@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/shadcn/components/ui/card";
-import { Globe } from "@/shared/shadcn/components/ui/globe";
 import { RiArrowDropLeftLine, RiLoader2Line } from "@remixicon/react";
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import Image from "next/image";
@@ -20,121 +19,129 @@ import { LoginMethod } from "./types";
 import AuthGlobe from "./components/auth-globe";
 
 import useLogin from "./hooks/useLogin";
-import { useSearchParams } from "next/navigation";
+import { use } from "react";
+import { Suspense } from "react";
 
-export default function Login() {
+export default function Login({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { mutate, isPending, setLoginData, loginData, loadingMethod } =
     useLogin();
-  const params = useSearchParams();
-  const error = params.get("error");
+  const params = use(searchParams);
   return (
-    <div className=" flex justify-center items-center  md:flex-row  flex-col h-dvh    ">
-      <Card className="flex-1 w-full h-full rounded-none bg-background/50 backdrop-blur-xs">
-        <CardHeader className="flex flex-row  items-center  gap-4 ">
-          <Image
-            src="/icons/logo-with-text-light-removebg.png"
-            alt="Chat.to Logo"
-            width={100}
-            height={32}
-            className=" aspect-video   object-cover rounded-md"
-          />
-        </CardHeader>
-        <CardContent className="flex flex-col max-w-lg mx-auto w-full items-center justify-center flex-1 space-y-3">
-          <CardTitle className="text-center text-3xl ">歡迎</CardTitle>
-          <CardDescription className="text-base">
-            登入來使用 ZEV
-          </CardDescription>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              mutate({
-                method: LoginMethod.CREDENTIALS,
-              });
-            }}
-            className="  w-10/12 flex flex-col items-center justify-center space-y-3"
-          >
-            <div className="grid gap-2 w-10/12">
-              <Label htmlFor="credentials-email">電子郵件</Label>
-              <Input
-                value={loginData.email}
-                onChange={(e) =>
-                  setLoginData((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
-                }
-                id="credentials-email"
-                placeholder="輸入您的電子郵件"
-                type="email"
-              />
-            </div>
-            <div className="grid gap-2 w-10/12">
-              <Label htmlFor="credentials-password">密碼</Label>
-              <Input
-                id="credentials-password"
-                placeholder="輸入您的密碼"
-                type="password"
-                value={loginData.password}
-                onChange={(e) =>
-                  setLoginData((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            {error && (
-              <p className="text-destructive text-xs">
-                Invalid email or password
-              </p>
-            )}
-            <Button
-              disabled={loadingMethod === LoginMethod.CREDENTIALS && isPending}
-              className="w-10/12  h-10"
-              type="submit"
+    <Suspense fallback={<div>Loading...</div>}>
+      <div className=" flex justify-center items-center  md:flex-row  flex-col h-dvh    ">
+        <Card className="flex-1 w-full h-full rounded-none bg-background/50 backdrop-blur-xs">
+          <CardHeader className="flex flex-row  items-center  gap-4 ">
+            <Image
+              src="/icons/logo-with-text-light-removebg.png"
+              alt="Chat.to Logo"
+              width={100}
+              height={32}
+              className=" aspect-video   object-cover rounded-md"
+            />
+          </CardHeader>
+          <CardContent className="flex flex-col max-w-lg mx-auto w-full items-center justify-center flex-1 space-y-3">
+            <CardTitle className="text-center text-3xl ">歡迎</CardTitle>
+            <CardDescription className="text-base">
+              登入來使用 ZEV
+            </CardDescription>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                mutate({
+                  method: LoginMethod.CREDENTIALS,
+                });
+              }}
+              className="  w-10/12 flex flex-col items-center justify-center space-y-3"
             >
-              登入
-              {loadingMethod === LoginMethod.CREDENTIALS && isPending && (
-                <RiLoader2Line size={24} className=" animate-spin" />
+              <div className="grid gap-2 w-10/12">
+                <Label htmlFor="credentials-email">電子郵件</Label>
+                <Input
+                  value={loginData.email}
+                  onChange={(e) =>
+                    setLoginData((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }))
+                  }
+                  id="credentials-email"
+                  placeholder="輸入您的電子郵件"
+                  type="email"
+                />
+              </div>
+              <div className="grid gap-2 w-10/12">
+                <Label htmlFor="credentials-password">密碼</Label>
+                <Input
+                  id="credentials-password"
+                  placeholder="輸入您的密碼"
+                  type="password"
+                  value={loginData.password}
+                  onChange={(e) =>
+                    setLoginData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+              {params.error && (
+                <p className="text-destructive text-xs">
+                  Invalid email or password
+                </p>
               )}
-            </Button>
-          </form>
+              <Button
+                disabled={
+                  loadingMethod === LoginMethod.CREDENTIALS && isPending
+                }
+                className="w-10/12  h-10"
+                type="submit"
+              >
+                登入
+                {loadingMethod === LoginMethod.CREDENTIALS && isPending && (
+                  <RiLoader2Line size={24} className=" animate-spin" />
+                )}
+              </Button>
+            </form>
 
-          <CardAction className="w-full flex space-x-2 items-center justify-center">
-            <Button
-              onClick={() => mutate({ method: LoginMethod.GOOGLE })}
-              disabled={loadingMethod === LoginMethod.GOOGLE && isPending}
-              className="  h-10"
-            >
-              {loadingMethod === LoginMethod.GOOGLE && isPending ? (
-                <RiLoader2Line size={24} className=" animate-spin" />
-              ) : (
-                <SiGoogle size={24} />
-              )}
-              以 Google 帳號繼續
-            </Button>
-            <Button
-              onClick={() => mutate({ method: LoginMethod.GITHUB })}
-              variant={"outline"}
-              disabled={loadingMethod === LoginMethod.GITHUB && isPending}
-              className="  h-10"
-            >
-              {loadingMethod === LoginMethod.GITHUB && isPending ? (
-                <RiLoader2Line size={24} className=" animate-spin" />
-              ) : (
-                <SiGithub size={24} />
-              )}
-              以 Github 帳號繼續
-            </Button>
-          </CardAction>
-          <Link href="/auth/register">
-            <Button variant={"link"} className="  h-10">
-              <RiArrowDropLeftLine size={24} /> 回到註冊
-            </Button>
-          </Link>
-        </CardContent>
-      </Card>
-      <AuthGlobe title="Welcome." />
-    </div>
+            <CardAction className="w-full flex space-x-2 items-center justify-center">
+              <Button
+                onClick={() => mutate({ method: LoginMethod.GOOGLE })}
+                disabled={loadingMethod === LoginMethod.GOOGLE && isPending}
+                className="  h-10"
+              >
+                {loadingMethod === LoginMethod.GOOGLE && isPending ? (
+                  <RiLoader2Line size={24} className=" animate-spin" />
+                ) : (
+                  <SiGoogle size={24} />
+                )}
+                以 Google 帳號繼續
+              </Button>
+              <Button
+                onClick={() => mutate({ method: LoginMethod.GITHUB })}
+                variant={"outline"}
+                disabled={loadingMethod === LoginMethod.GITHUB && isPending}
+                className="  h-10"
+              >
+                {loadingMethod === LoginMethod.GITHUB && isPending ? (
+                  <RiLoader2Line size={24} className=" animate-spin" />
+                ) : (
+                  <SiGithub size={24} />
+                )}
+                以 Github 帳號繼續
+              </Button>
+            </CardAction>
+            <Link href="/auth/register">
+              <Button variant={"link"} className="  h-10">
+                <RiArrowDropLeftLine size={24} /> 回到註冊
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+        <AuthGlobe title="Welcome." />
+      </div>
+    </Suspense>
   );
 }
