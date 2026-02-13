@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
+import "react-photo-view/dist/react-photo-view.css";
+import { Toaster } from "@/shared/shadcn/components/ui/sonner";
+import ClientLayout from "@/layout/client-layout";
+import { TooltipProvider } from "@/shared/shadcn/components/ui/tooltip";
+import { SessionProvider } from "next-auth/react";
+const roboto = Roboto({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,11 +29,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={roboto.variable}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <TooltipProvider>
+          <SessionProvider>
+            <ClientLayout>{children}</ClientLayout>
+            <Toaster />
+          </SessionProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
