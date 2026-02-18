@@ -1,6 +1,9 @@
 import { memberModel, roomModel } from "@/shared/schema";
+import { IRoom } from "@/shared/schema/room";
 
 import { IRoomCategory } from "@/shared/schema/room-category";
+import { IUser } from "@/shared/schema/user";
+import { ChatRoom, User } from "@/shared/types";
 
 export async function createMember({
   userId,
@@ -56,15 +59,22 @@ export const getUserRooms = async (userId: string) => {
       select: "name roomType roomId lastMessage createdAt",
       populate: {
         path: "lastMessage",
-        select: "content createdAt member",
-        populate: {
-          path: "member",
-          select: "nickname avatar user",
-          populate: {
-            path: "user",
-            select: "nickname avatar",
+        select: "content createdAt member attachments",
+
+        populate: [
+          {
+            path: "member",
+            select: "nickname avatar user",
+            populate: {
+              path: "user",
+              select: "nickname avatar",
+            },
           },
-        },
+          {
+            path: "attachments",
+            select: "filename url resourceType",
+          },
+        ],
       },
     })
     .populate({
@@ -85,8 +95,12 @@ export const getMembersByRoomId = async (roomId: string) => {
 
   const members = await memberModel
     .find({ room: roomDoc._id })
-    .populate({ path: "user", select: "nickname avatar _id userId email" })
-    .populate({ path: "room", select: "name roomType roomId lastMessage" })
+    .populate<{
+      user: User;
+    }>({ path: "user", select: "nickname avatar  _id userId email" })
+    .populate<{
+      room: ChatRoom;
+    }>({ path: "room", select: "name roomType roomId lastMessage" })
     .exec();
 
   return members;
@@ -163,4 +177,46 @@ export async function inviteMembers(roomId: string, userIds: string[]) {
   }
 
   return results;
+}
+
+export async function updateMemberRole(
+  operatorUserId: string,
+  roomId: string,
+  targetMemberId: string,
+  newRole: "admin" | "owner" | "member" | "guest",
+) {
+  const room = await roomModel.findOne({ roomId });
+  if (!room) throw new Error("Room not found");
+
+  // Find operator member to check permissions
+  const operatorMember = await memberModel.findOne({
+    user: operatorUserId,
+    room: room._id,
+  });
+  if (!operatorMember) throw new Error("Operator is not a member of this room");
+  if (!["admin", "owner"].includes(operatorMember.role || ""))
+    throw new Error("Only admin or owner can change roles");
+
+  // Find target member
+  const targetMember = await memberModel
+    .findById(targetMemberId)
+    .populate({ path: "user", select: "nickname avatar _id userId email" });
+  if (!targetMember) throw new Error("Target member not found");
+
+  // Cannot change own role
+  if (
+    targetMember.user?.toString() === operatorUserId ||
+    (targetMember.user as any)?.userId === operatorUserId ||
+    (targetMember.user as any)?._id?.toString() === operatorUserId
+  )
+    throw new Error("Cannot change your own role");
+
+  // Owner cannot be demoted by admin
+  if (targetMember.role === "owner" && operatorMember.role !== "owner")
+    throw new Error("Only owner can change another owner's role");
+
+  targetMember.role = newRole;
+  await targetMember.save();
+
+  return targetMember;
 }

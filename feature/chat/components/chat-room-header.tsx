@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Avatar,
   AvatarFallback,
   AvatarBadge,
+  AvatarImage,
 } from "@/shared/shadcn/components/ui/avatar";
 import { Button } from "@/shared/shadcn/components/ui/button";
 import { ChatRoom, Member } from "@/shared/types";
@@ -18,6 +19,8 @@ import {
 import { Separator } from "@/shared/shadcn/components/ui/separator";
 import { useSidebar } from "@/shared/shadcn/components/ui/sidebar";
 import { ChatRoomSettingsPanel } from "./chat-room-settings-panel";
+import { useOnlineStore } from "@/shared/store/online-store";
+import { RoomInfoUpdatedPayload } from "@/shared/hooks/use-ably-notification";
 
 interface ChatRoomHeaderProps {
   room: ChatRoom;
@@ -35,17 +38,44 @@ export function ChatRoomHeader({
   isAIPanelOpen,
 }: ChatRoomHeaderProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [localRoom, setLocalRoom] = useState<ChatRoom>(room);
+  const { onlineUsers } = useOnlineStore();
+
+  // Sync with prop changes
+  useEffect(() => {
+    setLocalRoom(room);
+  }, [room]);
+
+  // Listen for real-time room info updates
+  useEffect(() => {
+    const handleRoomInfoUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<RoomInfoUpdatedPayload>).detail;
+      if (detail.roomId === room.roomId) {
+        setLocalRoom((prev) => ({
+          ...prev,
+          ...(detail.name !== undefined && { name: detail.name }),
+          ...(detail.avatar !== undefined && { avatar: detail.avatar }),
+        }));
+      }
+    };
+
+    window.addEventListener("room-info-updated", handleRoomInfoUpdate);
+    return () =>
+      window.removeEventListener("room-info-updated", handleRoomInfoUpdate);
+  }, [room.roomId]);
 
   const recipient = members?.find(
     (member) => member.user.userId !== currentUserId,
   );
   const { toggleSidebar } = useSidebar();
   const displayName =
-    room.roomType === "dm" ? recipient?.user.nickname : room.name;
+    room.roomType === "dm" ? recipient?.user.nickname : localRoom.name;
   const displayAvatar =
     room.roomType === "dm"
       ? recipient?.user.nickname?.charAt(0)
-      : room.name?.charAt(0);
+      : localRoom.name?.charAt(0);
+  const displayAvatarUrl =
+    room.roomType === "dm" ? recipient?.user.avatar : localRoom.avatar;
 
   return (
     <>
@@ -61,7 +91,17 @@ export function ChatRoomHeader({
               <RiMenuLine className="h-5 w-5" />
             </Button>
             <Avatar className=" ">
-              <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+              {" "}
+              {room.roomType === "dm" ? (
+                onlineUsers.has(recipient?.user.userId || "") && (
+                  <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                )
+              ) : (
+                <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+              )}
+              {displayAvatarUrl && (
+                <AvatarImage src={displayAvatarUrl} alt={displayName || ""} />
+              )}
               <AvatarFallback className="bg-linear-to-br from-primary to-primary/80 text-primary-foreground font-semibold">
                 {displayAvatar}
               </AvatarFallback>
@@ -73,12 +113,22 @@ export function ChatRoomHeader({
               </h2>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 {room.roomType === "dm" ? (
-                  <>
-                    <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                    在線上
-                  </>
+                  onlineUsers.has(recipient?.user.userId || "") ? (
+                    <>
+                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      在線上
+                    </>
+                  ) : (
+                    <>離線</>
+                  )
                 ) : (
-                  <>{members.length} 位成員</>
+                  <>
+                    {
+                      members.filter((m) => onlineUsers.has(m.user.userId))
+                        .length
+                    }
+                    / {members.length} 位成員在線
+                  </>
                 )}
               </p>
             </div>

@@ -119,10 +119,26 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
-    @apply bg-background text-foreground;
   }
+}
+
+/* Activity Bar offset: push sidebar-container to the right of the activity bar */
+[data-slot="sidebar-container"][data-side="left"] {
+  left: 3.5rem !important;
+}
+
+[data-slot="sidebar-container"][data-side="left"]:is(
+    [data-collapsible="offcanvas"] *,
+    .group[data-collapsible="offcanvas"] *
+  ) {
+  /* Keep offcanvas working: slide out to the left relative to activity bar */
+}
+
+/* When collapsed offcanvas, slide fully out of view */
+[data-state="collapsed"][data-collapsible="offcanvas"]
+  [data-slot="sidebar-container"][data-side="left"] {
+  left: calc(var(--sidebar-width) * -1 + 3.5rem) !important;
 }

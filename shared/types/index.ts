@@ -3,6 +3,7 @@ import type { LoginMethod } from "@/feature/auth/types";
 export interface User {
   id: string;
   userId: string;
+  username?: string;
   nickname: string;
   email: string;
   bio?: string;
@@ -10,6 +11,7 @@ export interface User {
   password: string;
   provider: LoginMethod;
   emailVerified: boolean;
+  githubUsername?: string;
 }
 export interface ChatNavCategory {
   id: string;
@@ -85,4 +87,36 @@ export interface Attachment {
   publicId: string;
   resourceType?: string;
   uploadedAt: string;
+}
+
+export interface GitHubRepo {
+  owner: string;
+  repo: string;
+  url: string;
+  description?: string;
+  stars?: number;
+  language?: string;
+  forks?: number;
+}
+
+export interface Post {
+  id: string;
+  author: Pick<User, "id" | "userId" | "username" | "nickname" | "avatar">;
+  content: string;
+  images?: string[];
+  githubRepo?: GitHubRepo;
+  likes: string[]; // array of user ObjectId
+  commentCount: number;
+  createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string;
+}
+
+export interface Comment {
+  id: string;
+  post: string;
+  author: Pick<User, "id" | "userId" | "username" | "nickname" | "avatar">;
+  content: string;
+  createdAt: string;
+  deletedAt?: string;
 }

@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { ChatNavCategory, ChatNavItem, ChatRoom, Member } from "../types";
+import {
+  ChatNavCategory,
+  ChatNavItem,
+  ChatRoom,
+  Member,
+  Message,
+} from "../types";
 
 interface ChatState {
   chatCategorys: ChatNavCategory[];
@@ -11,6 +17,7 @@ interface ChatAction {
 
   addChatCategory: (chatCategory: ChatNavCategory) => void;
   removeChatCategory: (categoryId: string) => void;
+  updateChatCategoryTitle: (categoryId: string, title: string) => void;
   addChatRoom: (chatRoom: ChatRoom, members: Member[]) => void;
   updateRoomSettings: (
     roomId: string,
@@ -20,6 +27,8 @@ interface ChatAction {
       pinned?: boolean;
     },
   ) => void;
+  updateRoomLastMessage: (roomId: string, message: Message) => void;
+  clearUnreadCount: (roomId: string) => void;
 }
 
 type ChatStore = ChatState & ChatAction;
@@ -76,6 +85,14 @@ export const useChatStore = create<ChatStore>()(
           ...currentCategorys.slice(insertIndex),
         ];
 
+        set({ chatCategorys: newCategorys });
+      },
+
+      updateChatCategoryTitle: (categoryId: string, title: string) => {
+        const currentCategorys = get().chatCategorys;
+        const newCategorys = currentCategorys.map((cat) =>
+          cat.id === categoryId ? { ...cat, title } : cat,
+        );
         set({ chatCategorys: newCategorys });
       },
 
@@ -190,6 +207,68 @@ export const useChatStore = create<ChatStore>()(
             return {
               ...cat,
               items: sortChatItems(updatedItems, userId),
+            };
+          }
+          return cat;
+        });
+        set({ chatCategorys: newCategorys });
+      },
+      updateRoomLastMessage: (roomId, message) => {
+        const currentCategorys = get().chatCategorys;
+        const newCategorys = currentCategorys.map((cat) => {
+          let hasUpdated = false;
+          const updatedItems = cat.items.map((item) => {
+            // Find the item. Check item.id and item.room.roomId / item.room.id
+            if (
+              item.id === roomId ||
+              item.room?.id === roomId ||
+              item.room?.roomId === roomId
+            ) {
+              hasUpdated = true;
+              return {
+                ...item,
+                room: {
+                  ...item.room,
+                  lastMessage: message,
+                },
+              };
+            }
+            return item;
+          });
+
+          if (hasUpdated) {
+            return {
+              ...cat,
+              items: sortChatItems(updatedItems),
+            };
+          }
+          return cat;
+        });
+        set({ chatCategorys: newCategorys });
+      },
+      clearUnreadCount: (roomId) => {
+        const currentCategorys = get().chatCategorys;
+        const newCategorys = currentCategorys.map((cat) => {
+          let hasUpdated = false;
+          const updatedItems = cat.items.map((item) => {
+            if (
+              item.id === roomId ||
+              item.room?.id === roomId ||
+              item.room?.roomId === roomId
+            ) {
+              hasUpdated = true;
+              return {
+                ...item,
+                unreadCount: 0,
+              };
+            }
+            return item;
+          });
+
+          if (hasUpdated) {
+            return {
+              ...cat,
+              items: updatedItems,
             };
           }
           return cat;

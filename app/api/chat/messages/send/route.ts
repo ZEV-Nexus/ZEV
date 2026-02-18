@@ -1,7 +1,6 @@
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { sendMessage } from "@/shared/service/server/message";
 import { apiResponse } from "@/shared/service/server/response";
-import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {

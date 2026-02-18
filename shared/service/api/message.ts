@@ -51,3 +51,18 @@ export async function deleteMessageApi(messageId: string) {
   });
   return response.data;
 }
+
+export async function getUnreadCount(roomId: string, userId: string) {
+  const response = await fetchApi<number>(
+    `chat/messages/unread?roomId=${roomId}&userId=${userId}`,
+  );
+  return response.data;
+}
+
+export async function markAsRead(roomId: string, messageId?: string) {
+  const response = await fetchApi("chat/read", {
+    method: "POST",
+    body: JSON.stringify({ roomId, messageId }),
+  });
+  return response.data;
+}

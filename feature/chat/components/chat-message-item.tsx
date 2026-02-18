@@ -89,9 +89,11 @@ function formatFileSize(bytes: number) {
 
 interface MessageActionsProps {
   isCurrentUser: boolean;
+  isAttachment: boolean;
   message: Message;
   onReplyMessage?: (message: Message) => void;
   handleCopy: () => void;
+  handleDownload?: () => void;
   onDeleteMessage?: (messageId: string) => void;
   setEditContent: (content: string) => void;
   setIsEditing: (isEditing: boolean) => void;
@@ -101,9 +103,11 @@ interface MessageActionsProps {
 
 const MessageActions = ({
   isCurrentUser,
+  isAttachment,
   message,
   onReplyMessage,
   handleCopy,
+  handleDownload,
   onDeleteMessage,
   setEditContent,
   setIsEditing,
@@ -138,7 +142,13 @@ const MessageActions = ({
           align={isCurrentUser ? "end" : "start"}
           className="w-36"
         >
-          {message.content && (
+          {isAttachment && (
+            <DropdownMenuItem onClick={handleDownload}>
+              <RiDownloadLine className="h-4 w-4 mr-2" />
+              下載
+            </DropdownMenuItem>
+          )}
+          {message.content && !isAttachment && (
             <DropdownMenuItem onClick={handleCopy}>
               <RiFileCopyLine className="h-4 w-4 mr-2" />
               複製
@@ -387,6 +397,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                 <MessageActions
                   isCurrentUser={isCurrentUser}
                   message={message}
+                  isAttachment={false}
                   onReplyMessage={onReplyMessage}
                   handleCopy={handleCopy}
                   onDeleteMessage={onDeleteMessage}
@@ -406,107 +417,103 @@ export const ChatMessageItem = memo(function ChatMessageItem({
         )}
 
         {/* Attachments Bubble */}
-        {message.attachments && message.attachments.length > 0 && (
-          <div
-            className={cn(
-              "flex items-center gap-0.5 relative",
-              isCurrentUser ? "flex-row-reverse" : "flex-row",
-            )}
-          >
+        {message.attachments &&
+          message.attachments.length > 0 &&
+          message.attachments.map((att) => (
             <div
+              key={att.id}
               className={cn(
-                "relative ",
-                isCurrentUser
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/60 text-foreground",
+                "flex items-center gap-0.5 relative",
+                isCurrentUser ? "flex-row-reverse" : "flex-row",
               )}
-              style={{
-                borderRadius: getBubbleRadius(isCurrentUser, bubblePosition),
-              }}
             >
-              <PhotoProvider>
-                <div className="flex flex-col gap-1.5">
-                  {message.attachments.map((att) => {
-                    if (att.mimeType?.startsWith("image/")) {
-                      return (
-                        <PhotoView key={att.id} src={att.url}>
-                          <CldImage
-                            src={att.url}
-                            alt={att.filename}
-                            width={500}
-                            height={500}
-                            className="rounded-md max-w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity w-auto h-auto"
-                            preserveTransformations
-                          />
-                        </PhotoView>
-                      );
-                    } else if (att.mimeType?.startsWith("video/")) {
-                      return (
-                        <video
-                          key={att.id}
-                          src={att.url}
-                          controls
-                          className="rounded-md max-w-full max-h-[300px] object-cover"
-                        />
-                      );
-                    } else {
-                      return (
-                        <a
-                          key={att.id}
-                          href={att.url}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleDownload(att.url, att.filename);
-                          }}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={cn(
-                            "flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-decoration-none group/file",
-                            isCurrentUser
-                              ? "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-white"
-                              : "bg-background/50 hover:bg-background/80 text-foreground",
-                          )}
-                        >
-                          <RiFileTextLine className="h-4 w-4 shrink-0 opacity-70" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium truncate ">
-                              {att.filename}
-                            </p>
-                            <p className="text-[10px] opacity-60">
-                              {formatFileSize(att.size)}
-                            </p>
-                          </div>
-                          <RiDownloadLine className="h-3.5 w-3.5 opacity-60 group-hover/file:opacity-100 transition-opacity" />
-                        </a>
-                      );
-                    }
-                  })}
-                </div>
-              </PhotoProvider>
-            </div>
-
-            {!isEditing && (
-              <div className="flex flex-col items-end">
-                <MessageActions
-                  isCurrentUser={isCurrentUser}
-                  message={message}
-                  onReplyMessage={onReplyMessage}
-                  handleCopy={handleCopy}
-                  onDeleteMessage={onDeleteMessage}
-                  setEditContent={setEditContent}
-                  setIsEditing={setIsEditing}
-                  formatTime={formatTime}
-                  showEdit={!!message.content} // Only show edit if content exists
-                />
-                {message.editedAt && (
-                  <span className={cn("text-[10px] mt-0.5 block opacity-50")}>
-                    Edited
-                  </span>
+              <div
+                className={cn(
+                  "relative ",
+                  isCurrentUser
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/60 text-foreground",
                 )}
+                style={{
+                  borderRadius: getBubbleRadius(isCurrentUser, bubblePosition),
+                }}
+              >
+                <PhotoProvider>
+                  <div className="flex flex-col gap-1.5">
+                    {att.mimeType?.startsWith("image/") ? (
+                      <PhotoView src={att.url}>
+                        <CldImage
+                          src={att.url}
+                          alt={att.filename}
+                          width={500}
+                          height={500}
+                          className="rounded-md max-w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity w-auto h-auto"
+                          preserveTransformations
+                        />
+                      </PhotoView>
+                    ) : att.mimeType?.startsWith("video/") ? (
+                      <video
+                        key={att.id}
+                        src={att.url}
+                        controls
+                        className="rounded-md max-w-full max-h-[300px] object-cover"
+                      />
+                    ) : (
+                      <a
+                        key={att.id}
+                        href={att.url}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDownload(att.url, att.filename);
+                        }}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(
+                          "flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer text-decoration-none group/file",
+                          isCurrentUser
+                            ? "bg-primary-foreground/10 hover:bg-primary-foreground/20 text-white"
+                            : "bg-background/50 hover:bg-background/80 text-foreground",
+                        )}
+                      >
+                        <RiFileTextLine className="h-4 w-4 shrink-0 opacity-70" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate ">
+                            {att.filename}
+                          </p>
+                          <p className="text-[10px] opacity-60">
+                            {formatFileSize(att.size)}
+                          </p>
+                        </div>
+                        <RiDownloadLine className="h-3.5 w-3.5 opacity-60 group-hover/file:opacity-100 transition-opacity" />
+                      </a>
+                    )}
+                  </div>
+                </PhotoProvider>
               </div>
-            )}
-          </div>
-        )}
+
+              {!isEditing && (
+                <div className="flex flex-col items-end">
+                  <MessageActions
+                    isCurrentUser={isCurrentUser}
+                    message={message}
+                    isAttachment={true}
+                    onReplyMessage={onReplyMessage}
+                    handleCopy={handleCopy}
+                    onDeleteMessage={onDeleteMessage}
+                    setEditContent={setEditContent}
+                    setIsEditing={setIsEditing}
+                    formatTime={formatTime}
+                    showEdit={!!message.content} // Only show edit if content exists
+                  />
+                  {message.editedAt && (
+                    <span className={cn("text-[10px] mt-0.5 block opacity-50")}>
+                      Edited
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
 
         {showTimestamp && !isEditing && (
           <span className="text-[10px] text-muted-foreground mt-1 px-1 select-none">

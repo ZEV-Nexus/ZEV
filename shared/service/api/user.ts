@@ -8,3 +8,19 @@ export async function getUserByQuery(query: string) {
   return response.data;
 }
 
+export async function getUserProfile(username: string) {
+  const response = await fetchApi<
+    Pick<
+      User,
+      "id" | "userId" | "username" | "nickname" | "email" | "bio" | "avatar"
+    > & { createdAt: string }
+  >(`user/profile/${encodeURIComponent(username)}`);
+  return response.data;
+}
+
+export async function updateUsername(username: string) {
+  return await fetchApi<{ username: string }>("user/username", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}

@@ -26,6 +26,7 @@ interface ChatMessageInputProps {
   isAIMode?: boolean;
   replyingMessage?: Message | null;
   onCancelReply?: () => void;
+  onTyping?: () => void;
 }
 
 export function ChatMessageInput({
@@ -34,6 +35,7 @@ export function ChatMessageInput({
   isAIMode = false,
   replyingMessage,
   onCancelReply,
+  onTyping,
 }: ChatMessageInputProps) {
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -190,7 +192,10 @@ export function ChatMessageInput({
           <Textarea
             ref={textareaRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              onTyping?.();
+            }}
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}

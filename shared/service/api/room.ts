@@ -67,3 +67,24 @@ export const inviteMembers = async (roomId: string, userIds: string[]) => {
     body: JSON.stringify({ userIds }),
   });
 };
+
+export const updateMemberRole = async (
+  roomId: string,
+  memberId: string,
+  role: "admin" | "owner" | "member" | "guest",
+) => {
+  return await fetchApi(`rooms/${roomId}/members/role`, {
+    method: "POST",
+    body: JSON.stringify({ memberId, role }),
+  });
+};
+
+export const updateRoomInfo = async (
+  roomId: string,
+  info: { name?: string; avatar?: string },
+) => {
+  return await fetchApi(`rooms/${roomId}/info`, {
+    method: "POST",
+    body: JSON.stringify(info),
+  });
+};

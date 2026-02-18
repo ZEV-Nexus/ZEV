@@ -7,7 +7,7 @@ const messageSchema = new mongoose.Schema({
   content: String,
   createdAt: {
     type: Date,
-    default: Date.now(),
+    default: Date.now,
   },
   aiRoom: { type: mongoose.Schema.Types.ObjectId, ref: "Room" },
   replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },

@@ -5,6 +5,7 @@ import { ChatNavCategory, ChatNavItem } from "@/shared/types";
 import { IMember } from "@/shared/schema/member";
 import { getRoomCategories } from "@/shared/service/server/room-category";
 import { getCurrentUser } from "@/shared/service/server/auth";
+import { getUnreadCount } from "@/shared/service/server/message";
 
 export async function GET(request: Request) {
   try {
@@ -25,6 +26,7 @@ export async function GET(request: Request) {
       id: "dm",
       index: -1,
       title: "私人訊息",
+
       items: [],
     };
     const group: ChatNavCategory = {
@@ -49,11 +51,12 @@ export async function GET(request: Request) {
       const room = member.room;
 
       if (!room) continue;
-
+      const unreadCount = await getUnreadCount(room.id, user.id);
       const roomCategory = member.roomCategory;
       const groupId = roomCategory?._id?.toString();
       const item = {
         id: room._id.toString(),
+        unreadCount,
         room: {
           id: room._id.toString(),
           roomId: room.roomId ?? "",

@@ -20,6 +20,9 @@ import {
 import { uploadFileToCloudinary } from "@/shared/service/api/upload";
 import { toast } from "sonner";
 import { IAttachment } from "@/shared/schema/attachment";
+import { useChatStore } from "@/shared/store/chat-store";
+import { useAblyChat } from "@/feature/chat/hooks/use-ably-chat";
+import { RiLoader2Line } from "@remixicon/react";
 
 interface ChatRoomProps {
   room: ChatRoomType;
@@ -38,7 +41,30 @@ export default function ChatRoom({
   const [aiMessages, setAiMessages] = useState<AIMessage[]>([]);
   const [isAILoading, setIsAILoading] = useState(false);
   const [replyingMessage, setReplyingMessage] = useState<Message | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const { updateRoomLastMessage } = useChatStore();
 
+  const currentMember = members?.find((m) => m.user.userId === currentUserId);
+  const nickname = currentMember?.user?.nickname || "Guest";
+
+  const { sendRealtimeMessage, startTyping, stopTyping } = useAblyChat({
+    roomId: room.id,
+    userId: currentUserId,
+    nickname,
+    onMessage: (message: Message) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+      updateRoomLastMessage(room.id, message);
+    },
+    onTypingChange: (typers) => {
+      const others = new Set(typers);
+      console.log(typers);
+      others.delete(currentUserId);
+      setTypingUsers(others);
+    },
+  });
   // Fetch messages on mount
   useEffect(() => {
     const loadMessages = async () => {
@@ -54,8 +80,6 @@ export default function ChatRoom({
     };
     loadMessages();
   }, [room]);
-
-  const currentMember = members?.find((m) => m.user.userId === currentUserId);
 
   const handleSendMessage = async (
     content: string,
@@ -102,7 +126,7 @@ export default function ChatRoom({
       replyTo: replyToId,
       attachments: optimisticAttachments,
     };
-    console.log(optimisticMessage);
+
     setMessages((prev) => [...prev, optimisticMessage]);
     setReplyingMessage(null); // Clear reply state immediately
 
@@ -134,6 +158,9 @@ export default function ChatRoom({
               : msg,
           ),
         );
+        updateRoomLastMessage(room.id, savedMessage as Message);
+        // Publish to Ably
+        await sendRealtimeMessage(content, savedMessage as Message);
       }
     } catch (error: any) {
       // Remove optimistic message on error
@@ -141,6 +168,8 @@ export default function ChatRoom({
         prev.filter((msg) => msg.id !== optimisticMessage.id),
       );
       toast.error(error.message || "訊息發送失敗，請重試");
+    } finally {
+      stopTyping();
     }
   };
 
@@ -227,24 +256,41 @@ export default function ChatRoom({
         />
 
         <div className="flex-1 overflow-hidden relative">
-          <div className="h-full w-full">
+          <div className="h-full w-full relative">
             {isLoadingMessages ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-start justify-center h-full">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  <p className="text-sm text-muted-foreground">載入訊息中...</p>
+                  <RiLoader2Line className=" animate-spin rounded-full " />
                 </div>
               </div>
             ) : (
-              <ChatMessageList
-                messages={messages}
-                currentUserId={currentUserId}
-                members={members}
-                onEditMessage={handleEditMessage}
-                onDeleteMessage={handleDeleteMessage}
-                onReplyMessage={setReplyingMessage}
-                isAIPanelOpen={isAIPanelOpen}
-              />
+              <>
+                <ChatMessageList
+                  roomId={room.id}
+                  messages={messages}
+                  currentUserId={currentUserId}
+                  members={members}
+                  onEditMessage={handleEditMessage}
+                  onDeleteMessage={handleDeleteMessage}
+                  onReplyMessage={setReplyingMessage}
+                  isAIPanelOpen={isAIPanelOpen}
+                />
+                {/* Typing Indicator Overlay */}
+                {typingUsers.size > 0 && (
+                  <div className="absolute bottom-4 left-4 z-10 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="bg-background/80 backdrop-blur-md text-xs px-3 py-1.5 rounded-full border shadow-xs flex items-center gap-2">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></span>
+                      </div>
+                      <span className="text-muted-foreground">
+                        {typingUsers.size} 人正在輸入...
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -268,6 +314,9 @@ export default function ChatRoom({
           isAIMode={isAIPanelOpen}
           replyingMessage={replyingMessage}
           onCancelReply={() => setReplyingMessage(null)}
+          onTyping={() => {
+            startTyping();
+          }}
         />
       </div>
     </div>

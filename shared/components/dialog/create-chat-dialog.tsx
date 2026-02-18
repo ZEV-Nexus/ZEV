@@ -68,8 +68,10 @@ export default function CreateChatDialog({
     isPending,
   } = useCreateChat(categoryId);
 
+  const [open, setOpen] = React.useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
@@ -355,8 +357,12 @@ export default function CreateChatDialog({
           <Button
             type="button"
             disabled={isPending}
-            onClick={async () => {
-              mutate();
+            onClick={() => {
+              mutate(undefined, {
+                onSuccess: () => {
+                  setOpen(false);
+                },
+              });
             }}
           >
             {isPending ? <RiLoader2Line className="animate-spin" /> : "Create"}

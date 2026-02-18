@@ -72,7 +72,7 @@ export function NavUser() {
               <Button variant={"ghost"} asChild>
                 <Link
                   className="flex w-full items-center h-fit gap-2 px-3 py-2 text-left text-sm"
-                  href={`/profile/${session?.user.id}`}
+                  href={`/${session?.user.username}`}
                 >
                   <Avatar className="h-8 w-8 ">
                     <AvatarImage

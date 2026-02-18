@@ -14,8 +14,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json("User already exists", { status: 409 });
     }
     const hashPassword = await hash(password, 10);
+    const baseUsername = email
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9_.-]/g, "");
+    let username = baseUsername;
+    let suffix = 1;
+    while (await userModel.findOne({ username })) {
+      username = `${baseUsername}${suffix}`;
+      suffix++;
+    }
     const newUser = new userModel({
       userId: crypto.randomUUID(),
+      username,
       email,
       password: hashPassword,
       nickname,

@@ -29,6 +29,17 @@ export async function updateRoomCategoryIndex(
   return await roomCategoryModel.findByIdAndUpdate(categoryId, { index });
 }
 
+export async function updateRoomCategoryTitle(
+  categoryId: string,
+  title: string,
+) {
+  return await roomCategoryModel.findByIdAndUpdate(
+    categoryId,
+    { title },
+    { new: true },
+  );
+}
+
 export async function deleteRoomCategory(categoryId: string) {
   // Delete the category
   await roomCategoryModel.findByIdAndDelete(categoryId);

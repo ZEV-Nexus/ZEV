@@ -26,8 +26,7 @@ export default function useRegister() {
         throw new Error(result);
       }
       await signIn("credentials", {
-        redirect: true,
-        redirectTo: "/",
+        callbackUrl: "/c",
         email: data.email,
         password: data.password,
       });

@@ -10,7 +10,7 @@ const memberSchema = new mongoose.Schema({
     enum: ["admin", "owner", "member", "guest"],
     default: "member",
   },
-  lastReadMessageId: {
+  lastReadMessage: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Message",
     default: null,

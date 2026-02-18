@@ -20,12 +20,14 @@ declare module "next-auth" {
       User,
       | "email"
       | "nickname"
+      | "username"
       | "bio"
       | "avatar"
       | "provider"
       | "emailVerified"
       | "id"
       | "userId"
+      | "githubUsername"
     >;
   }
 }
@@ -45,8 +47,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "密碼", type: "password" },
       },
       authorize: async (credentials) => {
-        console.log("Credentials received in authorize:", credentials);
-
         const email = credentials?.email as string;
         const password = credentials?.password as string;
 
@@ -59,10 +59,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const user = (await userModel.findOne({
           email,
         })) as User | null;
-        console.log(user);
 
         if (user) {
-          console.log(await compare(password, user?.password!));
           const isMatch = await compare(password, user.password!);
           if (isMatch) {
             return {
@@ -99,12 +97,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           session.user = {
             id: dbUser.id,
             userId: dbUser.userId!,
+            username: dbUser.username || "",
             email: dbUser.email!,
             nickname: dbUser?.nickname || "",
             bio: dbUser?.bio || "",
             avatar: dbUser?.avatar || "",
             provider: (dbUser?.provider as LoginMethod) || "credentials",
             emailVerified: session.user?.emailVerified,
+            githubUsername: (dbUser as any)?.githubUsername || "",
           };
         }
       }
@@ -116,19 +116,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const loginUser = await userModel.findOne({ email: user.email });
       if (!loginUser && profile) {
         const userId = crypto.randomUUID();
+        const email = user.email || "";
+        const baseUsername = email
+          .split("@")[0]
+          .toLowerCase()
+          .replace(/[^a-z0-9_.-]/g, "");
+        let username = baseUsername;
+        let suffix = 1;
+        while (await userModel.findOne({ username })) {
+          username = `${baseUsername}${suffix}`;
+          suffix++;
+        }
+        const githubUsername =
+          account?.provider === "github" ? (profile as any)?.login || "" : "";
+
         const newUser = new userModel({
           userId: userId,
+          username,
           email: user.email,
           nickname: profile?.name || "",
           provider: account?.provider || profile?.provider,
-
           avatar: user?.image || profile?.picture,
           emailVerified: profile?.email_verified || false,
+          githubUsername,
         });
 
         await newUser.save();
 
         await sendWelcomeEmail(newUser.nickname!, newUser.email!);
+      } else if (loginUser && account?.provider === "github") {
+        // Update githubUsername for existing users who sign in via GitHub
+        const ghLogin = (profile as any)?.login || "";
+        if (ghLogin && !(loginUser as any).githubUsername) {
+          await userModel.findByIdAndUpdate(loginUser._id, {
+            githubUsername: ghLogin,
+          });
+        }
       }
 
       return true;

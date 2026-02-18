@@ -7,6 +7,6 @@ export default proxy((req) => {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
   if (authPath && req.auth) {
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/c", req.url));
   }
 });

@@ -29,6 +29,7 @@ export default function CreateCategoryDialog({
 }: {
   children: React.ReactNode;
 }) {
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const { addChatCategory } = useChatStore();
   const { mutate, isPending } = useMutation({
@@ -44,6 +45,8 @@ export default function CreateCategoryDialog({
         items: [],
       });
       toast.success("Category created successfully");
+      setOpen(false);
+      setName("");
     },
     onError: (error) => {
       toast.error(error.message);
@@ -51,7 +54,7 @@ export default function CreateCategoryDialog({
   });
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>

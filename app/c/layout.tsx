@@ -3,6 +3,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/shared/shadcn/components/ui/sidebar";
+import AblyNotificationProvider from "@/shared/components/provider/ably-notification-provider";
 import React from "react";
 
 export default function ChatLayout({
@@ -11,16 +12,9 @@ export default function ChatLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "22rem",
-          "--sidebar-width-mobile": "20rem",
-        } as React.CSSProperties
-      }
-    >
+    <AblyNotificationProvider>
       <ChatSidebar />
       <SidebarInset className="px-2">{children}</SidebarInset>
-    </SidebarProvider>
+    </AblyNotificationProvider>
   );
 }

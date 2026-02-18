@@ -54,3 +54,17 @@ export const getChatRoomById = async (roomId: string) => {
 
   return room;
 };
+
+export const updateRoomInfo = async (
+  roomId: string,
+  updates: { name?: string; avatar?: string },
+) => {
+  const room = await roomModel.findOne({ roomId });
+  if (!room) throw new Error("Room not found");
+
+  const update: Record<string, any> = {};
+  if (updates.name !== undefined) update.name = updates.name;
+  if (updates.avatar !== undefined) update.avatar = updates.avatar;
+
+  return await roomModel.findOneAndUpdate({ roomId }, update, { new: true });
+};

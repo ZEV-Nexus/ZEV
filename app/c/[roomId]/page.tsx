@@ -19,11 +19,10 @@ export default async function ChatRoomPage({
   const roomDoc = await getChatRoomById(roomId);
   const memberDocs = await getMembersByRoomId(roomId);
 
-  if (!roomDoc) {
-    redirect("/");
+  if (!roomDoc || !memberDocs.find((member) => member.user.id === user.id)) {
+    redirect("/c");
   }
 
-  // Convert Mongoose Documents to plain objects
   const room = JSON.parse(JSON.stringify(roomDoc));
   const members = JSON.parse(JSON.stringify(memberDocs));
 

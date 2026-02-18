@@ -1,6 +1,8 @@
-import { messageModel, roomModel } from "@/shared/schema";
+import { memberModel, messageModel, roomModel } from "@/shared/schema";
 import AttachmentModel, { IAttachment } from "@/shared/schema/attachment";
 import { createAttachment } from "./attachment";
+import mongoose from "mongoose";
+import { IMessage } from "@/shared/schema/message";
 
 export async function getMessages(
   roomId: string,
@@ -28,7 +30,10 @@ export async function getMessages(
           populate: { path: "user", select: "nickname avatar userId" },
         },
       },
-      { path: "attachments" },
+      {
+        path: "attachments",
+        select: "filename url resourceType size publicId mimeType",
+      },
     ]);
 
   return messages.reverse();
@@ -56,7 +61,9 @@ export async function sendMessage(
     message.attachments = attachmentIds.map((att) => att._id);
   }
   const savedMessage = await message.save();
-  console.log(savedMessage);
+  memberModel.findByIdAndUpdate(memberId, {
+    lastReadMessage: savedMessage._id,
+  });
   await roomModel.findByIdAndUpdate(roomId, { lastMessage: savedMessage._id });
   return await savedMessage.populate([
     {
@@ -98,4 +105,24 @@ export async function deleteMessage(messageId: string) {
     path: "member",
     populate: { path: "user", select: "nickname avatar userId" },
   });
+}
+
+export async function getUnreadCount(roomId: string, userId: string) {
+  const member = await memberModel
+    .findOne({ room: roomId, user: userId })
+    .populate<{ lastReadMessage: IMessage }>("lastReadMessage");
+  if (!member) throw new Error("Member not found");
+  const query: any = {
+    room: new mongoose.Types.ObjectId(roomId),
+    member: { $ne: member._id },
+  };
+  console.log(member.lastReadMessage);
+
+  if (member.lastReadMessage?.createdAt) {
+    query.createdAt = { $gt: new Date(member.lastReadMessage.createdAt) };
+  }
+
+  const messages = await messageModel.countDocuments(query);
+  console.log(messages);
+  return messages;
 }

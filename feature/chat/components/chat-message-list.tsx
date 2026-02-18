@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useCallback } from "react";
+import { useMemo, useRef, useState, useCallback, useEffect } from "react";
 import { Message, Member } from "@/shared/types";
 import { ChatMessageItem, BubblePosition } from "./chat-message-item";
 import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
@@ -8,7 +8,10 @@ import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { RiArrowDownLine } from "@remixicon/react";
+import { useChatStore } from "@/shared/store/chat-store";
+import { markAsRead } from "@/shared/service/api/message";
 interface ChatMessageListProps {
+  roomId: string;
   messages: Message[];
   currentUserId: string;
   members: Member[];
@@ -42,6 +45,7 @@ function formatDateSeparator(date: Date): string {
 }
 
 export function ChatMessageList({
+  roomId,
   messages,
   currentUserId,
   isAIPanelOpen,
@@ -52,6 +56,7 @@ export function ChatMessageList({
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const [atBottom, setAtBottom] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { clearUnreadCount } = useChatStore();
 
   const listItems = useMemo<ListItem[]>(() => {
     if (messages.length === 0) return [];
@@ -135,13 +140,21 @@ export function ChatMessageList({
   );
 
   const scrollToBottom = useCallback(() => {
-    virtuosoRef.current?.scrollToIndex({
-      index: listItems.length - 1,
-      align: "end",
+    virtuosoRef.current?.scrollTo({
+      top: 999999, // Force scroll to absolute bottom
       behavior: "smooth",
     });
     setUnreadCount(0);
-  }, [listItems.length]);
+  }, []);
+
+  // Mark as read when messages update and we are at bottom
+  useEffect(() => {
+    if (atBottom && messages.length > 0) {
+      clearUnreadCount(roomId);
+      markAsRead(roomId);
+      setUnreadCount(0);
+    }
+  }, [messages, atBottom, roomId, clearUnreadCount]);
 
   // Empty state
   if (messages.length === 0) {
@@ -153,25 +166,30 @@ export function ChatMessageList({
   return (
     <div className="relative h-full w-full">
       <Virtuoso
+        className="h-full w-full"
+        id="chat-message-list"
         ref={virtuosoRef}
         data={listItems}
-        initialTopMostItemIndex={listItems.length - 1}
-        followOutput="smooth"
+        initialTopMostItemIndex={{
+          index: listItems.length - 1,
+          align: "end",
+        }}
+        followOutput={atBottom ? "auto" : false}
         atBottomStateChange={(bottom) => {
           setAtBottom(bottom);
-          if (bottom) setUnreadCount(0);
+          if (bottom) {
+            setUnreadCount(0);
+            clearUnreadCount(roomId);
+            markAsRead(roomId);
+          }
         }}
         components={{
-          Footer: () => (
-            <div
-              className={cn(
-                "transition-all duration-300",
-                isAIPanelOpen ? "h-[300px]" : "h-4",
-              )}
-            />
-          ),
+          Footer: () =>
+            isAIPanelOpen ? (
+              <div className="h-[300px] transition-all duration-300" />
+            ) : null,
         }}
-        increaseViewportBy={{ top: 400, bottom: 200 }}
+        increaseViewportBy={{ top: 400, bottom: 0 }}
         itemContent={(_, item) => {
           if (item.type === "date-separator") {
             return (

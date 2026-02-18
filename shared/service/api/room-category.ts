@@ -20,6 +20,14 @@ export const updateMemberSort = async (
   });
 };
 
+export const updateCategory = async (categoryId: string, name: string) => {
+  const response = await fetchApi<RoomCategory>("category/update", {
+    method: "POST",
+    body: JSON.stringify({ categoryId, name }),
+  });
+  return response.data;
+};
+
 export const deleteCategory = async (categoryId: string) => {
   return await fetchApi("category/delete", {
     method: "POST",

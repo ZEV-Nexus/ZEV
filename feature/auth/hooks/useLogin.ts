@@ -16,6 +16,7 @@ export default function useLogin() {
         const response = await signIn(data.method, {
           email: loginData.email,
           password: loginData.password,
+          callbackUrl: "/c",
         });
         return response;
       } else {

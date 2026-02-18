@@ -4,6 +4,8 @@ import roomCategoryModel from "./room-category";
 import attachmentModel from "./attachment";
 import roomModel from "./room";
 import messageModel from "./message";
+import postModel from "./post";
+import commentModel from "./comment";
 
 export {
   userModel,
@@ -12,4 +14,6 @@ export {
   attachmentModel,
   roomModel,
   messageModel,
+  postModel,
+  commentModel,
 };

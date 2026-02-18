@@ -10,6 +10,7 @@ const roomSchema = new mongoose.Schema({
 
   lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
   name: { type: String, default: "" },
+  avatar: { type: String, default: "" },
   roomType: {
     type: String,
     enum: ["dm", "group", "channel", "ai"],
