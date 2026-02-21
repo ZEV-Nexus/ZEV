@@ -120,3 +120,18 @@ export interface Comment {
   createdAt: string;
   deletedAt?: string;
 }
+
+export type NotificationType = "room_invite" | "post_like" | "post_comment";
+
+export interface Notification {
+  id: string;
+  recipient: string;
+  sender: Pick<User, "id" | "userId" | "username" | "nickname" | "avatar">;
+  type: NotificationType;
+  post?: Pick<Post, "id" | "content"> | null;
+  comment?: Pick<Comment, "id" | "content"> | null;
+  room?: Pick<ChatRoom, "id" | "name" | "roomType" | "roomId"> | null;
+  read: boolean;
+  createdAt: string;
+}
+

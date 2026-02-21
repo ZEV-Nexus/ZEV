@@ -1,14 +1,16 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   RiSearchLine,
   RiChat1Line,
   RiNotificationLine,
   RiHome4Line,
+  RiRobot2Line,
 } from "@remixicon/react";
+
 import {
   Tooltip,
   TooltipContent,
@@ -20,22 +22,21 @@ import {
   AvatarImage,
 } from "@/shared/shadcn/components/ui/avatar";
 import { useSession } from "next-auth/react";
-import {
-  useAppSidebarStore,
-  type ActivityPanel,
-} from "@/shared/store/app-sidebar-store";
+import { useAppSidebarStore } from "@/shared/store/app-sidebar-store";
 import { cn } from "@/shared/shadcn/lib/utils";
 import SearchPanel from "./search-panel";
 import NotificationPanel from "./notification-panel";
 import { AnimatePresence, motion } from "motion/react";
 import Image from "next/image";
+import { useNotificationStore } from "@/shared/store/notification-store";
+import { SettingsDialog } from "@/feature/settings/components/settings-dialog";
 
 const ACTIVITY_BAR_WIDTH = "3.5rem";
 const PANEL_WIDTH = "22rem";
 
 /** Top-level navigation items shown in the Activity Bar */
 const navItems: {
-  id: "home" | "search" | "chat" | "notifications";
+  id: "home" | "search" | "chat" | "notifications" | "ai";
   icon: React.ElementType;
   label: string;
   href?: string;
@@ -43,7 +44,7 @@ const navItems: {
 }[] = [
   { id: "home", icon: RiHome4Line, label: "首頁", href: "/" },
   { id: "search", icon: RiSearchLine, label: "搜尋", panel: true },
-  { id: "chat", icon: RiChat1Line, label: "聊天", href: "/c" },
+  { id: "chat", icon: RiChat1Line, label: "聊天", href: "/c", panel: true },
   {
     id: "notifications",
     icon: RiNotificationLine,
@@ -54,8 +55,16 @@ const navItems: {
 
 export default function AppActivityBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { data: session } = useSession();
-  const { activePanel, togglePanel, closePanel } = useAppSidebarStore();
+  const {
+    activePanel,
+    togglePanel,
+    closePanel,
+    toggleChatSidebar,
+    setChatSidebarOpen,
+  } = useAppSidebarStore();
+  const { unreadCount } = useNotificationStore();
 
   // Don't show on auth pages
   const isAuthPage = pathname.startsWith("/auth");
@@ -83,35 +92,49 @@ export default function AppActivityBar() {
             />
           </Link>
         </div>
-
         {/* Nav items */}
         <nav className="flex flex-col items-center gap-1 flex-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.panel
-              ? activePanel === item.id
-              : item.id === "chat"
+            const isActive =
+              item.id === "chat"
                 ? isChatPage
-                : item.id === "home"
-                  ? isHomePage
-                  : false;
+                : item.panel
+                  ? activePanel === item.id
+                  : item.id === "home"
+                    ? isHomePage
+                    : false;
 
             if (item.panel) {
               return (
                 <Tooltip key={item.id}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() =>
-                        togglePanel(item.id as "search" | "notifications")
-                      }
+                      onClick={() => {
+                        if (item.id === "chat") {
+                          if (isChatPage) {
+                            toggleChatSidebar();
+                          } else {
+                            setChatSidebarOpen(true);
+                            router.push("/c");
+                          }
+                        } else {
+                          togglePanel(item.id as "search" | "notifications");
+                        }
+                      }}
                       className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200",
+                        "relative flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200",
                         isActive
                           ? "bg-primary/10 text-primary"
                           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                       )}
                     >
                       <Icon className="h-5 w-5" />
+                      {item.id === "notifications" && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-sidebar animate-in zoom-in">
+                          {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                      )}
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">{item.label}</TooltipContent>
@@ -140,7 +163,10 @@ export default function AppActivityBar() {
             );
           })}
         </nav>
-
+        {/* Settings */}
+        <div className="mb-1">
+          <SettingsDialog />
+        </div>
         {/* Bottom: user avatar */}
         {session?.user && (
           <Tooltip>

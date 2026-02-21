@@ -90,15 +90,15 @@ export function ChatRoomHeader({
             >
               <RiMenuLine className="h-5 w-5" />
             </Button>
-            <Avatar className=" ">
-              {" "}
-              {room.roomType === "dm" ? (
-                onlineUsers.has(recipient?.user.userId || "") && (
-                  <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
-                )
-              ) : (
-                <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
-              )}
+            <Avatar>
+              {room.roomType === "dm"
+                ? onlineUsers.has(recipient?.user.userId || "") && (
+                    <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                  )
+                : members.filter((m) => onlineUsers.has(m.user.id)).length >
+                    0 && (
+                    <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                  )}
               {displayAvatarUrl && (
                 <AvatarImage src={displayAvatarUrl} alt={displayName || ""} />
               )}
@@ -121,14 +121,14 @@ export function ChatRoomHeader({
                   ) : (
                     <>離線</>
                   )
-                ) : (
+                ) : members.filter((m) => onlineUsers.has(m.user.id)).length >
+                  0 ? (
                   <>
-                    {
-                      members.filter((m) => onlineUsers.has(m.user.userId))
-                        .length
-                    }
-                    / {members.length} 位成員在線
+                    {members.filter((m) => onlineUsers.has(m.user.id)).length}
+                    位成員在線
                   </>
+                ) : (
+                  <>離線</>
                 )}
               </p>
             </div>

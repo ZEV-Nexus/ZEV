@@ -1,17 +1,30 @@
 "use client";
 
-import { useRef, useEffect, memo } from "react";
+import { useRef, useEffect, memo, useState } from "react";
 import { Button } from "@/shared/shadcn/components/ui/button";
-import { ScrollArea } from "@/shared/shadcn/components/ui/scroll-area";
 import {
   RiSparklingFill,
   RiDeleteBinLine,
   RiLoader2Line,
   RiCollapseDiagonalLine,
+  RiXingLine,
+  RiCloseLine,
+  RiExpandDiagonal2Fill,
+  RiExpandDiagonalFill,
 } from "@remixicon/react";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { Card, CardContent } from "@/shared/shadcn/components/ui/card";
-
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectTrigger,
+  SelectValue,
+  SelectLabel,
+  SelectItem,
+} from "@/shared/shadcn/components/ui/select";
+import { AI_MODELS, AIModel } from "@/shared/store/ai-store";
+import { UIMessage } from "ai";
 export interface AIMessage {
   id: string;
   role: "user" | "assistant";
@@ -22,9 +35,10 @@ export interface AIMessage {
 interface AIChatPanelProps {
   isOpen: boolean;
   onToggle: () => void;
-  aiMessages: AIMessage[];
+  aiMessages: UIMessage[];
   isLoading: boolean;
   onClear: () => void;
+  onSelectModel: (modelId: string) => void;
 }
 
 export const AIChatPanel = memo(function AIChatPanel({
@@ -33,9 +47,10 @@ export const AIChatPanel = memo(function AIChatPanel({
   aiMessages,
   isLoading,
   onClear,
+  onSelectModel,
 }: AIChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-
+  const [fullScreen, setFullScreen] = useState(false);
   useEffect(() => {
     if (isOpen) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -43,10 +58,21 @@ export const AIChatPanel = memo(function AIChatPanel({
   }, [aiMessages, isOpen]);
 
   if (!isOpen) return null;
-
+  const aiModelsGroupByProvider = AI_MODELS.reduce(
+    (prev, curr) => {
+      if (prev[curr.provider]) prev[curr.provider].push(curr);
+      else prev[curr.provider] = [curr];
+      return prev;
+    },
+    {} as Record<string, AIModel[]>,
+  );
   return (
-    <div className="w-full px-4 py-2 animate-in slide-in-from-bottom-4 fade-in duration-300">
-      <Card className="shadow-lg border-primary/20 bg-background/95 backdrop-blur-md">
+    <div
+      className={cn(
+        "w-full px-4 py-2 animate-in  slide-in-from-bottom-4 fade-in duration-300 transition-all",
+      )}
+    >
+      <Card className="shadow-lg border-primary/20  bg-background/95 backdrop-blur-md  ">
         <CardContent className="p-0">
           <div className="rounded-xl overflow-hidden">
             {/* Panel Header */}
@@ -61,19 +87,38 @@ export const AIChatPanel = memo(function AIChatPanel({
                 )}
               </div>
               <div className="flex items-center gap-1">
-                {aiMessages.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onClear();
-                    }}
-                    className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
-                  >
-                    <RiDeleteBinLine className="h-3.5 w-3.5 mr-1" />
-                    清除
-                  </Button>
+                <Select
+                  onValueChange={onSelectModel}
+                  defaultValue="claude-3-5-sonnet-20240620"
+                >
+                  <SelectTrigger className=" text-muted-foreground hover:text-foreground">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(aiModelsGroupByProvider).map(
+                      ([provider, models]) => (
+                        <SelectGroup key={provider}>
+                          <SelectLabel>{provider}</SelectLabel>
+                          {models.map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              {model.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+                {fullScreen ? (
+                  <RiCollapseDiagonalLine
+                    className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
+                    onClick={() => setFullScreen(false)}
+                  />
+                ) : (
+                  <RiExpandDiagonalFill
+                    className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
+                    onClick={() => setFullScreen(true)}
+                  />
                 )}
                 <Button
                   variant="ghost"
@@ -81,13 +126,18 @@ export const AIChatPanel = memo(function AIChatPanel({
                   onClick={onToggle}
                   className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 >
-                  <RiCollapseDiagonalLine className="h-4 w-4" />
+                  <RiCloseLine className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
             {/* Messages Area */}
-            <ScrollArea className="max-h-[35vh] min-h-[100px]">
+            <div
+              className={cn(
+                " overflow-y-auto ",
+                fullScreen ? "h-dvh  max-h-[calc(100vh-250px)]" : "max-h-50",
+              )}
+            >
               <div className="px-4 py-4">
                 {aiMessages.length === 0 ? (
                   <div className="flex flex-col items-center text-center py-8">
@@ -140,7 +190,11 @@ export const AIChatPanel = memo(function AIChatPanel({
                             )}
                           >
                             <p className="whitespace-pre-wrap wrap-break-word leading-relaxed text-left">
-                              {msg.content}
+                              {msg.parts
+                                .map((part) =>
+                                  part.type === "text" ? part.text : "",
+                                )
+                                .join("")}
                             </p>
                           </div>
                         </div>
@@ -160,7 +214,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                   </div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         </CardContent>
       </Card>

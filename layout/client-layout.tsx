@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { usePathname } from "next/navigation";
 import AppActivityBar from "./components/app-activity-bar";
-import { SidebarProvider } from "@/shared/shadcn/components/ui/sidebar";
+import AblyNotificationProvider from "@/shared/components/provider/ably-notification-provider";
 
 export default function ClientLayout({
   children,
@@ -15,15 +15,8 @@ export default function ClientLayout({
   const isAuthPage = pathname.startsWith("/auth");
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "22rem",
-          "--sidebar-width-mobile": "20rem",
-        } as React.CSSProperties
-      }
-    >
-      <QueryClientProvider client={client}>
+    <QueryClientProvider client={client}>
+      <AblyNotificationProvider>
         <AppActivityBar />
         <div
           className="min-h-svh flex-1"
@@ -31,7 +24,7 @@ export default function ClientLayout({
         >
           {children}
         </div>
-      </QueryClientProvider>
-    </SidebarProvider>
+      </AblyNotificationProvider>
+    </QueryClientProvider>
   );
 }

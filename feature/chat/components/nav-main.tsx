@@ -24,6 +24,9 @@ import {
   RiDraggable,
   RiListCheck3,
   RiFolderAddLine,
+  RiUserLine,
+  RiGroupLine,
+  RiFolderLine,
 } from "@remixicon/react";
 
 import { Button } from "@/shared/shadcn/components/ui/button";
@@ -52,6 +55,7 @@ import NavRoomItem, { NavRoomItemSkeleton } from "./nav-room-item";
 import CreateCategoryDialog from "@/shared/components/dialog/create-category-dialog";
 import EditCategoryDialog from "@/shared/components/dialog/edit-category-dialog";
 import { useSession } from "next-auth/react";
+import { Badge } from "@/shared/shadcn/components/ui/badge";
 
 export function NavMain() {
   const { isMobile } = useSidebar();
@@ -168,10 +172,23 @@ export function NavMain() {
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                           tooltip={record?.title}
-                          className="text-muted-foreground text-base"
+                          className="text-muted-foreground flex justify-between text-base"
                         >
-                          <span>{record.title}</span>
-                          <RiArrowRightSLine className=" transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          <div className="flex items-center gap-2">
+                            {record.id === "dm" && <RiUserLine />}
+                            {record.id === "group" && <RiGroupLine />}
+                            {record.id !== "dm" && record.id !== "group" && (
+                              <RiFolderLine />
+                            )}
+                            <span>{record.title}</span>{" "}
+                            <RiArrowRightSLine className=" transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </div>
+
+                          {record.items.length > 0 && (
+                            <Badge variant="secondary">
+                              {record.items.length}
+                            </Badge>
+                          )}
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>

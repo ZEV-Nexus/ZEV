@@ -53,5 +53,5 @@ export async function searchGitHubRepos(query: string) {
   const response = await fetchApi<
     (GitHubRepo & { fullName: string; avatar: string })[]
   >(`github/search?q=${encodeURIComponent(query)}`);
-  return response.data;
+  return response;
 }

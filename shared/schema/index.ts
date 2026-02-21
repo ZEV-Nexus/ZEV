@@ -6,7 +6,8 @@ import roomModel from "./room";
 import messageModel from "./message";
 import postModel from "./post";
 import commentModel from "./comment";
-
+import notificationModel from "./notification";
+import userApiKeyModel from "./user-api-key";
 export {
   userModel,
   memberModel,
@@ -16,4 +17,6 @@ export {
   messageModel,
   postModel,
   commentModel,
+  notificationModel,
+  userApiKeyModel,
 };

@@ -1,6 +1,8 @@
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { sendMessage } from "@/shared/service/server/message";
 import { apiResponse } from "@/shared/service/server/response";
+import { getMembersByRoomId } from "@/shared/service/server/member";
+import { publishUserNotification } from "@/shared/lib/server-ably";
 
 export async function POST(req: Request) {
   try {
@@ -14,6 +16,7 @@ export async function POST(req: Request) {
     if (!roomId || (!content && !attachments?.length)) {
       return apiResponse({ ok: false, message: "Bad Request", status: 400 });
     }
+
     const message = await sendMessage(
       memberId,
       roomId,
@@ -21,8 +24,22 @@ export async function POST(req: Request) {
       attachments,
       replyTo,
     );
+
+    // Broadcast to room members for sidebar update
+    const members = await getMembersByRoomId(roomId);
+    const notifyPromises = members
+      .filter((m) => m.user?.userId && m.user.userId !== user.userId)
+      .map((m) =>
+        publishUserNotification(m.user.userId, "chat-message", {
+          roomId,
+          message,
+        }),
+      );
+    await Promise.allSettled(notifyPromises);
+
     return apiResponse({ data: message });
   } catch (error) {
+    console.error("Failed to send message:", error);
     return apiResponse({
       ok: false,
       message: "Internal Server Error",

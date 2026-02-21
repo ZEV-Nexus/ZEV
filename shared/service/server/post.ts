@@ -52,13 +52,12 @@ export async function getPosts({
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit)
-    .populate("author", "userId username nickname avatar")
-    .lean();
+    .populate("author", "userId username nickname avatar");
 
   const total = await postModel.countDocuments({ deletedAt: null });
 
   return {
-    posts: JSON.parse(JSON.stringify(posts)),
+    posts,
     total,
     hasMore: skip + posts.length < total,
   };
@@ -68,10 +67,9 @@ export async function getPostById(postId: string) {
   await connectMongoose();
   const post = await postModel
     .findById(postId)
-    .populate("author", "userId username nickname avatar")
-    .lean();
+    .populate("author", "userId username nickname avatar");
 
-  return post ? JSON.parse(JSON.stringify(post)) : null;
+  return post ? post.toJSON() : null;
 }
 
 export async function toggleLike(postId: string, userId: string) {
@@ -108,10 +106,12 @@ export async function toggleLike(postId: string, userId: string) {
 
 export async function deletePost(postId: string, userId: string) {
   await connectMongoose();
-  const post = await postModel.findById(postId).populate("author");
+  const post = await postModel
+    .findById(postId)
+    .populate<{ author: { id: string; userId: string } }>("author");
   if (!post) throw new Error("Post not found");
 
-  const author = post.author as any;
+  const author = post.author;
   if (author.userId !== userId) {
     throw new Error("Unauthorized");
   }
@@ -126,8 +126,7 @@ export async function getCommentsByPost(postId: string) {
   const comments = await commentModel
     .find({ post: postId, deletedAt: null })
     .sort({ createdAt: 1 })
-    .populate("author", "userId username nickname avatar")
-    .lean();
+    .populate("author", "userId username nickname avatar");
 
   return JSON.parse(JSON.stringify(comments));
 }

@@ -35,9 +35,11 @@ export const createRoom = async ({
   });
 
   console.log(room);
+
   await createMember({
     userId: ownerId,
     roomId: room.id,
+    roomType,
     role: "owner",
     nickname: roomName,
     notificationSetting: "all",

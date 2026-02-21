@@ -23,6 +23,7 @@ export async function GET(request: Request) {
       return apiResponse({
         ok: false,
         message: "GitHub 帳號尚未連結，請使用 GitHub 登入來連結帳號",
+        data: [],
         status: 400,
       });
     }
@@ -49,6 +50,7 @@ export async function GET(request: Request) {
       return apiResponse({
         ok: false,
         message: `GitHub API error: ${err}`,
+        data: [],
         status: githubRes.status,
       });
     }
@@ -74,6 +76,7 @@ export async function GET(request: Request) {
     return apiResponse({
       ok: false,
       message: error instanceof Error ? error.message : "Failed to fetch repos",
+      data: [],
       status: 500,
     });
   }

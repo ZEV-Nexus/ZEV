@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -29,7 +29,7 @@ interface CreatePostFormProps {
 }
 
 export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [content, setContent] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -42,6 +42,47 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
   >([]);
   const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // GitHub connection state
+  const [showGithubConnect, setShowGithubConnect] = useState(false);
+
+  const hasGithubConnected = !!session?.user?.githubUsername;
+
+  // Listen for message from the GitHub OAuth popup
+  const handleGithubMessage = useCallback(
+    async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== "github-connect") return;
+
+      if (event.data.success) {
+        toast.success(event.data.message || "GitHub 帳號連結成功！");
+        setShowGithubConnect(false);
+        // Refresh session to get updated githubUsername
+        await updateSession();
+      } else {
+        toast.error(event.data.message || "GitHub 帳號連結失敗");
+      }
+    },
+    [updateSession],
+  );
+
+  useEffect(() => {
+    window.addEventListener("message", handleGithubMessage);
+    return () => window.removeEventListener("message", handleGithubMessage);
+  }, [handleGithubMessage]);
+
+  const handleConnectGithub = () => {
+    // Open GitHub OAuth in a popup window (does NOT affect current session)
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    window.open(
+      "/api/github/connect",
+      "github-connect",
+      `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
+    );
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -68,7 +109,15 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
     setIsSearching(true);
     try {
       const repos = await searchGitHubRepos(githubQuery.trim());
-      setGithubResults(repos);
+      if (repos.message) {
+        toast.error(repos.message);
+        return;
+      }
+      if (repos?.data.length === 0) {
+        toast.error("找不到相關專案");
+        return;
+      }
+      setGithubResults(repos.data);
     } catch {
       toast.error("搜尋 GitHub 失敗");
     } finally {
@@ -168,9 +217,31 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
               </div>
             )}
 
-            {/* GitHub Search Panel */}
-            {showGithubSearch && !selectedRepo && (
-              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+            {/* GitHub Connect Panel — shown when user has no GitHub account linked */}
+            {showGithubConnect && !hasGithubConnected && (
+              <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <RiGithubLine className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">連結 GitHub 帳號</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  你尚未連結 GitHub 帳號，請透過 GitHub
+                  登入來連結帳號，連結後即可搜尋並分享你的專案。
+                </p>
+                <Button
+                  size="sm"
+                  onClick={handleConnectGithub}
+                  className="gap-2 w-full"
+                >
+                  <RiGithubLine className="h-4 w-4" />
+                  使用 GitHub 連結帳號
+                </Button>
+              </div>
+            )}
+
+            {/* GitHub Search Panel — shown when user has a connected GitHub account */}
+            {showGithubSearch && !selectedRepo && hasGithubConnected && (
+              <div className="rounded-lg border border-border overflow-auto max-h-60  bg-muted/20 p-3 space-y-2">
                 <div className="flex gap-2">
                   <Input
                     placeholder="搜尋 GitHub 專案..."
@@ -262,15 +333,23 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                   variant="ghost"
                   size="sm"
                   className={`gap-1.5 ${
-                    showGithubSearch
+                    showGithubSearch || showGithubConnect
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => {
-                    setShowGithubSearch(!showGithubSearch);
-                    if (showGithubSearch) {
-                      setGithubResults([]);
-                      setGithubQuery("");
+                    if (hasGithubConnected) {
+                      // User has GitHub connected — toggle repo search
+                      setShowGithubSearch(!showGithubSearch);
+                      setShowGithubConnect(false);
+                      if (showGithubSearch) {
+                        setGithubResults([]);
+                        setGithubQuery("");
+                      }
+                    } else {
+                      // User has no GitHub — toggle connect panel
+                      setShowGithubConnect(!showGithubConnect);
+                      setShowGithubSearch(false);
                     }
                   }}
                 >

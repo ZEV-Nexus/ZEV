@@ -18,6 +18,8 @@ import { Skeleton } from "@/shared/shadcn/components/ui/skeleton";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { useTypingStore } from "@/shared/store/typing-store";
 import { useOnlineStore } from "@/shared/store/online-store";
+import { useAblyChat } from "../hooks/use-ably-chat";
+import { useChatStore } from "@/shared/store/chat-store";
 
 export function NavRoomItemSkeleton() {
   return (
@@ -54,6 +56,8 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   const currentUser = members?.find(
     (member) => member.user.userId === session?.user?.userId,
   );
+  const { updateRoomLastMessage, incrementUnreadCount, currentRoom } =
+    useChatStore();
 
   // Get typing users for this room (excluding self)
   const typingByRoom = useTypingStore((s) => s.typingByRoom);
@@ -70,6 +74,21 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
     room.roomType === "dm" && recipient
       ? onlineUsers.has(recipient.userId)
       : false;
+
+  useAblyChat({
+    roomId: room.id,
+    userId: session?.user?.userId || "",
+    nickname: session?.user?.nickname || "",
+    onMessage: (message) => {
+      updateRoomLastMessage(room.id, message);
+      if (
+        message.member.user.userId !== session?.user?.userId &&
+        currentRoom?.id !== room.id
+      ) {
+        incrementUnreadCount(room.id);
+      }
+    },
+  });
 
   return (
     <SidebarMenuItem key={item.id}>

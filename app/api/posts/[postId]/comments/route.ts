@@ -2,7 +2,8 @@ import { getCurrentUser } from "@/shared/service/server/auth";
 import { getCommentsByPost, createComment } from "@/shared/service/server/post";
 import { apiResponse } from "@/shared/service/server/response";
 import { connectMongoose } from "@/shared/lib/mongoose";
-import { userModel } from "@/shared/schema";
+import { userModel, postModel } from "@/shared/schema";
+import { createNotification } from "@/shared/service/server/notification";
 
 export async function GET(
   request: Request,
@@ -55,6 +56,18 @@ export async function POST(
       authorId: dbUser.id,
       content: content.trim(),
     });
+
+    // Create Notification
+    const post = await postModel.findById(postId);
+    if (post && post.author.toString() !== dbUser._id.toString()) {
+      await createNotification({
+        recipientId: post.author.toString(),
+        senderId: dbUser.id,
+        type: "post_comment",
+        postId: post.id,
+        commentId: comment.id,
+      });
+    }
 
     return apiResponse({ ok: true, data: comment });
   } catch (error) {

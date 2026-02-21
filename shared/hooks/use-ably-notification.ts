@@ -6,15 +6,25 @@ import { useSession } from "next-auth/react";
 import { useChatStore } from "@/shared/store/chat-store";
 import { useOnlineStore, OnlineUser } from "@/shared/store/online-store";
 import { useTypingStore } from "@/shared/store/typing-store";
-import { ChatRoom, Member } from "@/shared/types";
+import { ChatRoom, Member, Notification, Message, User } from "@/shared/types";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
 import { getRoomMembers } from "@/shared/service/api/room";
+import { useNotificationStore } from "@/shared/store/notification-store";
+import { getNotifications } from "@/shared/service/api/notification";
 
 // Notification event types
 export type NotificationType =
   | "room-created"
   | "room-invited"
-  | "member-role-updated";
+  | "member-role-updated"
+  | "chat-message";
+
+export interface ChatMessagePayload {
+  roomId: string;
+  message: Message;
+}
+
 
 export interface NotificationPayload {
   type: NotificationType;
@@ -52,13 +62,27 @@ const GLOBAL_PRESENCE_CHANNEL = "global-presence";
 
 export function useAblyNotification() {
   const { data: session } = useSession();
-  const { addChatRoom, chatCategorys } = useChatStore();
+  const params = useParams();
+  const {
+    addChatRoom,
+    chatCategorys,
+    updateRoomLastMessage,
+    incrementUnreadCount,
+  } = useChatStore();
+  const { addNotification, setNotifications, isLoaded } =
+    useNotificationStore();
   const { setOnlineUsers } = useOnlineStore();
   const { setUserTyping, clearUserTyping } = useTypingStore();
   const clientRef = useRef<Ably.Realtime | null>(null);
   const typingChannelsRef = useRef<Map<string, Ably.RealtimeChannel>>(
     new Map(),
   );
+  const activeRoomIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    activeRoomIdRef.current = (params?.roomId as string) || null;
+  }, [params?.roomId]);
+
   const [isConnected, setIsConnected] = useState(false);
 
   const userId = session?.user?.userId;
@@ -68,6 +92,18 @@ export function useAblyNotification() {
   // Main effect: connection, notifications, presence
   useEffect(() => {
     if (!userId) return;
+
+    if (!isLoaded) {
+      getNotifications().then((res) => {
+        if (res.ok) {
+          setNotifications(
+            res.data.notifications,
+            res.data.unreadCount,
+            res.data.hasMore,
+          );
+        }
+      });
+    }
 
     const realtime = new Ably.Realtime({
       authUrl: `/api/ably/token?clientId=${userId}`,
@@ -98,21 +134,59 @@ export function useAblyNotification() {
         try {
           const members = await getRoomMembers(payload.room.id);
           addChatRoom(payload.room, members);
-          toast.success(
-            `${payload.inviter.nickname} 邀請你加入「${payload.room.name || "新聊天"}」`,
-          );
         } catch (error) {
           console.error(
             "[Ably Notification] Failed to fetch room members:",
             error,
           );
           addChatRoom(payload.room, payload.members);
-          toast.success(
-            `${payload.inviter.nickname} 邀請你加入「${payload.room.name || "新聊天"}」`,
-          );
         }
       },
     );
+
+    // === 1a. Subscribe to new-notification (DB backed) ===
+    notificationChannel.subscribe(
+      "new-notification",
+      (message: Ably.Message) => {
+        const notification = message.data as Notification;
+        console.log("[Ably Notification] new-notification:", notification);
+
+        // Add to store
+        addNotification(notification);
+
+        // Show Toast based on type
+        switch (notification.type) {
+          case "room_invite":
+            toast.info(
+              `${notification.sender.nickname} 邀請你加入「${notification.room?.name || "聊天室"}」`,
+            );
+            break;
+          case "post_like":
+            toast.info(`${notification.sender.nickname} 按讚了你的貼文`);
+            break;
+          case "post_comment":
+            toast.info(`${notification.sender.nickname} 回覆了你的貼文`);
+            break;
+        }
+      },
+    );
+
+    // === 1c. Subscribe to chat-message ===
+    notificationChannel.subscribe("chat-message", (message: Ably.Message) => {
+      const payload = message.data as ChatMessagePayload;
+      const currentActiveRoomId = activeRoomIdRef.current;
+      // console.log("[Ably Notification] chat-message:", payload, "ActiveRoom:", currentActiveRoomId);
+
+      const { roomId, message: chatMessage } = payload;
+
+      // Update last message
+      updateRoomLastMessage(roomId, chatMessage);
+
+      // If not in this room, increment unread count
+      if (currentActiveRoomId !== roomId) {
+        incrementUnreadCount(roomId);
+      }
+    });
 
     // === 1b. Subscribe to member-role-updated events ===
     notificationChannel.subscribe(
@@ -177,7 +251,7 @@ export function useAblyNotification() {
       clientRef.current = null;
       setIsConnected(false);
     };
-  }, [userId, nickname, avatar, addChatRoom, setOnlineUsers]);
+  }, [userId, nickname, avatar, addChatRoom, setOnlineUsers, addNotification]);
 
   // === 3. Subscribe to typing channels for all rooms ===
   useEffect(() => {

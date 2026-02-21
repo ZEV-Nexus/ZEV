@@ -6,6 +6,7 @@ import { User } from "@/shared/types";
 import { NextResponse } from "next/server";
 import { publishUserNotification } from "@/shared/lib/server-ably";
 import { getCurrentUser } from "@/shared/service/server/auth";
+import { createNotification } from "@/shared/service/server/notification";
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
           createMember({
             userId: member.id,
             roomId: room.id,
+            roomType,
             role: "member",
             nickname: member.nickname,
             notificationSetting: "all",
@@ -86,14 +88,31 @@ export async function POST(request: Request) {
       .map(
         (
           member: Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">,
-        ) =>
-          publishUserNotification(
+        ) => {
+          // 1. Sidebar Sync (room-created)
+          const p1 = publishUserNotification(
             member.userId,
             "room-created",
             notificationPayload,
           ).catch((err) =>
             console.error(`Failed to notify user ${member.userId}:`, err),
-          ),
+          );
+
+          // 2. Persistent Notification (new-notification)
+          const p2 = createNotification({
+            recipientId: member.id,
+            senderId: currentUser?.id!,
+            type: "room_invite",
+            roomId: room.id,
+          }).catch((err) =>
+            console.error(
+              `Failed to create notification for ${member.userId}:`,
+              err,
+            ),
+          );
+
+          return Promise.all([p1, p2]);
+        },
       );
 
     // Don't await — fire and forget so the response isn't blocked

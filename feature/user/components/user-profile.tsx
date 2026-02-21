@@ -23,10 +23,12 @@ import {
   RiCalendarLine,
   RiAtLine,
   RiChat1Line,
+  RiLogoutBoxLine,
 } from "@remixicon/react";
 import { updateUsername } from "@/shared/service/api/user";
 import { toast } from "sonner";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 interface UserProfileData {
   id: string;
@@ -226,12 +228,16 @@ export default function UserProfile({
         )}
 
         {isOwnProfile && (
-          <div className="mt-6">
+          <div className="mt-6 flex justify-between">
             <Button variant="outline" asChild>
               <Link href="/c">
                 <RiChat1Line className="h-4 w-4 mr-2" />
                 回到聊天室
               </Link>
+            </Button>
+            <Button onClick={() => signOut()} variant="destructive">
+              <RiLogoutBoxLine className="h-4 w-4 mr-2" />
+              登出
             </Button>
           </div>
         )}

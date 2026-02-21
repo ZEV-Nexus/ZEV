@@ -3,11 +3,12 @@ import { IRoom } from "@/shared/schema/room";
 
 import { IRoomCategory } from "@/shared/schema/room-category";
 import { IUser } from "@/shared/schema/user";
-import { ChatRoom, User } from "@/shared/types";
+import { ChatRoom, RoomType, User } from "@/shared/types";
 
 export async function createMember({
   userId,
   roomId,
+  roomType,
   role = "admin",
   nickname,
   notificationSetting = "all",
@@ -16,6 +17,7 @@ export async function createMember({
 }: {
   userId: string;
   roomId: string;
+  roomType: RoomType;
   role?: "admin" | "owner" | "member" | "guest";
   nickname?: string;
   notificationSetting?: "all" | "mentions" | "mute";
@@ -29,7 +31,9 @@ export async function createMember({
   if (member) {
     return member;
   }
-
+  if (roomType === "dm") {
+    role = "owner";
+  }
   const newMember = new memberModel({
     user: userId,
     room: roomId,
@@ -171,6 +175,7 @@ export async function inviteMembers(roomId: string, userIds: string[]) {
         userId,
         roomId: room._id as unknown as string,
         role: "member",
+        roomType: room.roomType as RoomType,
       });
       results.push(newMember);
     }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { ChatRoomHeader } from "./chat-room-header";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatMessageInput } from "./chat-message-input";
-import { AIChatPanel, AIMessage } from "./ai-chat-panel";
+import { AIChatPanel } from "./ai-chat-panel";
 import {
   ChatRoom as ChatRoomType,
   Member,
@@ -23,6 +23,8 @@ import { IAttachment } from "@/shared/schema/attachment";
 import { useChatStore } from "@/shared/store/chat-store";
 import { useAblyChat } from "@/feature/chat/hooks/use-ably-chat";
 import { RiLoader2Line } from "@remixicon/react";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 interface ChatRoomProps {
   room: ChatRoomType;
@@ -38,15 +40,33 @@ export default function ChatRoom({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
-  const [aiMessages, setAiMessages] = useState<AIMessage[]>([]);
-  const [isAILoading, setIsAILoading] = useState(false);
+
   const [replyingMessage, setReplyingMessage] = useState<Message | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
-  const { updateRoomLastMessage } = useChatStore();
+  const { updateRoomLastMessage, setCurrentRoom } = useChatStore();
+  const [modelId, setModelId] = useState("claude-3-5-sonnet-20240620");
+  const {
+    messages: aiMessages,
+    status,
+    sendMessage: sendAiMessage,
+    setMessages: setAiMessages,
+  } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
+    onError: (err: unknown) => {
+      console.error(err);
+      toast.error(
+        "Failed to generate response. Check your API keys in Settings.",
+      );
+    },
+  });
+
+  console.log(status);
 
   const currentMember = members?.find((m) => m.user.userId === currentUserId);
   const nickname = currentMember?.user?.nickname || "Guest";
-
+  useEffect(() => {
+    setCurrentRoom(room);
+  }, [room, setCurrentRoom]);
   const { sendRealtimeMessage, startTyping, stopTyping } = useAblyChat({
     roomId: room.id,
     userId: currentUserId,
@@ -56,11 +76,9 @@ export default function ChatRoom({
         if (prev.some((m) => m.id === message.id)) return prev;
         return [...prev, message];
       });
-      updateRoomLastMessage(room.id, message);
     },
     onTypingChange: (typers) => {
       const others = new Set(typers);
-      console.log(typers);
       others.delete(currentUserId);
       setTypingUsers(others);
     },
@@ -72,7 +90,8 @@ export default function ChatRoom({
         setIsLoadingMessages(true);
         const data = await fetchMessages(room.id);
         if (data) setMessages(data);
-      } catch (error) {
+      } catch (error: unknown) {
+        console.log(error);
         toast.error("訊息讀取失敗");
       } finally {
         setIsLoadingMessages(false);
@@ -174,30 +193,9 @@ export default function ChatRoom({
   };
 
   const handleSendToAI = (content: string) => {
-    if (!content.trim() || isAILoading) return;
-
-    const userMessage: AIMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content,
-      timestamp: new Date(),
-    };
-
-    setAiMessages((prev) => [...prev, userMessage]);
-    setIsAILoading(true);
-
-    // TODO: Implement actual AI API call
-    setTimeout(() => {
-      const aiResponse: AIMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content:
-          "我是 AI 助理，我可以幫助你分析對話、提供建議或回答問題。目前這是一個示範回應，實際功能需要連接 AI API。",
-        timestamp: new Date(),
-      };
-      setAiMessages((prev) => [...prev, aiResponse]);
-      setIsAILoading(false);
-    }, 1000);
+    if (!content.trim() || status === "streaming") return;
+    const aiMessage = { text: content, role: "user" };
+    sendAiMessage(aiMessage, { body: { modelId } });
   };
 
   const handleToggleAIPanel = () => {
@@ -300,7 +298,8 @@ export default function ChatRoom({
                 isOpen={isAIPanelOpen}
                 onToggle={handleToggleAIPanel}
                 aiMessages={aiMessages}
-                isLoading={isAILoading}
+                onSelectModel={setModelId}
+                isLoading={status === "streaming" || status === "submitted"}
                 onClear={handleClearAI}
               />
             </div>

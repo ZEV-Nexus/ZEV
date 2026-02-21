@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -31,11 +31,8 @@ export default function PostComments({ postId }: PostCommentsProps) {
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadComments();
-  }, [postId]);
-
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
+    if (!postId) return;
     try {
       const data = await fetchComments(postId);
       setComments(data);
@@ -44,7 +41,11 @@ export default function PostComments({ postId }: PostCommentsProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [postId]);
+
+  useEffect(() => {
+    loadComments();
+  }, [loadComments]);
 
   const handleSubmit = async () => {
     if (!newComment.trim() || !session?.user) return;
@@ -63,7 +64,6 @@ export default function PostComments({ postId }: PostCommentsProps) {
 
   return (
     <div className="border-t border-border/50 px-4 pb-4">
-      {/* Comments list */}
       <div className="space-y-3 py-3 max-h-64 overflow-y-auto">
         {isLoading ? (
           <div className="flex justify-center py-4">

@@ -10,6 +10,8 @@ import {
 
 interface ChatState {
   chatCategorys: ChatNavCategory[];
+  unreadCounts: Record<string, number>;
+  currentRoom: ChatRoom | null;
 }
 
 interface ChatAction {
@@ -27,7 +29,10 @@ interface ChatAction {
       pinned?: boolean;
     },
   ) => void;
+  setCurrentRoom: (room: ChatRoom) => void;
+
   updateRoomLastMessage: (roomId: string, message: Message) => void;
+  incrementUnreadCount: (roomId: string) => void;
   clearUnreadCount: (roomId: string) => void;
 }
 
@@ -37,6 +42,8 @@ export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
       chatCategorys: [],
+      unreadCounts: {},
+      currentRoom: null,
       setChatCategorys: (chatCategorys, userId) => {
         const currentCategorys = get().chatCategorys;
         const syncedCategorys = chatCategorys.map((apiCategory) => {
@@ -274,6 +281,36 @@ export const useChatStore = create<ChatStore>()(
           return cat;
         });
         set({ chatCategorys: newCategorys });
+      },
+      incrementUnreadCount: (roomId) => {
+        const currentCategorys = get().chatCategorys;
+        const newCategorys = currentCategorys.map((cat) => {
+          const updatedItems = cat.items.map((item) => {
+            if (
+              item.id === roomId ||
+              item.room?.id === roomId ||
+              item.room?.roomId === roomId
+            ) {
+              return {
+                ...item,
+                unreadCount: (item.unreadCount || 0) + 1,
+              };
+            }
+            return item;
+          });
+
+          // Optimization: check reference equality if map returns same
+          // But map always returns new array.
+          // Let's just return updated cat.
+          return {
+            ...cat,
+            items: updatedItems,
+          };
+        });
+        set({ chatCategorys: newCategorys });
+      },
+      setCurrentRoom: (room: ChatRoom) => {
+        set({ currentRoom: room });
       },
     }),
     {

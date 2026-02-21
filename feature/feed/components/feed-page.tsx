@@ -78,7 +78,7 @@ export default function FeedPage() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/3" />
+        <div className="absolute inset-0 bg-linear-to-br from-primary/5 via-transparent to-primary/3" />
         <div className="relative max-w-2xl mx-auto px-4 py-10 sm:py-14">
           <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
