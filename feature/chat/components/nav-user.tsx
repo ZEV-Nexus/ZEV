@@ -8,7 +8,6 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -20,14 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/shared/shadcn/components/ui/sidebar";
-import {
-  RiArrowUpDownLine,
-  RiSparklingLine,
-  RiCheckboxCircleLine,
-  RiBankCardLine,
-  RiNotificationLine,
-  RiLogoutBoxLine,
-} from "@remixicon/react";
+import { RiArrowUpDownLine, RiLogoutBoxLine } from "@remixicon/react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/shared/shadcn/components/ui/button";

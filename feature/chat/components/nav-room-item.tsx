@@ -20,8 +20,7 @@ import { useTypingStore } from "@/shared/store/typing-store";
 import { useOnlineStore } from "@/shared/store/online-store";
 import { useAblyChat } from "../hooks/use-ably-chat";
 import { useChatStore } from "@/shared/store/chat-store";
-import { parseMentions } from "@/shared/lib/mention";
-import { Mention } from "@/shared/shadcn/components/ui/mention";
+
 import { MentionText } from "./mention-text";
 
 export function NavRoomItemSkeleton() {
@@ -94,7 +93,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   });
 
   return (
-    <SidebarMenuItem key={item.id}>
+    <SidebarMenuItem key={item.id} className=" border-none">
       <SidebarMenuButton
         tooltip={
           room.roomType === "dm" ? recipient?.nickname : (room?.name ?? "")
@@ -103,14 +102,14 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
       >
         <Link
           href={`/c/${room?.roomId}`}
-          className="px-3 py-2 h-fit flex min-w-0 w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          className="px-3 py-2 h-fit border-none  flex min-w-0 w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
         >
-          <div className="flex gap-2 flex-1 min-w-0 overflow-hidden">
+          <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">
             <Avatar>
               {isRecipientOnline && (
                 <AvatarBadge className="bg-green-500  h-2 w-2 right-0 bottom-0" />
               )}
-              <AvatarFallback className="rounded-lg">
+              <AvatarFallback className="rounded-full">
                 {room.roomType === "dm"
                   ? recipient?.nickname?.charAt(0)
                   : (room?.name?.charAt(0) ?? "")}

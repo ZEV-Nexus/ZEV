@@ -134,7 +134,7 @@ export function NavMain() {
           </DropdownMenu>
         )}
       </span>
-      <SidebarMenu className=" bg-primary/15">
+      <SidebarMenu>
         {isLoading ? (
           Array.from({ length: 5 }).map((_, index) => (
             <NavRoomItemSkeleton key={index} />
@@ -170,13 +170,13 @@ export function NavMain() {
                   <Collapsible
                     defaultOpen={record.id === "dm" || record.id === "group"}
                     asChild
-                    className="group/collapsible flex-1 overflow-hidden"
+                    className="group/collapsible flex-1 overflow-hidden "
                   >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton
                           tooltip={record?.title}
-                          className="text-muted-foreground flex justify-between text-base"
+                          className="text-muted-foreground hover:bg-transparent focus:bg-transparent! flex justify-between text-base"
                         >
                           <div className="flex items-center gap-2">
                             {record.id === "dm" && <RiUserLine />}
@@ -195,7 +195,7 @@ export function NavMain() {
                           )}
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
+                      <CollapsibleContent className="bg-background rounded-xl ml-3">
                         <SidebarMenuSub className="w-full m-0 p-0 border-none">
                           <ReactSortable
                             list={record.items || []}
