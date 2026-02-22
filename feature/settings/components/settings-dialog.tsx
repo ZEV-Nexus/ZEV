@@ -95,20 +95,25 @@ export function SettingsDialog() {
                   }
                   value={
                     isEditing
-                      ? apiKeys[provider.id]
-                      : maskedKeys[provider.id] || ""
+                      ? apiKeys[provider.id]?.key || ""
+                      : maskedKeys[provider.id]?.key || ""
                   }
                   onChange={(e) =>
                     setApiKeys({
                       ...apiKeys,
-                      [provider.id]: e.target.value,
+                      [provider.id]: {
+                        key: e.target.value,
+                        id: maskedKeys[provider.id]
+                          ? maskedKeys[provider.id].id
+                          : "",
+                      },
                     })
                   }
                   placeholder={
                     isEditing
                       ? provider.placeholder
                       : maskedKeys[provider.id]
-                        ? maskedKeys[provider.id]
+                        ? maskedKeys[provider.id].key
                         : "（未設定）"
                   }
                   disabled={!isEditing || saveUserApiKeysMutation.isPending}

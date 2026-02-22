@@ -48,7 +48,10 @@ export async function createMember({
 export const getRoomMembers = async (roomId: string) => {
   const members = await memberModel
     .find({ room: roomId })
-    .populate({ path: "user", select: "nickname avatar _id userId email" })
+    .populate({
+      path: "user",
+      select: "nickname avatar _id userId email username",
+    })
     .populate({ path: "roomCategory", select: "title index" })
     .exec();
 
@@ -71,7 +74,7 @@ export const getUserRooms = async (userId: string) => {
             select: "nickname avatar user",
             populate: {
               path: "user",
-              select: "nickname avatar",
+              select: "nickname avatar username",
             },
           },
           {
@@ -101,7 +104,7 @@ export const getMembersByRoomId = async (roomId: string) => {
     .find({ room: roomDoc._id })
     .populate<{
       user: User;
-    }>({ path: "user", select: "nickname avatar  _id userId email" })
+    }>({ path: "user", select: "nickname avatar  _id userId email username" })
     .populate<{
       room: ChatRoom;
     }>({ path: "room", select: "name roomType roomId lastMessage" })

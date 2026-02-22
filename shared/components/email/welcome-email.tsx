@@ -75,13 +75,12 @@ export const ZEVWelcomeEmail = ({ name }: { name: string }) => (
 
             <Text className="text-muted-foreground text-xs   text-left">
               Best regards,
-            </Text>
-            <Text className="text-muted-foreground text-xs   text-left">
+              <br />
               Yuzen
+              <br /> ZEV Developer
             </Text>
-            <Text className="text-muted-foreground text-xs   text-left">
-              ZEV Developer
-            </Text>
+            <Text className="text-muted-foreground text-xs   text-left"></Text>
+            <Text className="text-muted-foreground text-xs   text-left"></Text>
           </Section>
         </Container>
       </Body>

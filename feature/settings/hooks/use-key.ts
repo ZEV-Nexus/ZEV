@@ -4,24 +4,32 @@ import {
   getUserApiKeys,
   saveUserApiKeys,
 } from "@/shared/service/api/user-api-key";
-import { AIProvider, useAIStore } from "@/shared/store/ai-store";
+import { AIProvider, useAIStore, UserApiKey } from "@/shared/store/ai-store";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export function useKey() {
   const { maskedKeys, setMaskedKey, setMaskedKeys } = useAIStore();
   const [isEditing, setIsEditing] = useState(false);
-  const [apiKeys, setApiKeys] = useState<Record<AIProvider, string>>({
-    openai: "",
-    anthropic: "",
-    google: "",
+  const [apiKeys, setApiKeys] = useState<UserApiKey>({
+    openai: { key: "", id: "" },
+    anthropic: { key: "", id: "" },
+    google: { key: "", id: "" },
   });
 
   const saveUserApiKeysMutation = useMutation({
     mutationKey: ["saveUserApiKeys"],
-    mutationFn: async (entries: Record<AIProvider, string>) => {
+    mutationFn: async (entries: UserApiKey) => {
       const result = await saveUserApiKeys(entries);
       setMaskedKeys(result);
+    },
+    onSuccess() {
+      toast.success("API Keys 已保存");
+      setIsEditing(false);
+    },
+    onError(error: unknown) {
+      toast.error((error as Error)?.message || "保存失敗");
     },
   });
 
@@ -29,7 +37,6 @@ export function useKey() {
     queryKey: ["userApiKeys"],
     queryFn: async () => {
       const keys = await getUserApiKeys();
-
       setMaskedKeys(keys);
       return keys;
     },

@@ -28,6 +28,8 @@ import {
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import { CldImage } from "next-cloudinary";
 import { toast } from "sonner";
+import { Member } from "@/shared/types";
+import { MentionText } from "./mention-text";
 
 // Position of a message within a group
 export type BubblePosition = "single" | "first" | "middle" | "last";
@@ -39,6 +41,7 @@ interface ChatMessageItemProps {
   showName: boolean;
   showTimestamp: boolean;
   bubblePosition: BubblePosition;
+  members?: Member[];
   onScrollToMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
   onDeleteMessage?: (messageId: string) => void;
@@ -200,6 +203,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
   showName,
   showTimestamp,
   bubblePosition,
+  members = [],
   onScrollToMessage,
   onEditMessage,
   onDeleteMessage,
@@ -387,7 +391,9 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                 </div>
               ) : (
                 <p className="text-[15px] whitespace-pre-wrap wrap-break-word leading-[1.4]">
-                  {message.content}
+                  {message.content ? (
+                    <MentionText content={message.content} members={members} />
+                  ) : null}
                 </p>
               )}
             </div>

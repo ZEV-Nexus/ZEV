@@ -346,6 +346,7 @@ export default function ChatRoom({
         <ChatMessageInput
           onSendMessage={handleSendMessage}
           roomId={room.id}
+          members={members}
           isAIMode={isAIPanelOpen}
           replyingMessage={replyingMessage}
           onCancelReply={() => setReplyingMessage(null)}

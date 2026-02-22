@@ -55,9 +55,8 @@ export default function UserProfile({
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [username, setUsername] = useState(profile.username);
   const [editUsername, setEditUsername] = useState(profile.username);
-  const [isSaving, setIsSaving] = useState(false);
 
-  const { isPending, mutate, isError } = useMutation({
+  const { isPending, mutate } = useMutation({
     mutationFn: async () => {
       const trimmed = editUsername.trim().toLowerCase();
       if (trimmed === username) {
@@ -153,7 +152,7 @@ export default function UserProfile({
                       variant="ghost"
                       className="h-7 w-7"
                       onClick={handleCancelEdit}
-                      disabled={isSaving}
+                      disabled={isPending}
                     >
                       <RiCloseLine className="h-3.5 w-3.5 text-destructive" />
                     </Button>

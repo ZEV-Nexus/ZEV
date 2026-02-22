@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { Button } from "@/shared/shadcn/components/ui/button";
-import { Textarea } from "@/shared/shadcn/components/ui/textarea";
-import { Message } from "@/shared/types";
+import { Member, Message } from "@/shared/types";
+import {
+  Mention,
+  MentionContent,
+  MentionInput,
+  MentionItem,
+} from "@/shared/shadcn/components/ui/mention";
 import {
   RiSendPlaneLine,
   RiAttachmentLine,
@@ -12,9 +17,15 @@ import {
   RiFileTextLine,
   RiCloseLine,
   RiReplyLine,
+  RiAtLine,
 } from "@remixicon/react";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { toast } from "sonner";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/shared/shadcn/components/ui/avatar";
 
 interface ChatMessageInputProps {
   onSendMessage: (
@@ -23,6 +34,7 @@ interface ChatMessageInputProps {
     replyToId?: string,
   ) => void;
   roomId: string;
+  members?: Member[];
   isAIMode?: boolean;
   replyingMessage?: Message | null;
   onCancelReply?: () => void;
@@ -31,28 +43,69 @@ interface ChatMessageInputProps {
 
 export function ChatMessageInput({
   onSendMessage,
-  roomId,
+  members = [],
   isAIMode = false,
   replyingMessage,
   onCancelReply,
   onTyping,
 }: ChatMessageInputProps) {
   const [message, setMessage] = useState("");
+  const [mentionValues, setMentionValues] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isFocused, setIsFocused] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 將成員列表轉換成 mention 選項，使用 userId 作為 value
+  const mentionSuggestions = useMemo(
+    () =>
+      members.map((member) => ({
+        id: member.user?.id || member.id,
+        label: member.user?.nickname || member.nickname,
+        avatar: member.user?.avatar,
+      })),
+    [members],
+  );
+
+  // label → userId 的對應表
+  const labelToIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const member of mentionSuggestions) {
+      map.set(member.label, member.id);
+    }
+    return map;
+  }, [mentionSuggestions]);
+
+  /**
+   * 將輸入中已選取的 mention（@nickname）轉換為 <@userId> 格式送出。
+   * 只轉換透過 onValueChange 追蹤到的已確認 mention。
+   */
+  const convertMentionsForSend = useCallback(
+    (rawContent: string): string => {
+      let result = rawContent;
+      for (const label of mentionValues) {
+        const userId = labelToIdMap.get(label);
+        if (userId && result.includes(`@${label}`)) {
+          result = result.replaceAll(`@${label}`, `<@${userId}>`);
+        }
+      }
+      return result;
+    },
+    [mentionValues, labelToIdMap],
+  );
 
   const handleSend = () => {
     if (!message.trim() && attachments.length === 0) return;
 
-    onSendMessage(message, attachments, replyingMessage?.id);
+    const contentToSend = convertMentionsForSend(message);
+    onSendMessage(contentToSend, attachments, replyingMessage?.id);
     setMessage("");
+    setMentionValues([]);
     setAttachments([]);
-    textareaRef.current?.focus();
+    inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -92,8 +145,8 @@ export function ChatMessageInput({
       <div className="px-4 py-3">
         {/* Reply Preview */}
         {replyingMessage && (
-          <div className="mb-3 animate-in slide-in-from-bottom-2 fade-in duration-200">
-            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10 group relative">
+          <div className="mb-3 animate-in slide-in-from-bottom-2 fade-in duration-200 overflow-hidden">
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl overflow-hidden bg-primary/5 border border-primary/10 group relative">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="h-8 w-1 bg-primary rounded-full shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -103,7 +156,7 @@ export function ChatMessageInput({
                       正在回覆 {replyingMessage.member?.user?.nickname}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                     {replyingMessage.content || "附件內容"}
                   </p>
                 </div>
@@ -154,15 +207,15 @@ export function ChatMessageInput({
           </div>
         )}
 
-        {/* Input Area */}
+        {/* Input Area with Mention */}
         <div
           className={cn(
-            "relative flex items-center gap-2 p-2  rounded-xl transition-all duration-200",
+            "relative flex items-center gap-2 p-2 rounded-xl transition-all duration-200",
             isFocused ? "bg-muted/50 ring-1 ring-primary/20" : "bg-muted/30",
           )}
         >
           {/* Left Actions */}
-          <div className="flex items-center gap-1 ">
+          <div className="flex items-center gap-1">
             <input
               ref={fileInputRef}
               type="file"
@@ -188,30 +241,60 @@ export function ChatMessageInput({
             </Button>
           </div>
 
-          {/* Textarea */}
-          <Textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value);
+          {/* Mention Input */}
+          <Mention
+            value={mentionValues}
+            onValueChange={setMentionValues}
+            onInputValueChange={(val) => {
+              setMessage(val);
               onTyping?.();
             }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder={
-              isAIMode ? "詢問 AI 助理..." : "輸入訊息... (Shift+Enter 換行)"
-            }
-            className="flex-1 min-h-[40px] max-h-[200px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
-            rows={1}
-          />
+            className="flex-1"
+          >
+            <MentionInput
+              ref={inputRef}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={
+                isAIMode
+                  ? "詢問 AI 助理..."
+                  : "輸入訊息... (@ 提及成員, Shift+Enter 換行)"
+              }
+              className="flex-1 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+            />
+            <MentionContent>
+              {mentionSuggestions.length > 0 ? (
+                mentionSuggestions.map((member) => (
+                  <MentionItem key={member.id} value={member.label}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        {member.avatar ? (
+                          <AvatarImage src={member.avatar} alt={member.label} />
+                        ) : null}
+                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                          {member.label.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm">{member.label}</span>
+                    </div>
+                  </MentionItem>
+                ))
+              ) : (
+                <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                  <RiAtLine className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                  沒有可提及的成員
+                </div>
+              )}
+            </MentionContent>
+          </Mention>
 
           {/* Send Button */}
           <Button
             onClick={handleSend}
             disabled={!message.trim() && attachments.length === 0}
             size="icon"
-            className={cn(" transition-all duration-200 ")}
+            className={cn("transition-all duration-200")}
           >
             <RiSendPlaneLine />
           </Button>

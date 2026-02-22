@@ -6,14 +6,14 @@ export async function getUserApiKeys(userId: string) {
   return apiKeys;
 }
 
-export async function getUserApiKey(userId: string, provider?: string) {
-  const query: Record<string, string> = { user: userId };
-  if (provider) {
-    query.provider = provider;
-  }
-  const apiKeys = await userApiKeyModel.findOne(query);
-  console.log("Retrieved API keys:", apiKeys);
-  return apiKeys;
+export async function getUserApiKey(id: string) {
+  if (!id) return null;
+  const apiKey = await userApiKeyModel.findById(id);
+  return apiKey;
+}
+
+export async function deleteUserApiKey(id: string) {
+  await userApiKeyModel.findByIdAndDelete(id);
 }
 
 export async function createUserApiKey(
@@ -37,12 +37,13 @@ export async function createUserApiKey(
 
 export async function updateUserApiKey(
   userId: string,
+  keyId: string,
   apiKey: string,
   provider: string,
 ) {
   const { encrypted, iv, tag } = encrypt(apiKey);
   const key = await userApiKeyModel.findOneAndUpdate(
-    { user: userId, provider },
+    { _id: keyId },
     {
       apiKey: encrypted,
       ivKey: iv,

@@ -51,6 +51,7 @@ export function ChatMessageList({
   roomId,
   messages,
   currentUserId,
+  members,
   isAIPanelOpen,
   hasMore = false,
   isLoadingMore = false,
@@ -252,6 +253,7 @@ export function ChatMessageList({
               showName={item.showName}
               showTimestamp={item.showTimestamp}
               bubblePosition={item.bubblePosition}
+              members={members}
               onScrollToMessage={handleScrollToMessage}
               onEditMessage={onEditMessage}
               onDeleteMessage={onDeleteMessage}

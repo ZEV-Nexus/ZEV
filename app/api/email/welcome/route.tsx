@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   const response = await resend.emails.send({
     from: "ZEV <zev@2026.yuzen.dev>",
     to: email,
-    subject: `Welcome to ZEV, ${nickname}!`,
+    subject: `Welcome to ZEV`,
     react: <ZEVWelcomeEmail name={nickname} />,
   });
 

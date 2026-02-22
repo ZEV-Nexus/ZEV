@@ -1,5 +1,5 @@
 import { memberModel, messageModel, roomModel } from "@/shared/schema";
-import AttachmentModel, { IAttachment } from "@/shared/schema/attachment";
+import { IAttachment } from "@/shared/schema/attachment";
 import { createAttachment } from "./attachment";
 import mongoose from "mongoose";
 import { IMessage } from "@/shared/schema/message";
@@ -21,13 +21,13 @@ export async function getMessages(
     .populate([
       {
         path: "member",
-        populate: { path: "user", select: "nickname avatar userId" },
+        populate: { path: "user", select: "nickname avatar userId username" },
       },
       {
         path: "replyTo",
         populate: {
           path: "member",
-          populate: { path: "user", select: "nickname avatar userId" },
+          populate: { path: "user", select: "nickname avatar userId username" },
         },
       },
       {
@@ -68,13 +68,13 @@ export async function sendMessage(
   return await savedMessage.populate([
     {
       path: "member",
-      populate: { path: "user", select: "nickname avatar userId" },
+      populate: { path: "user", select: "nickname avatar userId username" },
     },
     {
       path: "replyTo",
       populate: {
         path: "member",
-        populate: { path: "user", select: "nickname avatar userId" },
+        populate: { path: "user", select: "nickname avatar userId username" },
       },
     },
     { path: "attachments" },
@@ -90,7 +90,7 @@ export async function editMessage(messageId: string, content: string) {
   if (!message) throw new Error("Message not found");
   return await message.populate({
     path: "member",
-    populate: { path: "user", select: "nickname avatar userId" },
+    populate: { path: "user", select: "nickname avatar userId username" },
   });
 }
 
@@ -103,7 +103,7 @@ export async function deleteMessage(messageId: string) {
   if (!message) throw new Error("Message not found");
   return await message.populate({
     path: "member",
-    populate: { path: "user", select: "nickname avatar userId" },
+    populate: { path: "user", select: "nickname avatar userId username" },
   });
 }
 

@@ -9,6 +9,8 @@ export interface AIModel {
   provider: AIProvider;
 }
 
+export type UserApiKey = Record<AIProvider, { key: string; id: string }>;
+
 export const AI_MODELS: AIModel[] = [
   { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
   { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai" },
@@ -33,38 +35,38 @@ export const AI_MODELS: AIModel[] = [
 ];
 
 interface AIState {
-  apiKeys: Record<AIProvider, string>;
+  apiKeys: UserApiKey;
   /** Masked representations of DB-stored keys (e.g. "••••••••"), empty string means not set */
-  maskedKeys: Record<AIProvider, string>;
+  maskedKeys: UserApiKey;
   selectedModelId: string;
 }
 
 interface AIAction {
-  setApiKey: (provider: AIProvider, key: string) => void;
+  setApiKey: (provider: AIProvider, key: string, id: string) => void;
   setMaskedKey: (provider: AIProvider, masked: string) => void;
-  setMaskedKeys: (masked: Partial<Record<AIProvider, string>>) => void;
+  setMaskedKeys: (masked: UserApiKey) => void;
   setSelectedModelId: (modelId: string) => void;
-  getApiKey: (provider: AIProvider) => string;
+  getApiKey: (provider: AIProvider) => UserApiKey[AIProvider];
 }
 
 export const useAIStore = create<AIState & AIAction>()(
   persist(
     (set, get) => ({
       apiKeys: {
-        openai: "",
-        google: "",
-        anthropic: "",
+        openai: { key: "", id: "" },
+        google: { key: "", id: "" },
+        anthropic: { key: "", id: "" },
       },
       maskedKeys: {
-        openai: "",
-        google: "",
-        anthropic: "",
+        openai: { key: "", id: "" },
+        google: { key: "", id: "" },
+        anthropic: { key: "", id: "" },
       },
       selectedModelId: "gpt-3.5-turbo",
 
-      setApiKey: (provider, key) =>
+      setApiKey: (provider, key, id) =>
         set((state) => ({
-          apiKeys: { ...state.apiKeys, [provider]: key },
+          apiKeys: { ...state.apiKeys, [provider]: { key, id } },
         })),
 
       setMaskedKey: (provider, masked) =>
