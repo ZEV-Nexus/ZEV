@@ -29,6 +29,7 @@ import { updateUsername } from "@/shared/service/api/user";
 import { toast } from "sonner";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import { useMutation } from "@tanstack/react-query";
 
 interface UserProfileData {
   id: string;
@@ -56,25 +57,30 @@ export default function UserProfile({
   const [editUsername, setEditUsername] = useState(profile.username);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSaveUsername = async () => {
-    const trimmed = editUsername.trim().toLowerCase();
-    if (trimmed === username) {
-      setIsEditingUsername(false);
-      return;
-    }
+  const { isPending, mutate, isError } = useMutation({
+    mutationFn: async () => {
+      const trimmed = editUsername.trim().toLowerCase();
+      if (trimmed === username) {
+        setIsEditingUsername(false);
+        throw new Error("Username is unchanged");
+      }
+      const newUsername = await updateUsername(editUsername);
+      if (newUsername.error) {
+        throw new Error(newUsername.error);
+      }
+      console.log(newUsername);
+      return newUsername.data;
+    },
 
-    setIsSaving(true);
-    try {
-      await updateUsername(trimmed);
-      setUsername(trimmed);
+    onSuccess(data: { username: string }) {
+      setUsername(data.username);
       setIsEditingUsername(false);
       toast.success("Username 已更新");
-    } catch (error: any) {
-      toast.error(error?.message || "更新失敗");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    },
+    onError(error: unknown) {
+      toast.error((error as Error)?.message || "更新失敗");
+    },
+  });
 
   const handleCancelEdit = () => {
     setEditUsername(username);
@@ -123,9 +129,9 @@ export default function UserProfile({
                       className="h-7 text-sm w-48"
                       placeholder="username"
                       maxLength={30}
-                      disabled={isSaving}
+                      disabled={isPending}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter") handleSaveUsername();
+                        if (e.key === "Enter") mutate();
                         if (e.key === "Escape") handleCancelEdit();
                       }}
                     />
@@ -133,10 +139,10 @@ export default function UserProfile({
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7"
-                      onClick={handleSaveUsername}
-                      disabled={isSaving}
+                      onClick={() => mutate()}
+                      disabled={isPending}
                     >
-                      {isSaving ? (
+                      {isPending ? (
                         <RiLoader2Line className="h-3.5 w-3.5 animate-spin" />
                       ) : (
                         <RiCheckLine className="h-3.5 w-3.5 text-green-500" />

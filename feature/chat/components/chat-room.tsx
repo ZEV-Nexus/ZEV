@@ -40,6 +40,9 @@ export default function ChatRoom({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const MESSAGE_LIMIT = 50;
 
   const [replyingMessage, setReplyingMessage] = useState<Message | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
@@ -88,8 +91,11 @@ export default function ChatRoom({
     const loadMessages = async () => {
       try {
         setIsLoadingMessages(true);
-        const data = await fetchMessages(room.id);
-        if (data) setMessages(data);
+        const data = await fetchMessages(room.id, MESSAGE_LIMIT);
+        if (data) {
+          setMessages(data);
+          setHasMoreMessages(data.length >= MESSAGE_LIMIT);
+        }
       } catch (error: unknown) {
         console.log(error);
         toast.error("訊息讀取失敗");
@@ -99,6 +105,31 @@ export default function ChatRoom({
     };
     loadMessages();
   }, [room]);
+
+  // Load older messages for infinite scroll
+  const handleLoadMore = async () => {
+    if (isLoadingMore || !hasMoreMessages || messages.length === 0) return;
+    setIsLoadingMore(true);
+    try {
+      const oldestMessage = messages[0];
+      const data = await fetchMessages(
+        room.id,
+        MESSAGE_LIMIT,
+        oldestMessage.createdAt,
+      );
+      if (data && data.length > 0) {
+        setMessages((prev) => [...data, ...prev]);
+        setHasMoreMessages(data.length >= MESSAGE_LIMIT);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error: unknown) {
+      console.log(error);
+      toast.error("載入更多訊息失敗");
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   const handleSendMessage = async (
     content: string,
@@ -181,12 +212,14 @@ export default function ChatRoom({
         // Publish to Ably
         await sendRealtimeMessage(content, savedMessage as Message);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Remove optimistic message on error
       setMessages((prev) =>
         prev.filter((msg) => msg.id !== optimisticMessage.id),
       );
-      toast.error(error.message || "訊息發送失敗，請重試");
+      toast.error(
+        error instanceof Error ? error.message : "訊息發送失敗，請重試",
+      );
     } finally {
       stopTyping();
     }
@@ -219,7 +252,7 @@ export default function ChatRoom({
     try {
       await editMessageApi(messageId, content);
     } catch (error) {
-      toast.error("編輯失敗，請重試");
+      toast.error(error instanceof Error ? error.message : "編輯失敗，請重試");
     }
   };
 
@@ -236,7 +269,7 @@ export default function ChatRoom({
     try {
       await deleteMessageApi(messageId);
     } catch (error) {
-      toast.error("刪除失敗，請重試");
+      toast.error(error instanceof Error ? error.message : "刪除失敗，請重試");
     }
   };
 
@@ -272,6 +305,9 @@ export default function ChatRoom({
                   onDeleteMessage={handleDeleteMessage}
                   onReplyMessage={setReplyingMessage}
                   isAIPanelOpen={isAIPanelOpen}
+                  hasMore={hasMoreMessages}
+                  isLoadingMore={isLoadingMore}
+                  onLoadMore={handleLoadMore}
                 />
                 {/* Typing Indicator Overlay */}
                 {typingUsers.size > 0 && (

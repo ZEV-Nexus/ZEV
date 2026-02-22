@@ -167,7 +167,11 @@ export function NavMain() {
                         <RiDraggable />
                       </Button>
                     )}
-                  <Collapsible asChild className="group/collapsible flex-1">
+                  <Collapsible
+                    defaultOpen={record.id === "dm" || record.id === "group"}
+                    asChild
+                    className="group/collapsible flex-1 overflow-hidden"
+                  >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton

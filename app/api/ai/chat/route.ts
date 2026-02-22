@@ -5,7 +5,7 @@ import { convertToModelMessages, streamText } from "ai";
 
 import { getUserApiKey } from "@/shared/service/server/user-api-key";
 import { getCurrentUser } from "@/shared/service/server/auth";
-import { decrypt } from "@/shared/lib/key-authcation";
+import { decrypt } from "@/shared/lib/key-authentication";
 
 export const maxDuration = 60;
 

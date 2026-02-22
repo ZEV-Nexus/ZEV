@@ -1,4 +1,4 @@
-import { encrypt } from "@/shared/lib/key-authcation";
+import { encrypt } from "@/shared/lib/key-authentication";
 import { userApiKeyModel } from "@/shared/schema";
 
 export async function getUserApiKeys(userId: string) {

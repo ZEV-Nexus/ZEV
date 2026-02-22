@@ -39,7 +39,7 @@ export function NavRoomItemSkeleton() {
 
 function TypingDots() {
   return (
-    <span className="inline-flex items-center gap-[2px] ml-0.5">
+    <span className="inline-flex items-center gap-0.5 ml-0.5">
       <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
       <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
       <span className="h-1 w-1 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
@@ -100,9 +100,9 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
       >
         <Link
           href={`/c/${room?.roomId}`}
-          className="px-3 py-2 h-fit flex w-full   justify-between hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
+          className="px-3 py-2 h-fit flex min-w-0 w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
         >
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-1 min-w-0 overflow-hidden">
             <Avatar>
               {isRecipientOnline && (
                 <AvatarBadge className="bg-green-500  h-2 w-2 right-0 bottom-0" />
@@ -113,14 +113,14 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                   : (room?.name?.charAt(0) ?? "")}
               </AvatarFallback>
             </Avatar>
-            <span className=" self-start    justify-items-start">
-              <p>
+            <div className="self-start min-w-0 flex-1 overflow-hidden">
+              <p className="truncate">
                 {room.roomType === "dm"
                   ? recipient?.nickname
                   : (room?.name ?? "")}
               </p>
               {filteredTypers.length > 0 ? (
-                <p className="text-xs text-primary font-medium flex items-center">
+                <p className="text-xs text-primary font-medium flex items-center truncate">
                   {filteredTypers.length === 1
                     ? `${filteredTypers[0].nickname} 正在輸入`
                     : `${filteredTypers.length} 人正在輸入`}
@@ -131,13 +131,17 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                 room.lastMessage && (
                   <p
                     className={cn(
-                      "text-xs text-muted-foreground",
+                      "text-xs text-muted-foreground truncate",
                       item.unreadCount && item.unreadCount > 0
-                        ? "font bold"
+                        ? "font-bold"
                         : "",
                     )}
                   >
-                    {room.lastMessage.member.user.nickname}:
+                    {room.lastMessage.member.user.id === session?.user?.id
+                      ? "你: "
+                      : room.lastMessage.member.user.nickname
+                        ? `${room.lastMessage.member.user.nickname}: `
+                        : ""}
                     {room.lastMessage?.attachments?.length &&
                     room.lastMessage?.attachments?.length > 0
                       ? room.lastMessage.attachments?.[0].filename
@@ -145,7 +149,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                   </p>
                 )
               )}
-            </span>
+            </div>
           </div>
           {currentUser?.pinned && (
             <RiPushpinLine className="text-muted-foreground" />

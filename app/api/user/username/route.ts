@@ -1,22 +1,22 @@
-import { NextResponse } from "next/server";
 import { userModel } from "@/shared/schema";
 import { connectMongoose } from "@/shared/lib/mongoose";
 import { getCurrentUser } from "@/shared/service/server/auth";
+import { apiResponse } from "@/shared/service/server/response";
 
 export async function POST(req: Request) {
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return apiResponse({ error: "Unauthorized", status: 401 });
     }
 
     const { username } = await req.json();
 
     if (!username || typeof username !== "string") {
-      return NextResponse.json(
-        { error: "Username is required" },
-        { status: 400 },
-      );
+      return apiResponse({
+        error: "Username is required",
+        status: 400,
+      });
     }
 
     const trimmed = username.trim().toLowerCase();
@@ -24,13 +24,11 @@ export async function POST(req: Request) {
     // Validate format: only lowercase letters, numbers, underscores, hyphens, dots. 3-30 chars.
     const usernameRegex = /^[a-z0-9_.-]{3,30}$/;
     if (!usernameRegex.test(trimmed)) {
-      return NextResponse.json(
-        {
-          error:
-            "Username must be 3-30 characters, only lowercase letters, numbers, underscores, hyphens, and dots",
-        },
-        { status: 400 },
-      );
+      return apiResponse({
+        error:
+          "Username must be 3-30 characters, only lowercase letters, numbers, underscores, hyphens, and dots",
+        status: 400,
+      });
     }
 
     // Reserved words
@@ -51,10 +49,7 @@ export async function POST(req: Request) {
       "signin",
     ];
     if (reserved.includes(trimmed)) {
-      return NextResponse.json(
-        { error: "This username is reserved" },
-        { status: 400 },
-      );
+      return apiResponse({ error: "This username is reserved", status: 400 });
     }
 
     await connectMongoose();
@@ -62,10 +57,7 @@ export async function POST(req: Request) {
     // Check uniqueness
     const existing = await userModel.findOne({ username: trimmed });
     if (existing && existing.userId !== currentUser.userId) {
-      return NextResponse.json(
-        { error: "Username already taken" },
-        { status: 409 },
-      );
+      return apiResponse({ error: "Username already taken", status: 409 });
     }
 
     // Update username
@@ -76,18 +68,15 @@ export async function POST(req: Request) {
     );
 
     if (!updatedUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return apiResponse({ error: "User not found", status: 404 });
     }
 
-    return NextResponse.json({
-      success: true,
+    return apiResponse({
+      ok: true,
       data: { username: updatedUser.username },
     });
   } catch (error) {
     console.error("Error updating username:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+    return apiResponse({ error: "Internal Server Error", status: 500 });
   }
 }

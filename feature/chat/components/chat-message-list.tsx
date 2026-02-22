@@ -7,7 +7,7 @@ import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
 import { format, isToday, isYesterday, isSameDay } from "date-fns";
 import { zhTW } from "date-fns/locale";
 import { cn } from "@/shared/shadcn/lib/utils";
-import { RiArrowDownLine } from "@remixicon/react";
+import { RiArrowDownLine, RiLoader2Line } from "@remixicon/react";
 import { useChatStore } from "@/shared/store/chat-store";
 import { markAsRead } from "@/shared/service/api/message";
 interface ChatMessageListProps {
@@ -16,6 +16,9 @@ interface ChatMessageListProps {
   currentUserId: string;
   members: Member[];
   isAIPanelOpen?: boolean;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  onLoadMore?: () => void;
   onEditMessage?: (messageId: string, content: string) => void;
   onDeleteMessage?: (messageId: string) => void;
   onReplyMessage?: (message: Message) => void;
@@ -49,14 +52,23 @@ export function ChatMessageList({
   messages,
   currentUserId,
   isAIPanelOpen,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
   onEditMessage,
   onDeleteMessage,
   onReplyMessage,
 }: ChatMessageListProps) {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const [atBottom, setAtBottom] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const { clearUnreadCount } = useChatStore();
+
+  const { clearUnreadCount, unreadCounts } = useChatStore();
+  const prevAtBottom = useRef(atBottom);
+  const unreadCount = atBottom ? 0 : unreadCounts[roomId] || 0;
+  const START_INDEX = 100000;
+  const [firstItemIndex, setFirstItemIndex] = useState(START_INDEX);
+  const prevListItemsLenRef = useRef<number>(0);
+  const wasLoadingMoreRef = useRef(false);
 
   const listItems = useMemo<ListItem[]>(() => {
     if (messages.length === 0) return [];
@@ -123,6 +135,25 @@ export function ChatMessageList({
     return items;
   }, [messages, currentUserId]);
 
+  useEffect(() => {
+    const prevLen = prevListItemsLenRef.current;
+    const newLen = listItems.length;
+
+    if (wasLoadingMoreRef.current && !isLoadingMore && newLen > prevLen) {
+      const diff = newLen - prevLen;
+      setFirstItemIndex((prev) => prev - diff);
+    }
+
+    wasLoadingMoreRef.current = isLoadingMore;
+    prevListItemsLenRef.current = newLen;
+  }, [listItems, isLoadingMore]);
+
+  const handleStartReached = useCallback(() => {
+    if (hasMore && !isLoadingMore && onLoadMore) {
+      onLoadMore();
+    }
+  }, [hasMore, isLoadingMore, onLoadMore]);
+
   const handleScrollToMessage = useCallback(
     (messageId: string) => {
       const idx = listItems.findIndex(
@@ -144,7 +175,6 @@ export function ChatMessageList({
       top: 999999, // Force scroll to absolute bottom
       behavior: "smooth",
     });
-    setUnreadCount(0);
   }, []);
 
   // Mark as read when messages update and we are at bottom
@@ -152,8 +182,9 @@ export function ChatMessageList({
     if (atBottom && messages.length > 0) {
       clearUnreadCount(roomId);
       markAsRead(roomId);
-      setUnreadCount(0);
     }
+
+    prevAtBottom.current = atBottom;
   }, [messages, atBottom, roomId, clearUnreadCount]);
 
   // Empty state
@@ -170,23 +201,35 @@ export function ChatMessageList({
         id="chat-message-list"
         ref={virtuosoRef}
         data={listItems}
+        firstItemIndex={firstItemIndex}
         initialTopMostItemIndex={{
           index: listItems.length - 1,
           align: "end",
         }}
+        startReached={handleStartReached}
         followOutput={atBottom ? "auto" : false}
+        atBottomThreshold={200}
         atBottomStateChange={(bottom) => {
           setAtBottom(bottom);
           if (bottom) {
-            setUnreadCount(0);
             clearUnreadCount(roomId);
             markAsRead(roomId);
+            prevAtBottom.current = atBottom;
           }
         }}
         components={{
+          Header: () =>
+            isLoadingMore ? (
+              <div className="flex items-center justify-center py-3">
+                <RiLoader2Line className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-xs text-muted-foreground">
+                  載入更多訊息...
+                </span>
+              </div>
+            ) : null,
           Footer: () =>
             isAIPanelOpen ? (
-              <div className="h-[300px] transition-all duration-300" />
+              <div className="h-75 transition-all duration-300" />
             ) : null,
         }}
         increaseViewportBy={{ top: 400, bottom: 0 }}

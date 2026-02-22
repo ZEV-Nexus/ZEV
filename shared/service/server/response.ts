@@ -5,11 +5,13 @@ export function apiResponse({
   data,
   message,
   status = 200,
+  error,
 }: {
   ok?: boolean;
-  data?: any;
+  data?: unknown;
   message?: string;
   status?: number;
+  error?: string;
 }) {
-  return NextResponse.json({ ok, data, message }, { status });
+  return NextResponse.json({ ok, data, message, status, error }, { status });
 }

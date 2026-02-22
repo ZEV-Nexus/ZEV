@@ -123,12 +123,10 @@ export function ChatRoomHeader({
                   )
                 ) : members.filter((m) => onlineUsers.has(m.user.id)).length >
                   0 ? (
-                  <>
-                    {members.filter((m) => onlineUsers.has(m.user.id)).length}
-                    位成員在線
-                  </>
+                  `${members.filter((m) => onlineUsers.has(m.user.id)).length}
+                    位成員在線`
                 ) : (
-                  <>離線</>
+                  "離線"
                 )}
               </p>
             </div>

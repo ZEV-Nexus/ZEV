@@ -147,10 +147,10 @@ export function ChatRoomSettingsPanel({
       try {
         await updateMemberRole(room.roomId, memberId, newRole);
         toast.success("角色已更新");
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Revert on failure
         setLocalMembers(members);
-        toast.error(error?.message || "更新角色失敗");
+        toast.error(error instanceof Error ? error.message : "更新角色失敗");
       } finally {
         setUpdatingMemberId(null);
       }
@@ -395,7 +395,7 @@ export function ChatRoomSettingsPanel({
                             >
                               <SelectTrigger
                                 size="sm"
-                                className="h-6 text-[11px] min-w-[80px]"
+                                className="h-6 text-[11px] min-w-20"
                               >
                                 <SelectValue />
                               </SelectTrigger>
