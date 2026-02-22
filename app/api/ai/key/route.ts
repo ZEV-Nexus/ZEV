@@ -52,10 +52,11 @@ export async function POST(request: NextRequest) {
       Object.entries(apiKeys).map(async ([provider, data]) => {
         const { key, id } = data;
         if (key.length < 8) {
-          return apiResponse({
-            error: `API key for ${provider} is too short`,
-            status: 400,
-          });
+          return {
+            id: id || "",
+            key: "",
+            provider,
+          };
         }
         const existingKeys = await getUserApiKey(id || "");
 
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
           return {
             id: existingKeys.id,
             key: newApiKey?.maskedKey || "",
-            provider: provider,
+            provider,
           };
         }
       }),

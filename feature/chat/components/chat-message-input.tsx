@@ -26,6 +26,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/shared/shadcn/components/ui/avatar";
+import { Textarea } from "@/shared/shadcn/components/ui/textarea";
 
 interface ChatMessageInputProps {
   onSendMessage: (
@@ -55,6 +56,7 @@ export function ChatMessageInput({
   const [isFocused, setIsFocused] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [mentionOpen, setMentionOpen] = useState(false);
 
   // 將成員列表轉換成 mention 選項，使用 userId 作為 value
   const mentionSuggestions = useMemo(
@@ -106,7 +108,7 @@ export function ChatMessageInput({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !mentionOpen) {
       e.preventDefault();
       handleSend();
     }
@@ -241,7 +243,6 @@ export function ChatMessageInput({
             </Button>
           </div>
 
-          {/* Mention Input */}
           <Mention
             value={mentionValues}
             onValueChange={setMentionValues}
@@ -249,6 +250,8 @@ export function ChatMessageInput({
               setMessage(val);
               onTyping?.();
             }}
+            inputValue={message}
+            onOpenChange={setMentionOpen}
             className="flex-1"
           >
             <MentionInput
@@ -256,13 +259,16 @@ export function ChatMessageInput({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
+              asChild
               placeholder={
                 isAIMode
                   ? "詢問 AI 助理..."
                   : "輸入訊息... (@ 提及成員, Shift+Enter 換行)"
               }
               className="flex-1 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
-            />
+            >
+              <Textarea value={message} className="max-h-[7lh]" />
+            </MentionInput>
             <MentionContent>
               {mentionSuggestions.length > 0 ? (
                 mentionSuggestions.map((member) => (

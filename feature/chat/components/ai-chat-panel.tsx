@@ -4,12 +4,9 @@ import { useRef, useEffect, memo, useState } from "react";
 import { Button } from "@/shared/shadcn/components/ui/button";
 import {
   RiSparklingFill,
-  RiDeleteBinLine,
   RiLoader2Line,
   RiCollapseDiagonalLine,
-  RiXingLine,
   RiCloseLine,
-  RiExpandDiagonal2Fill,
   RiExpandDiagonalFill,
 } from "@remixicon/react";
 import { cn } from "@/shared/shadcn/lib/utils";
@@ -46,7 +43,7 @@ export const AIChatPanel = memo(function AIChatPanel({
   onToggle,
   aiMessages,
   isLoading,
-  onClear,
+
   onSelectModel,
 }: AIChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);

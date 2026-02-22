@@ -330,7 +330,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                     : "回覆訊息"}
                 </span>
               </div>
-              <p className="truncate max-w-[200px] opacity-70 italic text-[11px]">
+              <p className="truncate max-w-50 opacity-70 italic text-[11px]">
                 {typeof message.replyTo === "object"
                   ? message.replyTo.content
                   : "查看原訊息"}
@@ -350,7 +350,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
           >
             <div
               className={cn(
-                "relative px-3 py-[7px] md:px-[14px] md:py-[10px]",
+                "relative px-3 py-1.75 md:px-3.5 md:pmy-2.5",
                 isCurrentUser
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/60 text-foreground",
@@ -360,13 +360,13 @@ export const ChatMessageItem = memo(function ChatMessageItem({
               }}
             >
               {isEditing ? (
-                <div className="flex flex-col gap-1.5 min-w-[200px]">
+                <div className="flex flex-col gap-1.5 min-w-50">
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     onKeyDown={handleEditKeyDown}
                     className={cn(
-                      "text-[15px] leading-[1.4] bg-transparent border-0 resize-none outline-none w-full min-h-[40px]",
+                      "text-[15px] leading-[1.4] bg-transparent border-0 resize-none outline-none w-full min-h-10",
                       isCurrentUser
                         ? "text-primary-foreground placeholder:text-primary-foreground/50"
                         : "text-foreground placeholder:text-muted-foreground",
@@ -453,7 +453,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                           alt={att.filename}
                           width={500}
                           height={500}
-                          className="rounded-md max-w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity w-auto h-auto"
+                          className="rounded-md max-w-full max-h-75 object-cover cursor-pointer hover:opacity-90 transition-opacity w-auto h-auto"
                           preserveTransformations
                         />
                       </PhotoView>
@@ -462,7 +462,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                         key={att.id}
                         src={att.url}
                         controls
-                        className="rounded-md max-w-full max-h-[300px] object-cover"
+                        className="rounded-md max-w-full max-h-75 object-cover"
                       />
                     ) : (
                       <a

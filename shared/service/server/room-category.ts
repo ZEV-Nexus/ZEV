@@ -4,8 +4,8 @@ export async function createRoomCategory(userId: string, name: string) {
   const lastCategory = await roomCategoryModel
     .findOne({ user: userId })
     .sort({ index: -1 })
-    .select("index")
-    .lean();
+    .select("index");
+
   const roomCategory = new roomCategoryModel({
     title: name,
     user: userId,
@@ -16,10 +16,7 @@ export async function createRoomCategory(userId: string, name: string) {
 }
 
 export async function getRoomCategories(userId: string) {
-  return await roomCategoryModel
-    .find({ user: userId })
-    .sort({ index: 1 })
-    .lean();
+  return await roomCategoryModel.find({ user: userId }).sort({ index: 1 });
 }
 
 export async function updateRoomCategoryIndex(

@@ -1,8 +1,7 @@
 import { memberModel, roomModel } from "@/shared/schema";
-import { IRoom } from "@/shared/schema/room";
 
 import { IRoomCategory } from "@/shared/schema/room-category";
-import { IUser } from "@/shared/schema/user";
+
 import { ChatRoom, RoomType, User } from "@/shared/types";
 
 export async function createMember({
@@ -61,7 +60,9 @@ export const getRoomMembers = async (roomId: string) => {
 export const getUserRooms = async (userId: string) => {
   const members = await memberModel
     .find({ user: userId })
-    .populate({
+    .populate<{
+      room: ChatRoom;
+    }>({
       path: "room",
       select: "name roomType roomId lastMessage createdAt",
       populate: {
@@ -84,11 +85,12 @@ export const getUserRooms = async (userId: string) => {
         ],
       },
     })
-    .populate({
+    .populate<{
+      roomCategory?: IRoomCategory & { id: string };
+    }>({
       path: "roomCategory",
       select: "title index",
-    })
-    .exec();
+    });
 
   return members;
 };
@@ -117,13 +119,12 @@ export async function updateMemberCategory(
   userId: string,
   roomId: string,
   categoryId: string | null,
-  index?: number,
 ) {
   // Find the actual room doc first since roomId passed from frontend might be the public ID
   const room = await roomModel.findOne({ _id: roomId });
   if (!room) throw new Error("Room not found");
 
-  const update: Record<string, any> = { roomCategory: categoryId };
+  const update: Record<string, string | null> = { roomCategory: categoryId };
 
   // If we had an index field in member schema for custom sort order within category
   // we would update it here. For now, we just move categories.
@@ -150,7 +151,7 @@ export async function updateMemberSettings(
 
   if (!room) throw new Error("Room not found");
 
-  const update: Record<string, any> = {};
+  const update: Record<string, string | boolean> = {};
   if (notificationSetting !== undefined)
     update.notificationSetting = notificationSetting;
   if (pinned !== undefined) update.pinned = pinned;
@@ -206,16 +207,16 @@ export async function updateMemberRole(
     throw new Error("Only admin or owner can change roles");
 
   // Find target member
-  const targetMember = await memberModel
-    .findById(targetMemberId)
-    .populate({ path: "user", select: "nickname avatar _id userId email" });
+  const targetMember = await memberModel.findById(targetMemberId).populate<{
+    user: User;
+  }>({ path: "user", select: "nickname avatar _id userId email" });
   if (!targetMember) throw new Error("Target member not found");
 
   // Cannot change own role
   if (
     targetMember.user?.toString() === operatorUserId ||
-    (targetMember.user as any)?.userId === operatorUserId ||
-    (targetMember.user as any)?._id?.toString() === operatorUserId
+    targetMember.user?.userId === operatorUserId ||
+    targetMember.user?.id === operatorUserId
   )
     throw new Error("Cannot change your own role");
 

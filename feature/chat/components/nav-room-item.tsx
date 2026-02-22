@@ -20,6 +20,9 @@ import { useTypingStore } from "@/shared/store/typing-store";
 import { useOnlineStore } from "@/shared/store/online-store";
 import { useAblyChat } from "../hooks/use-ably-chat";
 import { useChatStore } from "@/shared/store/chat-store";
+import { parseMentions } from "@/shared/lib/mention";
+import { Mention } from "@/shared/shadcn/components/ui/mention";
+import { MentionText } from "./mention-text";
 
 export function NavRoomItemSkeleton() {
   return (
@@ -143,9 +146,15 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                         ? `${room.lastMessage.member.user.nickname}: `
                         : ""}
                     {room.lastMessage?.attachments?.length &&
-                    room.lastMessage?.attachments?.length > 0
-                      ? room.lastMessage.attachments?.[0].filename
-                      : room.lastMessage.content}
+                    room.lastMessage?.attachments?.length > 0 ? (
+                      room.lastMessage.attachments?.[0].filename
+                    ) : (
+                      <MentionText
+                        content={room.lastMessage?.content || ""}
+                        members={members!}
+                        className=" pointer-events-none"
+                      />
+                    )}
                   </p>
                 )
               )}

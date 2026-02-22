@@ -19,12 +19,31 @@ export async function generateMetadata({
     .select("nickname username bio");
 
   if (!user) {
-    return { title: "User not found" };
+    return {
+      title: "User Not Found",
+      description: "This user profile could not be found on ZEV.",
+    };
   }
 
+  const displayName = user.nickname || user.username;
+  const description =
+    user.bio ||
+    `Check out ${displayName}'s profile on ZEV — the team communication hub for developers and companies.`;
+
   return {
-    title: `${user.nickname || user.username} | Chat.to`,
-    description: user.bio || `${user.nickname || user.username} 的個人檔案`,
+    title: `${displayName} (@${user.username})`,
+    description,
+    openGraph: {
+      title: `${displayName} (@${user.username}) | ZEV`,
+      description,
+      type: "profile",
+      url: `/${user.username}`,
+    },
+    twitter: {
+      card: "summary",
+      title: `${displayName} (@${user.username}) | ZEV`,
+      description,
+    },
   };
 }
 

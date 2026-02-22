@@ -2,8 +2,14 @@ import FeedPage from "@/feature/feed/components/feed-page";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Chat.to - 動態牆",
-  description: "分享你的想法、專案和靈感，與其他開發者交流",
+  title: "Feed — Explore Ideas & Updates",
+  description:
+    "Discover the latest posts, ideas, projects, and updates from your team and the ZEV community. Share your thoughts and collaborate in real time.",
+  openGraph: {
+    title: "Feed — Explore Ideas & Updates | ZEV",
+    description:
+      "Discover the latest posts, ideas, projects, and updates from your team and the ZEV community.",
+  },
 };
 
 export default function Page() {

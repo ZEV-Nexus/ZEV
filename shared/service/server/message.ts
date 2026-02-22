@@ -112,7 +112,13 @@ export async function getUnreadCount(roomId: string, userId: string) {
     .findOne({ room: roomId, user: userId })
     .populate<{ lastReadMessage: IMessage }>("lastReadMessage");
   if (!member) throw new Error("Member not found");
-  const query: any = {
+  const query: {
+    room: mongoose.Types.ObjectId;
+    member: {
+      $ne: mongoose.Types.ObjectId;
+    };
+    createdAt?: { $gt: Date };
+  } = {
     room: new mongoose.Types.ObjectId(roomId),
     member: { $ne: member._id },
   };

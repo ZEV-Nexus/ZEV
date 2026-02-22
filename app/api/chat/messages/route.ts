@@ -24,7 +24,8 @@ export async function GET(req: Request) {
 
     const messages = await getMessages(roomId, limit, before);
     return apiResponse({ data: messages });
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("Error fetching messages:", error);
     return apiResponse({
       ok: false,
       message: "Internal Server Error",

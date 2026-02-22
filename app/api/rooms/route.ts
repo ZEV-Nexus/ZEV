@@ -1,13 +1,12 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { getUserRooms } from "@/shared/service/server/member";
-import { ChatNavCategory, ChatNavItem } from "@/shared/types";
-import { IMember } from "@/shared/schema/member";
+import { ChatNavCategory } from "@/shared/types";
+
 import { getRoomCategories } from "@/shared/service/server/room-category";
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { getUnreadCount } from "@/shared/service/server/message";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -39,30 +38,31 @@ export async function GET(request: Request) {
     const categories = await getRoomCategories(user.id);
 
     categories.map((category) => {
-      grouped[category._id.toString()] = {
-        id: category._id.toString(),
+      grouped[category.id] = {
+        id: category.id,
         index: category.index,
         title: category.title!,
         items: [],
       };
     });
     for (const memberObj of rooms) {
-      const member = memberObj as any;
+      const member = memberObj;
       const room = member.room;
 
       if (!room) continue;
       const unreadCount = await getUnreadCount(room.id, user.id);
       const roomCategory = member.roomCategory;
-      const groupId = roomCategory?._id?.toString();
+
+      const groupId = roomCategory?.id;
       const item = {
-        id: room._id.toString(),
+        id: room.id,
         unreadCount,
         room: {
-          id: room._id.toString(),
+          id: room.id,
           roomId: room.roomId ?? "",
           name: room.name ?? "",
           roomType: room.roomType ?? "dm",
-          createdAt: room.createdAt?.toISOString() || new Date().toISOString(),
+          createdAt: new Date(room.createdAt || new Date()).toISOString(),
           lastMessage: room.lastMessage,
           avatar: room.avatar,
         },
