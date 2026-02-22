@@ -19,12 +19,7 @@ export async function POST(req: Request) {
     const targetCategoryId =
       categoryId === "dm" || categoryId === "group" ? null : categoryId;
 
-    await updateMemberCategory(
-      session.user.id,
-      roomId,
-      targetCategoryId,
-      index,
-    );
+    await updateMemberCategory(session.user.id, roomId, targetCategoryId);
 
     return NextResponse.json({ success: true });
   } catch (error) {
