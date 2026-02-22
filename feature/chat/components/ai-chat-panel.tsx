@@ -35,7 +35,7 @@ interface AIChatPanelProps {
   aiMessages: UIMessage[];
   isLoading: boolean;
   onClear: () => void;
-  onSelectModel: (modelId: string) => void;
+  onSelectModel: (model: AIModel) => void;
 }
 
 export const AIChatPanel = memo(function AIChatPanel({
@@ -43,7 +43,6 @@ export const AIChatPanel = memo(function AIChatPanel({
   onToggle,
   aiMessages,
   isLoading,
-
   onSelectModel,
 }: AIChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -85,7 +84,10 @@ export const AIChatPanel = memo(function AIChatPanel({
               </div>
               <div className="flex items-center gap-1">
                 <Select
-                  onValueChange={onSelectModel}
+                  onValueChange={(e) => {
+                    const model = AI_MODELS.find((m) => m.id === e);
+                    if (model) onSelectModel(model);
+                  }}
                   defaultValue="claude-3-5-sonnet-20240620"
                 >
                   <SelectTrigger className=" text-muted-foreground hover:text-foreground">

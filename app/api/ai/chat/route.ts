@@ -10,32 +10,22 @@ import { decrypt } from "@/shared/lib/key-authentication";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  const { messages, modelId } = await req.json();
-  console.log(messages, modelId);
+  const { messages, modelKeyId, modelId } = await req.json();
+  console.log(messages, modelKeyId, modelId);
 
   const user = await getCurrentUser();
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
-  if (!modelId) {
-    return new Response("Model ID is required", { status: 400 });
+  if (!modelKeyId) {
+    return new Response("Model Key ID is required", { status: 400 });
   }
 
   let model;
-  const provider = modelId.startsWith("gpt")
-    ? "openai"
-    : modelId.startsWith("claude")
-      ? "anthropic"
-      : modelId.startsWith("gemini")
-        ? "google"
-        : null;
 
-  if (!provider) {
-    return new Response("Invalid Model ID", { status: 400 });
-  }
-  const apiKeyData = await getUserApiKey(user.id, provider);
+  const apiKeyData = await getUserApiKey(modelKeyId);
   if (!apiKeyData) {
-    return new Response(`Missing API Key for provider: ${provider}`, {
+    return new Response(`Missing API Key for model key ID: ${modelKeyId}`, {
       status: 401,
     });
   }
@@ -46,19 +36,19 @@ export async function POST(req: Request) {
   });
 
   try {
-    if (modelId.startsWith("gpt")) {
+    if (apiKeyData.provider === "openai") {
       if (!apiKey) {
         return new Response("Missing OpenAI API Key", { status: 401 });
       }
       const openai = createOpenAI({ apiKey });
       model = openai(modelId);
-    } else if (modelId.startsWith("claude")) {
+    } else if (apiKeyData.provider === "anthropic") {
       if (!apiKey) {
         return new Response("Missing Anthropic API Key", { status: 401 });
       }
       const anthropic = createAnthropic({ apiKey });
       model = anthropic(modelId);
-    } else if (modelId.startsWith("gemini")) {
+    } else if (apiKeyData.provider === "google") {
       if (!apiKey) {
         return new Response("Missing Google API Key", { status: 401 });
       }

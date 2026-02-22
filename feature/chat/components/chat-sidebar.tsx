@@ -4,12 +4,9 @@ import * as React from "react";
 
 import { NavMain } from "@/feature/chat/components/nav-main";
 
-import { NavHeader } from "@/feature/chat/components/team-switcher";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
   SidebarRail,
 } from "@/shared/shadcn/components/ui/sidebar";
 

@@ -25,6 +25,7 @@ import { useAblyChat } from "@/feature/chat/hooks/use-ably-chat";
 import { RiLoader2Line } from "@remixicon/react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
+import { useAIStore } from "@/shared/store/ai-store";
 
 interface ChatRoomProps {
   room: ChatRoomType;
@@ -47,7 +48,8 @@ export default function ChatRoom({
   const [replyingMessage, setReplyingMessage] = useState<Message | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const { updateRoomLastMessage, setCurrentRoom } = useChatStore();
-  const [modelId, setModelId] = useState("claude-3-5-sonnet-20240620");
+  const { selectedModel, setSelectedModel, apiKeys } = useAIStore();
+
   const {
     messages: aiMessages,
     status,
@@ -70,6 +72,7 @@ export default function ChatRoom({
   useEffect(() => {
     setCurrentRoom(room);
   }, [room, setCurrentRoom]);
+
   const { sendRealtimeMessage, startTyping, stopTyping } = useAblyChat({
     roomId: room.id,
     userId: currentUserId,
@@ -228,7 +231,9 @@ export default function ChatRoom({
   const handleSendToAI = (content: string) => {
     if (!content.trim() || status === "streaming") return;
     const aiMessage = { text: content, role: "user" };
-    sendAiMessage(aiMessage, { body: { modelId } });
+
+    const modelKeyId = apiKeys[selectedModel.provider].id;
+    sendAiMessage(aiMessage, { body: { modelKeyId, modelId: selectedModel } });
   };
 
   const handleToggleAIPanel = () => {
@@ -334,7 +339,7 @@ export default function ChatRoom({
                 isOpen={isAIPanelOpen}
                 onToggle={handleToggleAIPanel}
                 aiMessages={aiMessages}
-                onSelectModel={setModelId}
+                onSelectModel={setSelectedModel}
                 isLoading={status === "streaming" || status === "submitted"}
                 onClear={handleClearAI}
               />

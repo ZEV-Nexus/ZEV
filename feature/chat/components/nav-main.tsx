@@ -134,7 +134,7 @@ export function NavMain() {
           </DropdownMenu>
         )}
       </span>
-      <SidebarMenu>
+      <SidebarMenu className=" bg-primary/15">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, index) => (
             <NavRoomItemSkeleton key={index} />

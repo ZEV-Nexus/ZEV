@@ -38,14 +38,14 @@ interface AIState {
   apiKeys: UserApiKey;
   /** Masked representations of DB-stored keys (e.g. "••••••••"), empty string means not set */
   maskedKeys: UserApiKey;
-  selectedModelId: string;
+  selectedModel: AIModel;
 }
 
 interface AIAction {
   setApiKey: (provider: AIProvider, key: string, id: string) => void;
   setMaskedKey: (provider: AIProvider, masked: string) => void;
   setMaskedKeys: (masked: UserApiKey) => void;
-  setSelectedModelId: (modelId: string) => void;
+  setSelectedModel: (model: AIModel) => void;
   getApiKey: (provider: AIProvider) => UserApiKey[AIProvider];
 }
 
@@ -62,7 +62,7 @@ export const useAIStore = create<AIState & AIAction>()(
         google: { key: "", id: "" },
         anthropic: { key: "", id: "" },
       },
-      selectedModelId: "gpt-3.5-turbo",
+      selectedModel: { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
 
       setApiKey: (provider, key, id) =>
         set((state) => ({
@@ -79,7 +79,7 @@ export const useAIStore = create<AIState & AIAction>()(
           maskedKeys: { ...state.maskedKeys, ...masked },
         })),
 
-      setSelectedModelId: (modelId) => set({ selectedModelId: modelId }),
+      setSelectedModel: (model) => set({ selectedModel: model }),
 
       getApiKey: (provider) => get().apiKeys[provider],
     }),
