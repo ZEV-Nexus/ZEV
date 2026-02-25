@@ -1,21 +1,27 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Roboto } from "next/font/google";
+import { Outfit, Merriweather, Fira_Code } from "next/font/google";
 import "./globals.css";
 import "react-photo-view/dist/react-photo-view.css";
 import { Toaster } from "@/shared/shadcn/components/ui/sonner";
 import ClientLayout from "@/layout/client-layout";
 import { TooltipProvider } from "@/shared/shadcn/components/ui/tooltip";
 import { SessionProvider } from "next-auth/react";
-const roboto = Roboto({ subsets: ["latin"], variable: "--font-sans" });
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+const fontSans = Outfit({
   subsets: ["latin"],
+  variable: "--font-sans",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontSerif = Merriweather({
   subsets: ["latin"],
+  variable: "--font-serif",
+});
+
+const fontMono = Fira_Code({
+  subsets: ["latin"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -128,7 +134,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className={roboto.variable}>
+    <html lang="en">
       <head>
         <script
           type="application/ld+json"
@@ -136,7 +142,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
         <TooltipProvider>
           <SessionProvider>

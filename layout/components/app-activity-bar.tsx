@@ -5,9 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   RiSearchLine,
+  RiSearchFill,
   RiChat1Line,
+  RiChat1Fill,
   RiNotificationLine,
+  RiNotificationFill,
   RiHome4Line,
+  RiHome4Fill,
 } from "@remixicon/react";
 
 import {
@@ -42,16 +46,37 @@ const PANEL_WIDTH = "22rem";
 const navItems: {
   id: "home" | "search" | "chat" | "notifications";
   icon: React.ElementType;
+  activeIcon: React.ElementType;
   label: string;
   href?: string;
   panel?: boolean;
 }[] = [
-  { id: "home", icon: RiHome4Line, label: "首頁", href: "/" },
-  { id: "search", icon: RiSearchLine, label: "搜尋", panel: true },
-  { id: "chat", icon: RiChat1Line, label: "聊天", href: "/c", panel: true },
+  {
+    id: "home",
+    icon: RiHome4Line,
+    activeIcon: RiHome4Fill,
+    label: "首頁",
+    href: "/",
+  },
+  {
+    id: "search",
+    icon: RiSearchLine,
+    activeIcon: RiSearchFill,
+    label: "搜尋",
+    panel: true,
+  },
+  {
+    id: "chat",
+    icon: RiChat1Line,
+    activeIcon: RiChat1Fill,
+    label: "聊天",
+    href: "/c",
+    panel: true,
+  },
   {
     id: "notifications",
     icon: RiNotificationLine,
+    activeIcon: RiNotificationFill,
     label: "通知",
     panel: true,
   },
@@ -110,7 +135,6 @@ export default function AppActivityBar() {
         <nav className="shrink-0 border-t border-border bg-background safe-area-bottom">
           <div className="flex items-center justify-around h-14">
             {navItems.map((item) => {
-              const Icon = item.icon;
               const isActive =
                 item.id === "chat"
                   ? isChatPage
@@ -119,10 +143,13 @@ export default function AppActivityBar() {
                     : item.id === "home"
                       ? isHomePage
                       : false;
+              const Icon = isActive ? item.activeIcon : item.icon;
 
               return (
-                <button
+                <motion.button
                   key={item.id}
+                  whileTap={{ scale: 0.8 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   onClick={() => {
                     if (item.id === "chat") {
                       closePanel();
@@ -150,7 +177,7 @@ export default function AppActivityBar() {
                     )}
                   </span>
                   <span className="text-[10px] leading-none">{item.label}</span>
-                </button>
+                </motion.button>
               );
             })}
 
@@ -206,7 +233,6 @@ export default function AppActivityBar() {
           <SidebarGroup>
             <SidebarMenu>
               {navItems.map((item) => {
-                const Icon = item.icon;
                 const isActive =
                   item.id === "chat"
                     ? isChatPage
@@ -215,46 +241,67 @@ export default function AppActivityBar() {
                       : item.id === "home"
                         ? isHomePage
                         : false;
+                const Icon = isActive ? item.activeIcon : item.icon;
 
                 if (item.panel) {
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        tooltip={item.label}
-                        isActive={isActive}
-                        className="relative [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
-                        onClick={() => {
-                          if (item.id === "chat") {
-                            closePanel();
-                            router.push("/c");
-                          } else {
-                            togglePanel(item.id as "search" | "notifications");
-                          }
+                      <motion.div
+                        whileTap={{ scale: 0.8 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 400,
+                          damping: 17,
                         }}
                       >
-                        <Icon />
-                        {item.id === "notifications" && unreadCount > 0 && (
-                          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-sidebar animate-in zoom-in">
-                            {unreadCount > 9 ? "9+" : unreadCount}
-                          </span>
-                        )}
-                      </SidebarMenuButton>
+                        <SidebarMenuButton
+                          tooltip={item.label}
+                          isActive={isActive}
+                          className="relative [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                          onClick={() => {
+                            if (item.id === "chat") {
+                              closePanel();
+                              router.push("/c");
+                            } else {
+                              togglePanel(
+                                item.id as "search" | "notifications",
+                              );
+                            }
+                          }}
+                        >
+                          <Icon />
+                          {item.id === "notifications" && unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-sidebar animate-in zoom-in">
+                              {unreadCount > 9 ? "9+" : unreadCount}
+                            </span>
+                          )}
+                        </SidebarMenuButton>
+                      </motion.div>
                     </SidebarMenuItem>
                   );
                 }
 
                 return (
                   <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      tooltip={item.label}
-                      isActive={isActive}
-                      className="[&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
-                      asChild
+                    <motion.div
+                      whileTap={{ scale: 0.8 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 17,
+                      }}
                     >
-                      <Link href={item.href!} onClick={() => closePanel()}>
-                        <Icon />
-                      </Link>
-                    </SidebarMenuButton>
+                      <SidebarMenuButton
+                        tooltip={item.label}
+                        isActive={isActive}
+                        className="[&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                        asChild
+                      >
+                        <Link href={item.href!} onClick={() => closePanel()}>
+                          <Icon />
+                        </Link>
+                      </SidebarMenuButton>
+                    </motion.div>
                   </SidebarMenuItem>
                 );
               })}

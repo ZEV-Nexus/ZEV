@@ -1,8 +1,18 @@
 {
   "color-space-for-untagged-svg-colors" : "display-p3",
-  "fill" : {
-    "automatic-gradient" : "srgb:1.00000,1.00000,1.00000,1.00000"
-  },
+  "fill-specializations" : [
+    {
+      "value" : {
+        "automatic-gradient" : "srgb:0.90980,0.92157,0.92941,1.00000"
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "automatic-gradient" : "srgb:0.10196,0.10196,0.10196,1.00000"
+      }
+    }
+  ],
   "groups" : [
     {
       "blend-mode" : "normal",
@@ -11,9 +21,14 @@
         {
           "fill-specializations" : [
             {
+              "value" : {
+                "solid" : "srgb:0.91373,0.37647,0.20784,1.00000"
+              }
+            },
+            {
               "appearance" : "dark",
               "value" : {
-                "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+                "solid" : "srgb:0.91373,0.37647,0.20784,1.00000"
               }
             }
           ],
