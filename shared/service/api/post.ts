@@ -49,9 +49,15 @@ export async function createComment(postId: string, content: string) {
   return response.data;
 }
 
-export async function searchGitHubRepos(query: string) {
+export async function fetchGitHubRepos(page: string) {
   const response = await fetchApi<
     (GitHubRepo & { fullName: string; avatar: string })[]
-  >(`github/search?q=${encodeURIComponent(query)}`);
+  >(`github/search?page=${page}`);
   return response;
+}
+
+export async function disconnectGitHub() {
+  return fetchApi<void>("github/connect/disconnect", {
+    method: "POST",
+  });
 }

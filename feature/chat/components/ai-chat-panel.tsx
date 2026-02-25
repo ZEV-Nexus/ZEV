@@ -22,6 +22,7 @@ import {
 } from "@/shared/shadcn/components/ui/select";
 import { AI_MODELS, AIModel } from "@/shared/store/ai-store";
 import { UIMessage } from "ai";
+
 export interface AIMessage {
   id: string;
   role: "user" | "assistant";
@@ -47,6 +48,7 @@ export const AIChatPanel = memo(function AIChatPanel({
 }: AIChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [fullScreen, setFullScreen] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -65,10 +67,10 @@ export const AIChatPanel = memo(function AIChatPanel({
   return (
     <div
       className={cn(
-        "w-full px-4 py-2 animate-in  slide-in-from-bottom-4 fade-in duration-300 transition-all",
+        "w-full px-4 py-2 animate-in slide-in-from-bottom-4 fade-in duration-300 transition-all",
       )}
     >
-      <Card className="shadow-lg border-primary/20  bg-background/95 backdrop-blur-md  ">
+      <Card className="shadow-lg border-primary/20 bg-background/95 backdrop-blur-md">
         <CardContent className="p-0">
           <div className="rounded-xl overflow-hidden">
             {/* Panel Header */}
@@ -90,7 +92,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                   }}
                   defaultValue="claude-3-5-sonnet-20240620"
                 >
-                  <SelectTrigger className=" text-muted-foreground hover:text-foreground">
+                  <SelectTrigger className="text-muted-foreground hover:text-foreground">
                     <SelectValue placeholder="Select a model" />
                   </SelectTrigger>
                   <SelectContent>
@@ -108,6 +110,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                     )}
                   </SelectContent>
                 </Select>
+
                 {fullScreen ? (
                   <RiCollapseDiagonalLine
                     className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
@@ -133,8 +136,8 @@ export const AIChatPanel = memo(function AIChatPanel({
             {/* Messages Area */}
             <div
               className={cn(
-                " overflow-y-auto ",
-                fullScreen ? "h-dvh  max-h-[calc(100vh-250px)]" : "max-h-50",
+                "overflow-y-auto",
+                fullScreen ? "h-dvh max-h-[calc(100vh-250px)]" : "max-h-50",
               )}
             >
               <div className="px-4 py-4">
@@ -162,13 +165,9 @@ export const AIChatPanel = memo(function AIChatPanel({
                       >
                         {/* Avatar */}
                         <div className="shrink-0 mt-0.5">
-                          {msg.role === "assistant" ? (
+                          {msg.role === "assistant" && (
                             <div className="h-8 w-8 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
                               <RiSparklingFill className="h-4 w-4 text-primary-foreground" />
-                            </div>
-                          ) : (
-                            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center border border-border/50">
-                              <span className="text-xs font-semibold">你</span>
                             </div>
                           )}
                         </div>

@@ -12,8 +12,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  useSidebar,
 } from "@/shared/shadcn/components/ui/sidebar";
+import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import {
   RiArrowRightSLine,
   RiChatAiLine,
@@ -58,7 +58,7 @@ import { useSession } from "next-auth/react";
 import { Badge } from "@/shared/shadcn/components/ui/badge";
 
 export function NavMain() {
-  const { isMobile } = useSidebar();
+  const isMobile = useIsMobile();
   const { data: session, status } = useSession();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -135,7 +135,7 @@ export function NavMain() {
         )}
       </span>
       <SidebarMenu>
-        {isLoading ? (
+        {chatCategorys.length === 0 && isLoading ? (
           Array.from({ length: 5 }).map((_, index) => (
             <NavRoomItemSkeleton key={index} />
           ))

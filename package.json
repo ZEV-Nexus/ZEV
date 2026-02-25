@@ -31,6 +31,8 @@
     "clsx": "^2.1.1",
     "cobe": "^0.6.5",
     "date-fns": "^4.1.0",
+    "frimousse": "^0.3.0",
+    "lucide-react": "^0.575.0",
     "mongodb": "^7.1.0",
     "mongoose": "^9.1.6",
     "motion": "^12.33.0",

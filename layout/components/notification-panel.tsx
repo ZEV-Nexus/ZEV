@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   RiNotificationLine,
   RiCheckDoubleLine,
@@ -27,6 +27,7 @@ import { zhTW } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { Notification } from "@/shared/types";
+import { useQuery } from "@tanstack/react-query";
 
 export default function NotificationPanel() {
   const router = useRouter();
@@ -38,24 +39,22 @@ export default function NotificationPanel() {
     markAllAsRead: markStoreAllAsRead,
     isLoaded,
   } = useNotificationStore();
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!isLoaded) {
-      setLoading(true);
-      getNotifications()
-        .then((res) => {
-          if (res.ok) {
-            setNotifications(
-              res.data.notifications,
-              res.data.unreadCount,
-              res.data.hasMore,
-            );
-          }
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [isLoaded, setNotifications]);
+  const { isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      const res = await getNotifications();
+      if (res.ok) {
+        setNotifications(
+          res.data.notifications,
+          res.data.unreadCount,
+          res.data.hasMore,
+        );
+      }
+      return res;
+    },
+    enabled: !isLoaded,
+  });
 
   const handleMarkAllRead = async () => {
     if (unreadCount === 0) return;
@@ -144,7 +143,7 @@ export default function NotificationPanel() {
 
       {/* Notification list */}
       <ScrollArea className="flex-1">
-        {loading && !isLoaded ? (
+        {isLoading && !isLoaded ? (
           <div className="flex justify-center p-8">
             <RiLoader4Line className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
@@ -203,10 +202,8 @@ export default function NotificationPanel() {
                   {(notification.post?.content ||
                     notification.comment?.content) && (
                     <p className="text-xs text-muted-foreground line-clamp-2 italic">
-                      "
                       {notification.comment?.content ||
                         notification.post?.content}
-                      "
                     </p>
                   )}
 

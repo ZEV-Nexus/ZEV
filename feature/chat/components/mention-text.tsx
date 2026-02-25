@@ -4,11 +4,6 @@ import { useMemo } from "react";
 import { Member } from "@/shared/types";
 import { parseMentions, hasMentions } from "@/shared/lib/mention";
 import { cn } from "@/shared/shadcn/lib/utils";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/shared/shadcn/components/ui/hover-card";
 
 interface MentionTextProps {
   content: string;
@@ -37,24 +32,17 @@ export function MentionText({ content, members, className }: MentionTextProps) {
         if (segment.type === "mention") {
           console.log(segment.user);
           return (
-            <HoverCard key={`mention-${index}`} openDelay={10} closeDelay={100}>
-              <HoverCardTrigger>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded px-1 py-0.5 text-sm font-medium",
-                    "bg-accent text-primary",
-                    "cursor-pointer hover:bg-primary hover:text-accent transition-colors",
-                  )}
-                  title={`使用者 ID: ${segment.user?.id}`}
-                >
-                  @{segment.displayName}
-                </span>
-              </HoverCardTrigger>
-              <HoverCardContent className="flex w-64 flex-col gap-0.5">
-                <div className="font-semibold">@{segment.user?.username}</div>
-                <div>{segment.displayName}</div>
-              </HoverCardContent>
-            </HoverCard>
+            <span
+              key={segment.user?.id}
+              className={cn(
+                "inline-flex items-center rounded px-1 py-0.5 text-sm font-medium",
+                "bg-accent text-primary",
+                "cursor-pointer hover:bg-primary hover:text-accent transition-colors",
+              )}
+              title={`使用者 ID: ${segment.user?.id}`}
+            >
+              @{segment.displayName}
+            </span>
           );
         }
         return <span key={`text-${index}`}>{segment.content}</span>;

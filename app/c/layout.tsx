@@ -1,34 +1,38 @@
 "use client";
 
 import { ChatSidebar } from "@/feature/chat/components/chat-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/shared/shadcn/components/ui/sidebar";
-
+import { usePathname } from "next/navigation";
+import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import React from "react";
-import { useAppSidebarStore } from "@/shared/store/app-sidebar-store";
 
 export default function ChatLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { chatSidebarOpen, setChatSidebarOpen } = useAppSidebarStore();
+  const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const isRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
 
   return (
-    <SidebarProvider
-      open={chatSidebarOpen}
-      onOpenChange={setChatSidebarOpen}
-      style={
-        {
-          "--sidebar-width": "22rem",
-          "--sidebar-width-mobile": "20rem",
-        } as React.CSSProperties
-      }
-    >
-      <ChatSidebar />
-      <SidebarInset className="px-2">{children}</SidebarInset>
-    </SidebarProvider>
+    <div className="flex h-full w-full overflow-hidden">
+      {/* Desktop: always show; Mobile: only show on /c (chat list) */}
+      {(!isMobile || !isRoomPage) && (
+        <div
+          className={
+            isMobile
+              ? "w-full h-full"
+              : "w-88 shrink-0 border-r border-border h-full"
+          }
+        >
+          <ChatSidebar />
+        </div>
+      )}
+
+      {/* Desktop: always show; Mobile: only show on /c/[roomId] */}
+      {(!isMobile || isRoomPage) && (
+        <div className="flex-1 min-w-0 h-full">{children}</div>
+      )}
+    </div>
   );
 }

@@ -14,10 +14,11 @@ import {
   RiNotificationLine,
   RiSearchLine,
   RiSparklingLine,
-  RiMenuLine,
+  RiArrowLeftLine,
 } from "@remixicon/react";
 import { Separator } from "@/shared/shadcn/components/ui/separator";
-import { useSidebar } from "@/shared/shadcn/components/ui/sidebar";
+import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
+import { useRouter } from "next/navigation";
 import { ChatRoomSettingsPanel } from "./chat-room-settings-panel";
 import { useOnlineStore } from "@/shared/store/online-store";
 import { RoomInfoUpdatedPayload } from "@/shared/hooks/use-ably-notification";
@@ -67,7 +68,8 @@ export function ChatRoomHeader({
   const recipient = members?.find(
     (member) => member.user.userId !== currentUserId,
   );
-  const { toggleSidebar } = useSidebar();
+  const isMobile = useIsMobile();
+  const router = useRouter();
   const displayName =
     room.roomType === "dm" ? recipient?.user.nickname : localRoom.name;
   const displayAvatar =
@@ -82,14 +84,16 @@ export function ChatRoomHeader({
       <div className="bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <RiMenuLine className="h-5 w-5" />
-            </Button>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/c")}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <RiArrowLeftLine className="h-5 w-5" />
+              </Button>
+            )}
             <Avatar>
               {room.roomType === "dm"
                 ? onlineUsers.has(recipient?.user.userId || "") && (

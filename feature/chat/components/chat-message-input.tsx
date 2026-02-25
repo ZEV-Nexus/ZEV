@@ -27,6 +27,12 @@ import {
   AvatarImage,
 } from "@/shared/shadcn/components/ui/avatar";
 import { Textarea } from "@/shared/shadcn/components/ui/textarea";
+import {
+  EmojiPicker,
+  EmojiPickerSearch,
+  EmojiPickerContent,
+  EmojiPickerFooter,
+} from "@/components/ui/emoji-picker";
 
 interface ChatMessageInputProps {
   onSendMessage: (
@@ -54,8 +60,10 @@ export function ChatMessageInput({
   const [mentionValues, setMentionValues] = useState<string[]>([]);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isFocused, setIsFocused] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
 
   // 將成員列表轉換成 mention 選項，使用 userId 作為 value
@@ -94,6 +102,25 @@ export function ChatMessageInput({
       return result;
     },
     [mentionValues, labelToIdMap],
+  );
+
+  // 當焦點離開整個輸入區域（包含 emoji picker）時收起 emoji picker
+  const handleContainerBlur = useCallback((e: React.FocusEvent) => {
+    const container = inputContainerRef.current;
+    if (container && !container.contains(e.relatedTarget as Node)) {
+      setEmojiOpen(false);
+      setIsFocused(false);
+    }
+  }, []);
+
+  const handleEmojiSelect = useCallback(
+    (emoji: { emoji: string }) => {
+      setMessage((prev) => prev + emoji.emoji);
+      onTyping?.();
+
+      setTimeout(() => inputRef.current?.focus(), 0);
+    },
+    [onTyping],
   );
 
   const handleSend = () => {
@@ -211,99 +238,128 @@ export function ChatMessageInput({
 
         {/* Input Area with Mention */}
         <div
-          className={cn(
-            "relative flex items-center gap-2 p-2 rounded-xl transition-all duration-200",
-            isFocused ? "bg-muted/50 ring-1 ring-primary/20" : "bg-muted/30",
-          )}
+          ref={inputContainerRef}
+          onBlur={handleContainerBlur}
+          onFocus={() => setIsFocused(true)}
+          className="relative"
         >
-          {/* Left Actions */}
-          <div className="flex items-center gap-1">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              className="hidden"
-              onChange={handleFileSelect}
-              accept="image/*,.pdf,.doc,.docx,.txt"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-              onClick={() => fileInputRef.current?.click()}
+          {/* Emoji Picker */}
+          {emojiOpen && (
+            <div className="absolute bottom-full left-0 mb-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <EmojiPicker
+                className="h-80 w-80 border shadow-lg"
+                onEmojiSelect={handleEmojiSelect}
+              >
+                <EmojiPickerSearch placeholder="搜尋表情符號..." />
+                <EmojiPickerContent />
+                <EmojiPickerFooter />
+              </EmojiPicker>
+            </div>
+          )}
+
+          <div
+            className={cn(
+              "relative flex items-center gap-2 p-2 rounded-xl transition-all duration-200",
+              isFocused ? "bg-muted/50 ring-1 ring-primary/20" : "bg-muted/30",
+            )}
+          >
+            {/* Left Actions */}
+            <div className="flex items-center gap-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+                accept="image/*,.pdf,.doc,.docx,.txt"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <RiAttachmentLine className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-8 w-8 transition-colors",
+                  emojiOpen
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-primary",
+                )}
+                onClick={() => setEmojiOpen((prev) => !prev)}
+              >
+                <RiEmotionLine className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <Mention
+              value={mentionValues}
+              onValueChange={setMentionValues}
+              onInputValueChange={(val) => {
+                setMessage(val);
+                onTyping?.();
+              }}
+              inputValue={message}
+              onOpenChange={setMentionOpen}
+              className="flex-1"
             >
-              <RiAttachmentLine className="h-5 w-5" />
-            </Button>
+              <MentionInput
+                ref={inputRef}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setIsFocused(true)}
+                asChild
+                placeholder={
+                  isAIMode
+                    ? "詢問 AI 助理..."
+                    : "輸入訊息... (@ 提及成員, Shift+Enter 換行)"
+                }
+                className="flex-1 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+              >
+                <Textarea value={message} className="max-h-[7lh]" />
+              </MentionInput>
+              <MentionContent>
+                {mentionSuggestions.length > 0 ? (
+                  mentionSuggestions.map((member) => (
+                    <MentionItem key={member.id} value={member.label}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          {member.avatar ? (
+                            <AvatarImage
+                              src={member.avatar}
+                              alt={member.label}
+                            />
+                          ) : null}
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {member.label.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{member.label}</span>
+                      </div>
+                    </MentionItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                    <RiAtLine className="h-4 w-4 mx-auto mb-1 opacity-50" />
+                    沒有可提及的成員
+                  </div>
+                )}
+              </MentionContent>
+            </Mention>
+
+            {/* Send Button */}
             <Button
-              variant="ghost"
+              onClick={handleSend}
+              disabled={!message.trim() && attachments.length === 0}
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+              className={cn("transition-all duration-200")}
             >
-              <RiEmotionLine className="h-5 w-5" />
+              <RiSendPlaneLine />
             </Button>
           </div>
-
-          <Mention
-            value={mentionValues}
-            onValueChange={setMentionValues}
-            onInputValueChange={(val) => {
-              setMessage(val);
-              onTyping?.();
-            }}
-            inputValue={message}
-            onOpenChange={setMentionOpen}
-            className="flex-1"
-          >
-            <MentionInput
-              ref={inputRef}
-              onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              asChild
-              placeholder={
-                isAIMode
-                  ? "詢問 AI 助理..."
-                  : "輸入訊息... (@ 提及成員, Shift+Enter 換行)"
-              }
-              className="flex-1 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
-            >
-              <Textarea value={message} className="max-h-[7lh]" />
-            </MentionInput>
-            <MentionContent>
-              {mentionSuggestions.length > 0 ? (
-                mentionSuggestions.map((member) => (
-                  <MentionItem key={member.id} value={member.label}>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        {member.avatar ? (
-                          <AvatarImage src={member.avatar} alt={member.label} />
-                        ) : null}
-                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                          {member.label.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">{member.label}</span>
-                    </div>
-                  </MentionItem>
-                ))
-              ) : (
-                <div className="px-2 py-3 text-center text-sm text-muted-foreground">
-                  <RiAtLine className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                  沒有可提及的成員
-                </div>
-              )}
-            </MentionContent>
-          </Mention>
-
-          {/* Send Button */}
-          <Button
-            onClick={handleSend}
-            disabled={!message.trim() && attachments.length === 0}
-            size="icon"
-            className={cn("transition-all duration-200")}
-          >
-            <RiSendPlaneLine />
-          </Button>
         </div>
       </div>
     </div>

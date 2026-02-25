@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Avatar,
   AvatarFallback,
@@ -15,14 +21,21 @@ import {
   RiCloseLine,
   RiLoader2Line,
   RiSendPlaneLine,
+  RiLinkUnlink,
+  RiStarSLine,
 } from "@remixicon/react";
 import { useSession } from "next-auth/react";
-import { createPost, searchGitHubRepos } from "@/shared/service/api/post";
+import {
+  createPost,
+  fetchGitHubRepos,
+  disconnectGitHub,
+} from "@/shared/service/api/post";
 import { uploadFileToCloudinary } from "@/shared/service/api/upload";
 import { toast } from "sonner";
 import type { GitHubRepo } from "@/shared/types";
 import { Input } from "@/shared/shadcn/components/ui/input";
 import Image from "next/image";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 interface CreatePostFormProps {
   onPostCreated: () => void;
@@ -37,16 +50,55 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
   const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
   const [showGithubSearch, setShowGithubSearch] = useState(false);
   const [githubQuery, setGithubQuery] = useState("");
-  const [githubResults, setGithubResults] = useState<
-    (GitHubRepo & { fullName: string; avatar: string })[]
-  >([]);
-  const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // GitHub connection state
   const [showGithubConnect, setShowGithubConnect] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
 
   const hasGithubConnected = !!session?.user?.githubUsername;
+
+  // Fetch all GitHub repos with infinite pagination (30 per page)
+  const {
+    data: repoPages,
+    isLoading: isLoadingRepos,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["github-repos", session?.user?.githubUsername],
+    queryFn: async ({ pageParam }) => {
+      const res = await fetchGitHubRepos(String(pageParam));
+      if (res.message) {
+        toast.error(res.message);
+        return [];
+      }
+      return res.data ?? [];
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      // GitHub returns 30 per page by default; if less, no more pages
+      if (lastPage.length < 30) return undefined;
+      return lastPageParam + 1;
+    },
+    enabled: showGithubSearch && hasGithubConnected,
+  });
+
+  // Flatten all pages into a single list
+  const allRepos = useMemo(() => repoPages?.pages.flat() ?? [], [repoPages]);
+
+  // Client-side filter by search query
+  const filteredRepos = useMemo(() => {
+    const q = githubQuery.trim().toLowerCase();
+    if (!q) return allRepos;
+    return allRepos.filter(
+      (repo) =>
+        repo.fullName?.toLowerCase().includes(q) ||
+        repo.repo?.toLowerCase().includes(q) ||
+        repo.description?.toLowerCase().includes(q) ||
+        repo.language?.toLowerCase().includes(q),
+    );
+  }, [allRepos, githubQuery]);
 
   // Listen for message from the GitHub OAuth popup
   const handleGithubMessage = useCallback(
@@ -84,6 +136,26 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
     );
   };
 
+  const handleDisconnectGithub = async () => {
+    setIsDisconnecting(true);
+    try {
+      const res = await disconnectGitHub();
+      if (res.ok) {
+        toast.success("已斷開 GitHub 帳號連結");
+        setSelectedRepo(null);
+        setShowGithubSearch(false);
+        setGithubQuery("");
+        await updateSession();
+      } else {
+        toast.error(res.error || "斷開連結失敗");
+      }
+    } catch {
+      toast.error("斷開連結時發生錯誤");
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -96,32 +168,11 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
       const results = await Promise.all(uploadPromises);
       const urls = results.map((r) => r.url).filter(Boolean) as string[];
       setImages((prev) => [...prev, ...urls]);
-    } catch (error) {
+    } catch {
       toast.error("圖片上傳失敗");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleSearchGithub = async () => {
-    if (!githubQuery.trim()) return;
-    setIsSearching(true);
-    try {
-      const repos = await searchGitHubRepos(githubQuery.trim());
-      if (repos.message) {
-        toast.error(repos.message);
-        return;
-      }
-      if (repos?.data.length === 0) {
-        toast.error("找不到相關專案");
-        return;
-      }
-      setGithubResults(repos.data);
-    } catch {
-      toast.error("搜尋 GitHub 失敗");
-    } finally {
-      setIsSearching(false);
     }
   };
 
@@ -169,7 +220,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
               placeholder="分享一些想法..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-[80px] resize-none border-none bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60"
+              className="min-h-20 resize-none border-none bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60"
             />
 
             {/* Image Previews */}
@@ -241,32 +292,57 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
 
             {/* GitHub Search Panel — shown when user has a connected GitHub account */}
             {showGithubSearch && !selectedRepo && hasGithubConnected && (
-              <div className="rounded-lg border border-border overflow-auto max-h-60  bg-muted/20 p-3 space-y-2">
-                <div className="flex gap-2">
+              <div className="rounded-lg border border-border overflow-auto max-h-72 bg-muted/20 p-3 space-y-2">
+                {/* Connected account info */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <RiGithubLine className="h-3.5 w-3.5" />
+                    <span>
+                      已連結：
+                      <span className="font-medium text-foreground">
+                        {session?.user?.githubUsername}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-1.5 text-[10px] text-destructive hover:text-destructive gap-1"
+                      onClick={handleDisconnectGithub}
+                      disabled={isDisconnecting}
+                    >
+                      {isDisconnecting ? (
+                        <RiLoader2Line className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <RiLinkUnlink className="h-3 w-3" />
+                      )}
+                      斷開
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Search input — client-side filter */}
+                <div className="relative">
                   <Input
-                    placeholder="搜尋 GitHub 專案..."
+                    placeholder="篩選專案名稱..."
                     value={githubQuery}
                     onChange={(e) => setGithubQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearchGithub()}
                     className="h-8 text-sm"
                   />
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={handleSearchGithub}
-                    disabled={isSearching}
-                    className="shrink-0"
-                  >
-                    {isSearching ? (
-                      <RiLoader2Line className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      "搜尋"
-                    )}
-                  </Button>
                 </div>
-                {githubResults.length > 0 && (
+
+                {/* Loading state */}
+                {isLoadingRepos && (
+                  <div className="flex items-center justify-center py-4">
+                    <RiLoader2Line className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+
+                {/* Results */}
+                {!isLoadingRepos && filteredRepos.length > 0 && (
                   <div className="max-h-48 overflow-y-auto space-y-1">
-                    {githubResults.map((repo) => (
+                    {filteredRepos.map((repo) => (
                       <button
                         key={repo.url}
                         onClick={() => {
@@ -280,7 +356,6 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                             forks: repo.forks,
                           });
                           setShowGithubSearch(false);
-                          setGithubResults([]);
                           setGithubQuery("");
                         }}
                         className="flex items-center gap-2.5 w-full text-left rounded-md p-2 hover:bg-accent transition-colors"
@@ -294,13 +369,42 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                             {repo.fullName}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            ⭐ {repo.stars} · {repo.language}
+                            <RiStarSLine
+                              className="inline-block mr-1"
+                              size={15}
+                            />
+                            {repo.stars} · {repo.language}
                           </p>
                         </div>
                       </button>
                     ))}
+
+                    {/* Load more button — only show when not filtering */}
+                    {!githubQuery.trim() && hasNextPage && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-muted-foreground"
+                        onClick={() => fetchNextPage()}
+                        disabled={isFetchingNextPage}
+                      >
+                        {isFetchingNextPage ? (
+                          <RiLoader2Line className="h-3 w-3 animate-spin mr-1" />
+                        ) : null}
+                        載入更多
+                      </Button>
+                    )}
                   </div>
                 )}
+
+                {/* Empty state */}
+                {!isLoadingRepos &&
+                  filteredRepos.length === 0 &&
+                  allRepos.length > 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      找不到相關專案
+                    </p>
+                  )}
               </div>
             )}
 
@@ -343,7 +447,6 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                       setShowGithubSearch(!showGithubSearch);
                       setShowGithubConnect(false);
                       if (showGithubSearch) {
-                        setGithubResults([]);
                         setGithubQuery("");
                       }
                     } else {

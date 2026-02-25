@@ -237,7 +237,7 @@ export function ChatMessageList({
         itemContent={(_, item) => {
           if (item.type === "date-separator") {
             return (
-              <div className="flex items-center justify-center py-4 px-6">
+              <div className="flex items-center justify-center py-4 px-6 animate-in fade-in duration-200">
                 <div className="px-3 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground font-medium">
                   {formatDateSeparator(item.date)}
                 </div>
@@ -246,19 +246,21 @@ export function ChatMessageList({
           }
 
           return (
-            <ChatMessageItem
-              message={item.message}
-              isCurrentUser={item.isCurrentUser}
-              showAvatar={item.showAvatar}
-              showName={item.showName}
-              showTimestamp={item.showTimestamp}
-              bubblePosition={item.bubblePosition}
-              members={members}
-              onScrollToMessage={handleScrollToMessage}
-              onEditMessage={onEditMessage}
-              onDeleteMessage={onDeleteMessage}
-              onReplyMessage={onReplyMessage}
-            />
+            <div className="animate-in fade-in duration-200">
+              <ChatMessageItem
+                message={item.message}
+                isCurrentUser={item.isCurrentUser}
+                showAvatar={item.showAvatar}
+                showName={item.showName}
+                showTimestamp={item.showTimestamp}
+                bubblePosition={item.bubblePosition}
+                members={members}
+                onScrollToMessage={handleScrollToMessage}
+                onEditMessage={onEditMessage}
+                onDeleteMessage={onDeleteMessage}
+                onReplyMessage={onReplyMessage}
+              />
+            </div>
           );
         }}
       />

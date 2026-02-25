@@ -48,7 +48,7 @@ export default function ChatRoom({
   const [replyingMessage, setReplyingMessage] = useState<Message | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const { updateRoomLastMessage, setCurrentRoom } = useChatStore();
-  const { selectedModel, setSelectedModel, apiKeys } = useAIStore();
+  const { selectedModel, setSelectedModel, maskedKeys } = useAIStore();
 
   const {
     messages: aiMessages,
@@ -232,8 +232,11 @@ export default function ChatRoom({
     if (!content.trim() || status === "streaming") return;
     const aiMessage = { text: content, role: "user" };
 
-    const modelKeyId = apiKeys[selectedModel.provider].id;
-    sendAiMessage(aiMessage, { body: { modelKeyId, modelId: selectedModel } });
+    const modelKeyId = maskedKeys[selectedModel.provider].id;
+    console.log(modelKeyId);
+    sendAiMessage(aiMessage, {
+      body: { modelKeyId, modelId: selectedModel.id, roomId: room.id },
+    });
   };
 
   const handleToggleAIPanel = () => {
