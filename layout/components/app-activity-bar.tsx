@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -39,6 +39,7 @@ import { useNotificationStore } from "@/shared/store/notification-store";
 import { SettingsDialog } from "@/feature/settings/components/settings-dialog";
 import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import { cn } from "@/shared/shadcn/lib/utils";
+import { Dialog, DialogContent } from "@/shared/shadcn/components/ui/dialog";
 
 const PANEL_WIDTH = "22rem";
 
@@ -89,6 +90,7 @@ export default function AppActivityBar() {
   const { activePanel, togglePanel, closePanel } = useAppSidebarStore();
   const { unreadCount } = useNotificationStore();
   const isMobile = useIsMobile();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const isChatPage = pathname.startsWith("/c");
   const isChatRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
@@ -103,19 +105,16 @@ export default function AppActivityBar() {
   if (isMobile) {
     return (
       <>
-        {/* Slide-up panels for search / notifications */}
+        <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+          <DialogContent className="p-0 sm:max-w-lg w-[min(92vw,32rem)] h-[min(80vh,40rem)]">
+            <SearchPanel onClose={() => setIsSearchOpen(false)} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Slide-up panel for notifications */}
         <AnimatePresence>
           {activePanel && (
             <>
-              <motion.div
-                key="panel-backdrop-mobile"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-30 bg-black/10 backdrop-blur-[1px]"
-                onClick={closePanel}
-              />
               <motion.div
                 key="panel-content-mobile"
                 initial={{ y: 40, opacity: 0 }}
@@ -124,7 +123,6 @@ export default function AppActivityBar() {
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="fixed inset-x-0 bottom-14 top-0 z-40 border-t border-border bg-background shadow-xl overflow-auto"
               >
-                {activePanel === "search" && <SearchPanel />}
                 {activePanel === "notifications" && <NotificationPanel />}
               </motion.div>
             </>
@@ -136,13 +134,15 @@ export default function AppActivityBar() {
           <div className="flex items-center justify-around h-14">
             {navItems.map((item) => {
               const isActive =
-                item.id === "chat"
-                  ? isChatPage
-                  : item.panel
-                    ? activePanel === item.id
-                    : item.id === "home"
-                      ? isHomePage
-                      : false;
+                item.id === "search"
+                  ? isSearchOpen
+                  : item.id === "chat"
+                    ? isChatPage
+                    : item.panel
+                      ? activePanel === item.id
+                      : item.id === "home"
+                        ? isHomePage
+                        : false;
               const Icon = isActive ? item.activeIcon : item.icon;
 
               return (
@@ -151,13 +151,19 @@ export default function AppActivityBar() {
                   whileTap={{ scale: 0.8 }}
                   transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   onClick={() => {
-                    if (item.id === "chat") {
+                    if (item.id === "search") {
                       closePanel();
+                      setIsSearchOpen((prev) => !prev);
+                    } else if (item.id === "chat") {
+                      closePanel();
+                      setIsSearchOpen(false);
                       router.push("/c");
                     } else if (item.panel) {
+                      setIsSearchOpen(false);
                       togglePanel(item.id as "search" | "notifications");
                     } else if (item.href) {
                       closePanel();
+                      setIsSearchOpen(false);
                       router.push(item.href);
                     }
                   }}
@@ -191,7 +197,10 @@ export default function AppActivityBar() {
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
                 )}
-                onClick={() => closePanel()}
+                onClick={() => {
+                  closePanel();
+                  setIsSearchOpen(false);
+                }}
               >
                 <Avatar className="h-5 w-5">
                   <AvatarImage
@@ -214,10 +223,22 @@ export default function AppActivityBar() {
   // ─── Desktop Sidebar ───
   return (
     <>
+      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+        <DialogContent className="p-0 sm:max-w-lg w-[min(92vw,32rem)] h-[min(80vh,40rem)]">
+          <SearchPanel onClose={() => setIsSearchOpen(false)} />
+        </DialogContent>
+      </Dialog>
+
       <Sidebar collapsible="icon">
         {/* Logo */}
         <SidebarHeader className="items-center py-3">
-          <Link href="/">
+          <Link
+            href="/"
+            onClick={() => {
+              closePanel();
+              setIsSearchOpen(false);
+            }}
+          >
             <Image
               src="/icons/logo-light.svg"
               alt="Logo"
@@ -234,13 +255,15 @@ export default function AppActivityBar() {
             <SidebarMenu>
               {navItems.map((item) => {
                 const isActive =
-                  item.id === "chat"
-                    ? isChatPage
-                    : item.panel
-                      ? activePanel === item.id
-                      : item.id === "home"
-                        ? isHomePage
-                        : false;
+                  item.id === "search"
+                    ? isSearchOpen
+                    : item.id === "chat"
+                      ? isChatPage
+                      : item.panel
+                        ? activePanel === item.id
+                        : item.id === "home"
+                          ? isHomePage
+                          : false;
                 const Icon = isActive ? item.activeIcon : item.icon;
 
                 if (item.panel) {
@@ -259,10 +282,15 @@ export default function AppActivityBar() {
                           isActive={isActive}
                           className="relative [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                           onClick={() => {
-                            if (item.id === "chat") {
+                            if (item.id === "search") {
                               closePanel();
+                              setIsSearchOpen((prev) => !prev);
+                            } else if (item.id === "chat") {
+                              closePanel();
+                              setIsSearchOpen(false);
                               router.push("/c");
                             } else {
+                              setIsSearchOpen(false);
                               togglePanel(
                                 item.id as "search" | "notifications",
                               );
@@ -297,7 +325,13 @@ export default function AppActivityBar() {
                         className="[&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                         asChild
                       >
-                        <Link href={item.href!} onClick={() => closePanel()}>
+                        <Link
+                          href={item.href!}
+                          onClick={() => {
+                            closePanel();
+                            setIsSearchOpen(false);
+                          }}
+                        >
                           <Icon />
                         </Link>
                       </SidebarMenuButton>
@@ -316,7 +350,13 @@ export default function AppActivityBar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip="個人檔案" asChild>
-                  <Link href={`/${session.user.username}`}>
+                  <Link
+                    href={`/${session.user.username}`}
+                    onClick={() => {
+                      closePanel();
+                      setIsSearchOpen(false);
+                    }}
+                  >
                     <Avatar className="h-6 w-6">
                       <AvatarImage
                         src={session.user.avatar}
@@ -334,7 +374,7 @@ export default function AppActivityBar() {
         </SidebarFooter>
       </Sidebar>
 
-      {/* Slide-out Panel (search / notifications) */}
+      {/* Slide-out Panel (notifications) */}
       <AnimatePresence>
         {activePanel && (
           <>
@@ -362,7 +402,6 @@ export default function AppActivityBar() {
                 width: PANEL_WIDTH,
               }}
             >
-              {activePanel === "search" && <SearchPanel />}
               {activePanel === "notifications" && <NotificationPanel />}
             </motion.div>
           </>

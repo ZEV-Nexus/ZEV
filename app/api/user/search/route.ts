@@ -1,7 +1,6 @@
-import { connectMongoose } from "@/shared/lib/mongoose";
-import { userModel } from "@/shared/schema";
 import { getCurrentUser } from "@/shared/service/server/auth";
-import { User } from "@/shared/types";
+import { apiResponse } from "@/shared/service/server/response";
+import { searchUsers } from "@/shared/service/server/user";
 
 import { NextRequest, NextResponse } from "next/server";
 
@@ -16,28 +15,15 @@ export async function GET(request: NextRequest) {
         { status: 401 },
       );
     }
-    await connectMongoose();
-    const users = await userModel.find({
-      nickname: { $regex: query, $options: "i" },
-      _id: { $ne: user.id },
-    });
-    const result: Pick<
-      User,
-      "id" | "userId" | "email" | "nickname" | "avatar"
-    >[] = users.map((user) => ({
-      id: user._id.toString(),
-      userId: user.userId!,
-      email: user.email!,
-      nickname: user.nickname!,
-      avatar: user.avatar!,
-    }));
+    const users = await searchUsers(user, query);
 
-    return NextResponse.json({ ok: true, data: result }, { status: 200 });
+    return apiResponse({ ok: true, data: users });
   } catch (error: unknown) {
     console.error("User search error:", error);
-    return NextResponse.json(
-      { ok: false, error: (error as Error).message || "Internal Server Error" },
-      { status: 500 },
-    );
+    return apiResponse({
+      ok: false,
+      error: (error as Error).message || "Internal Server Error",
+      status: 500,
+    });
   }
 }

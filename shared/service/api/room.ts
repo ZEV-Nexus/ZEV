@@ -7,6 +7,18 @@ import type {
 } from "@/shared/types";
 import { fetchApi } from "./fetch";
 
+export type SearchRoom = Pick<
+  ChatRoom,
+  "id" | "roomId" | "name" | "avatar" | "roomType" | "createdAt"
+>;
+
+export async function searchRooms(query: string) {
+  const response = await fetchApi<SearchRoom[]>(
+    `rooms/search?query=${encodeURIComponent(query)}`,
+  );
+  return response.data;
+}
+
 export const createRoom = async (
   userId: string,
   roomName: string,

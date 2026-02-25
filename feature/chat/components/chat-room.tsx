@@ -26,6 +26,7 @@ import { RiLoader2Line } from "@remixicon/react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useAIStore } from "@/shared/store/ai-store";
+import { useQuery } from "@tanstack/react-query";
 
 interface ChatRoomProps {
   room: ChatRoomType;
@@ -38,8 +39,7 @@ export default function ChatRoom({
   members,
   currentUserId,
 }: ChatRoomProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -78,7 +78,7 @@ export default function ChatRoom({
     userId: currentUserId,
     nickname,
     onMessage: (message: Message) => {
-      setMessages((prev) => {
+      setLocalMessages((prev) => {
         if (prev.some((m) => m.id === message.id)) return prev;
         return [...prev, message];
       });
@@ -89,39 +89,37 @@ export default function ChatRoom({
       setTypingUsers(others);
     },
   });
-  // Fetch messages on mount
+  // Fetch messages with useQuery — cached per room, background refetch on revisit
+  const { data: messagesData, isLoading: isLoadingMessages } = useQuery({
+    queryKey: ["room-messages", room.id],
+    queryFn: async () => {
+      const data = await fetchMessages(room.id, MESSAGE_LIMIT);
+      return data ?? [];
+    },
+    staleTime: 30 * 1000, // 30s 內視為新鮮，不重新拉取
+    gcTime: 10 * 60 * 1000, // 快取保留 10 分鐘
+  });
+
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        setIsLoadingMessages(true);
-        const data = await fetchMessages(room.id, MESSAGE_LIMIT);
-        if (data) {
-          setMessages(data);
-          setHasMoreMessages(data.length >= MESSAGE_LIMIT);
-        }
-      } catch (error: unknown) {
-        console.log(error);
-        toast.error("訊息讀取失敗");
-      } finally {
-        setIsLoadingMessages(false);
-      }
-    };
-    loadMessages();
-  }, [room]);
+    if (messagesData) {
+      setLocalMessages(messagesData);
+      setHasMoreMessages(messagesData.length >= MESSAGE_LIMIT);
+    }
+  }, [messagesData]);
 
   // Load older messages for infinite scroll
   const handleLoadMore = async () => {
-    if (isLoadingMore || !hasMoreMessages || messages.length === 0) return;
+    if (isLoadingMore || !hasMoreMessages || localMessages.length === 0) return;
     setIsLoadingMore(true);
     try {
-      const oldestMessage = messages[0];
+      const oldestMessage = localMessages[0];
       const data = await fetchMessages(
         room.id,
         MESSAGE_LIMIT,
         oldestMessage.createdAt,
       );
       if (data && data.length > 0) {
-        setMessages((prev) => [...data, ...prev]);
+        setLocalMessages((prev) => [...data, ...prev]);
         setHasMoreMessages(data.length >= MESSAGE_LIMIT);
       } else {
         setHasMoreMessages(false);
@@ -180,7 +178,7 @@ export default function ChatRoom({
       attachments: optimisticAttachments,
     };
 
-    setMessages((prev) => [...prev, optimisticMessage]);
+    setLocalMessages((prev) => [...prev, optimisticMessage]);
     setReplyingMessage(null); // Clear reply state immediately
 
     try {
@@ -204,7 +202,7 @@ export default function ChatRoom({
 
       // Replace optimistic message with saved one
       if (savedMessage && typeof savedMessage === "object") {
-        setMessages((prev) =>
+        setLocalMessages((prev) =>
           prev.map((msg) =>
             msg.id === optimisticMessage.id
               ? { ...optimisticMessage, ...(savedMessage as Message) }
@@ -217,7 +215,7 @@ export default function ChatRoom({
       }
     } catch (error: unknown) {
       // Remove optimistic message on error
-      setMessages((prev) =>
+      setLocalMessages((prev) =>
         prev.filter((msg) => msg.id !== optimisticMessage.id),
       );
       toast.error(
@@ -249,7 +247,7 @@ export default function ChatRoom({
 
   const handleEditMessage = async (messageId: string, content: string) => {
     // Optimistic update
-    setMessages((prev) =>
+    setLocalMessages((prev) =>
       prev.map((msg) =>
         msg.id === messageId
           ? { ...msg, content, editedAt: new Date().toISOString() }
@@ -266,7 +264,7 @@ export default function ChatRoom({
 
   const handleDeleteMessage = async (messageId: string) => {
     // Optimistic update
-    setMessages((prev) =>
+    setLocalMessages((prev) =>
       prev.map((msg) =>
         msg.id === messageId
           ? { ...msg, deletedAt: new Date().toISOString() }
@@ -296,7 +294,7 @@ export default function ChatRoom({
 
         <div className="flex-1 overflow-hidden relative">
           <div className="h-full w-full relative">
-            {isLoadingMessages ? (
+            {isLoadingMessages && localMessages.length === 0 ? (
               <div className="flex items-start justify-center h-full">
                 <div className="flex flex-col items-center gap-3">
                   <RiLoader2Line className=" animate-spin rounded-full " />
@@ -306,7 +304,7 @@ export default function ChatRoom({
               <>
                 <ChatMessageList
                   roomId={room.id}
-                  messages={messages}
+                  messages={localMessages}
                   currentUserId={currentUserId}
                   members={members}
                   onEditMessage={handleEditMessage}

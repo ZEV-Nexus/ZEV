@@ -1,5 +1,5 @@
 import { userModel } from "@/shared/schema";
-import { connectMongoose } from "@/shared/lib/mongoose";
+
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { apiResponse } from "@/shared/service/server/response";
 
@@ -52,9 +52,6 @@ export async function POST(req: Request) {
       return apiResponse({ error: "This username is reserved", status: 400 });
     }
 
-    await connectMongoose();
-
-    // Check uniqueness
     const existing = await userModel.findOne({ username: trimmed });
     if (existing && existing.userId !== currentUser.userId) {
       return apiResponse({ error: "Username already taken", status: 409 });
