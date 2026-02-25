@@ -4,9 +4,13 @@ export default proxy((req) => {
   const authPath = req.nextUrl.pathname.startsWith("/auth/");
   const protectedPath = ["/c"];
   if (protectedPath.includes(req.nextUrl.pathname) && !req.auth) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
   }
   if (authPath && req.auth) {
-    return NextResponse.redirect(new URL("/", req.url));
+    const url = req.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
   }
 });

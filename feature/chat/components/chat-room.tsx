@@ -233,7 +233,7 @@ export default function ChatRoom({
     const aiMessage = { text: content, role: "user" };
 
     const modelKeyId = maskedKeys[selectedModel.provider].id;
-    console.log(modelKeyId);
+
     sendAiMessage(aiMessage, {
       body: { modelKeyId, modelId: selectedModel.id, roomId: room.id },
     });

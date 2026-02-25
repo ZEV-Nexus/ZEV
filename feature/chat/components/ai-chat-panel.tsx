@@ -90,7 +90,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                     const model = AI_MODELS.find((m) => m.id === e);
                     if (model) onSelectModel(model);
                   }}
-                  defaultValue="claude-3-5-sonnet-20240620"
+                  defaultValue="gpt-4o"
                 >
                   <SelectTrigger className="text-muted-foreground hover:text-foreground">
                     <SelectValue placeholder="Select a model" />
