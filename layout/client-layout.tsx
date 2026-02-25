@@ -34,7 +34,7 @@ export default function ClientLayout({
           }
         >
           {isAuthPage ? (
-            <div className="min-h-svh">{children}</div>
+            <div className="min-h-svh flex-1">{children}</div>
           ) : isMobile ? (
             /* Mobile: content full width, bottom bar fixed */
             <div className="flex flex-col h-svh flex-1">

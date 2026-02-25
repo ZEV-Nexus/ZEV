@@ -8,7 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shared/shadcn/components/ui/card";
-import { RiArrowDropLeftLine, RiLoader2Line } from "@remixicon/react";
+import {
+  RiArrowDropLeftLine,
+  RiLoader2Line,
+  RiEyeLine,
+  RiEyeOffLine,
+} from "@remixicon/react";
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,7 +24,7 @@ import { LoginMethod } from "./types";
 import AuthGlobe from "./components/auth-globe";
 
 import useLogin from "./hooks/useLogin";
-import { use } from "react";
+import { use, useState } from "react";
 import { Suspense } from "react";
 
 export default function Login({
@@ -30,6 +35,7 @@ export default function Login({
   const { mutate, isPending, setLoginData, loginData, loadingMethod } =
     useLogin();
   const params = use(searchParams);
+  const [showPassword, setShowPassword] = useState(false);
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className=" flex justify-center items-center  md:flex-row  flex-col h-dvh    ">
@@ -74,18 +80,32 @@ export default function Login({
               </div>
               <div className="grid gap-2 w-10/12">
                 <Label htmlFor="credentials-password">密碼</Label>
-                <Input
-                  id="credentials-password"
-                  placeholder="輸入您的密碼"
-                  type="password"
-                  value={loginData.password}
-                  onChange={(e) =>
-                    setLoginData((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                />
+                <div className="relative">
+                  <Input
+                    id="credentials-password"
+                    placeholder="輸入您的密碼"
+                    type={showPassword ? "text" : "password"}
+                    value={loginData.password}
+                    onChange={(e) =>
+                      setLoginData((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setShowPassword((v) => !v)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <RiEyeOffLine size={18} />
+                    ) : (
+                      <RiEyeLine size={18} />
+                    )}
+                  </button>
+                </div>
               </div>
               {params.error && (
                 <p className="text-destructive text-xs">
@@ -106,11 +126,11 @@ export default function Login({
               </Button>
             </form>
 
-            <CardAction className="w-full flex space-x-2 items-center justify-center">
+            <CardAction className="w-10/12 mx-auto flex  gap-2 items-center justify-center lg:flex-row flex-col">
               <Button
                 onClick={() => mutate({ method: LoginMethod.GOOGLE })}
                 disabled={loadingMethod === LoginMethod.GOOGLE && isPending}
-                className="  h-10"
+                className="  h-10  max-lg:w-10/12"
               >
                 {loadingMethod === LoginMethod.GOOGLE && isPending ? (
                   <RiLoader2Line size={24} className=" animate-spin" />
@@ -123,7 +143,7 @@ export default function Login({
                 onClick={() => mutate({ method: LoginMethod.GITHUB })}
                 variant={"outline"}
                 disabled={loadingMethod === LoginMethod.GITHUB && isPending}
-                className="  h-10"
+                className="  h-10 max-lg:w-10/12"
               >
                 {loadingMethod === LoginMethod.GITHUB && isPending ? (
                   <RiLoader2Line size={24} className=" animate-spin" />
