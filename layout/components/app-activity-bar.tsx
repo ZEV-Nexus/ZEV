@@ -170,7 +170,7 @@ export default function AppActivityBar() {
                   className={cn(
                     "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
                     isActive
-                      ? "text-foreground"
+                      ? "text-foreground/50 hover:text-foreground"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -280,7 +280,7 @@ export default function AppActivityBar() {
                         <SidebarMenuButton
                           tooltip={item.label}
                           isActive={isActive}
-                          className="relative [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                          className="relative text-foreground/50 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                           onClick={() => {
                             if (item.id === "search") {
                               closePanel();
