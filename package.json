@@ -32,6 +32,7 @@
     "cobe": "^0.6.5",
     "date-fns": "^4.1.0",
     "frimousse": "^0.3.0",
+    "googleapis": "^171.4.0",
     "lucide-react": "^0.575.0",
     "mongodb": "^7.1.0",
     "mongoose": "^9.1.6",

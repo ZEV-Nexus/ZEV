@@ -33,6 +33,9 @@ export const metadata: Metadata = {
   description:
     "ZEV is the easiest way for teams and companies to chat, collaborate, and stay connected. Enjoy real-time messaging, organized channels, file sharing, and AI-powered tools — all in one place.",
   keywords: [
+    "zev",
+    "zev Nexus",
+    "Yuzen",
     "team chat",
     "team communication",
     "business messaging",

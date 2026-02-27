@@ -130,7 +130,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
     window.open(
-      "/api/github/connect",
+      "/api/third-part/oauth/github",
       "github-connect",
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
     );

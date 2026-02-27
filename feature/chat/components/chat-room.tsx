@@ -138,7 +138,7 @@ export default function ChatRoom({
     replyToId?: string,
   ) => {
     if (isAIPanelOpen) {
-      handleSendToAI(content);
+      handleSendToAI(content, attachments);
       return;
     }
 
@@ -226,14 +226,49 @@ export default function ChatRoom({
     }
   };
 
-  const handleSendToAI = (content: string) => {
+  const handleSendToAI = async (content: string, files?: File[]) => {
     if (!content.trim() || status === "streaming") return;
     const aiMessage = { text: content, role: "user" };
 
     const modelKeyId = maskedKeys[selectedModel.provider].id;
 
+    // Upload files and collect attachment metadata for AI agents
+    let attachmentMeta: Array<{
+      url: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+      resourceType?: string;
+    }> = [];
+
+    if (files && files.length > 0) {
+      try {
+        const uploaded = await Promise.all(
+          files.map((file) => uploadFileToCloudinary(file)),
+        );
+        attachmentMeta = uploaded.map((u, i) => ({
+          url: (u as unknown as { url: string }).url,
+          filename: files[i].name,
+          mimeType: files[i].type,
+          size: files[i].size,
+          resourceType: files[i].type.startsWith("image/")
+            ? "image"
+            : files[i].type.startsWith("video/")
+              ? "video"
+              : "raw",
+        }));
+      } catch {
+        toast.error("附件上傳失敗，僅傳送文字訊息。");
+      }
+    }
+
     sendAiMessage(aiMessage, {
-      body: { modelKeyId, modelId: selectedModel.id, roomId: room.id },
+      body: {
+        modelKeyId,
+        modelId: selectedModel.id,
+        roomId: room.id,
+        ...(attachmentMeta.length > 0 ? { attachments: attachmentMeta } : {}),
+      },
     });
   };
 

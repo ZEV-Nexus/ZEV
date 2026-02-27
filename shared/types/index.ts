@@ -134,3 +134,13 @@ export interface Notification {
   read: boolean;
   createdAt: string;
 }
+
+export interface UserOAuthAccount {
+  id: string;
+  user: string;
+  provider: "google" | "github";
+  providerService: string;
+
+  createdAt: string;
+  updatedAt: string;
+}

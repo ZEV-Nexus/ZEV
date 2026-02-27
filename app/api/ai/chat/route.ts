@@ -1,13 +1,21 @@
-import { createOpenAI } from "@ai-sdk/openai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { convertToModelMessages, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 
-import { getUserApiKey } from "@/shared/service/server/user-api-key";
 import { getCurrentUser } from "@/shared/service/server/auth";
-import { decrypt } from "@/shared/lib/key-authentication";
 import { getMessages } from "@/shared/service/server/message";
+import { createModel, resolveApiKey } from "@/shared/lib/ai";
+import { translateText } from "@/ai/agents/translation-agent";
+import {
+  extractTask,
+  needsConfirmation,
+  buildCalendarEvent,
+} from "@/ai/agents/calendar-agent";
+import { processAttachments } from "@/ai/agents/attachment-agent";
+import {
+  createGoogleCalendarEvent,
+  googleCalendar,
+} from "@/shared/lib/google-calendar";
+import { cookies } from "next/headers";
 
 export const maxDuration = 60;
 
@@ -34,8 +42,25 @@ function formatMessages(msgs: unknown[]): FormattedMessage[] {
   }));
 }
 
+function getConversationContextFromMessages(msgs: FormattedMessage[]): string {
+  return msgs
+    .map((m) => `[${m.createdAt}] ${m.nickname}: ${m.content}`)
+    .join("\n");
+}
+
+// ─── Attachment info type from frontend ───
+
+interface AttachmentInfo {
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  resourceType?: string;
+}
+
 export async function POST(req: Request) {
-  const { messages, modelKeyId, modelId, roomId } = await req.json();
+  const { messages, modelKeyId, modelId, roomId, attachments } =
+    await req.json();
 
   const user = await getCurrentUser();
   if (!user) {
@@ -45,50 +70,46 @@ export async function POST(req: Request) {
     return new Response("Model Key ID is required", { status: 400 });
   }
 
-  let model;
-
-  const apiKeyData = await getUserApiKey(modelKeyId);
-  if (!apiKeyData) {
+  const resolved = await resolveApiKey(modelKeyId);
+  if (!resolved) {
     return new Response(`Missing API Key for model key ID: ${modelKeyId}`, {
       status: 401,
     });
   }
-  const apiKey = decrypt({
-    iv: apiKeyData?.ivKey || "",
-    tag: apiKeyData?.tag || "",
-    content: apiKeyData?.apiKey || "",
-  });
+
+  const { apiKey, provider } = resolved;
+
+  // Pre-parse attachments for tool access
+  const attachmentList: AttachmentInfo[] = Array.isArray(attachments)
+    ? attachments
+    : [];
+  const hasAttachments = attachmentList.length > 0;
+
+  // Build attachment context for system prompt
+  const attachmentContext = hasAttachments
+    ? `\n\n目前訊息附帶了以下附件：\n${attachmentList
+        .map(
+          (a: AttachmentInfo, i: number) =>
+            `${i + 1}. ${a.filename} (${a.mimeType}, ${(a.size / 1024).toFixed(1)} KB)`,
+        )
+        .join(
+          "\n",
+        )}\n如果使用者詢問附件相關問題，請使用 analyze_attachment 工具分析附件。`
+    : "";
 
   try {
-    if (apiKeyData.provider === "openai") {
-      if (!apiKey) {
-        return new Response("Missing OpenAI API Key", { status: 401 });
-      }
-      const openai = createOpenAI({ apiKey });
-      model = openai(modelId);
-    } else if (apiKeyData.provider === "anthropic") {
-      if (!apiKey) {
-        return new Response("Missing Anthropic API Key", { status: 401 });
-      }
-      const anthropic = createAnthropic({ apiKey });
-      model = anthropic(modelId);
-    } else if (apiKeyData.provider === "google") {
-      if (!apiKey) {
-        return new Response("Missing Google API Key", { status: 401 });
-      }
-      const google = createGoogleGenerativeAI({ apiKey });
-      model = google(modelId);
-    } else {
-      return new Response("Invalid Model ID", { status: 400 });
-    }
-
+    const model = createModel(provider, apiKey, modelId);
     const now = new Date();
 
     const result = streamText({
       model,
       messages: await convertToModelMessages(messages),
       system: `你是一個有用的 AI 助理，名為 ZEV AI。你可以回答使用者的問題，也可以在使用者要求時總結聊天紀錄。
+你也可以翻譯文字、分析附件、以及建立行事曆排程。
 
+## 工具使用規則
+
+### 總結對話
 當使用者要求總結對話/聊天紀錄時，使用 summarize_chat 工具來擷取並總結訊息。
 你需要從使用者的自然語言中判斷對話範圍，然後呼叫工具。
 
@@ -97,28 +118,31 @@ export async function POST(req: Request) {
 - 「最近 N 則訊息」→ 使用 scope_type: "message_count"
 - 「剛剛那段」「最近那段對話」→ 使用 scope_type: "segment", target: "last"
 - 「上一段」「前一段」→ 使用 scope_type: "segment", target: "previous"
-- 如果使用者只說「幫我總結」但沒有指定範圍，先詢問他想總結多少訊息或多久的對話
+- 如果使用者只說「幫我總結」但沒有指定範圍，預設為最近20則訊息。
 
-當工具返回總結結果後，請以結構化格式呈現給使用者。
+### 翻譯
+當使用者明確要求翻譯時，使用 translate_text 工具。此工具會呼叫獨立的 Translation Agent 進行翻譯。
 
-對於非總結相關的問題，直接回答即可，不需要使用工具。
+### 建立行事曆
+當使用者要求建立行程/排程/會議/提醒時，使用 create_schedule 工具。
+此工具會呼叫 Calendar Agent 從對話中智能提取行程資訊（使用中階模型）。
+如果資訊不完整（信心度低於 0.9），工具會自動回傳需要補充的欄位。
+
+### 附件分析
+當使用者的訊息附帶檔案或圖片，且使用者詢問相關問題時，使用 analyze_attachment 工具。
+此工具會呼叫 Attachment Agent：
+- 圖片 → Vision Agent（大模型，可分析圖片內容）
+- 文件 → Document Agent（中模型，分析文件元資料）
+
+## 一般對話
+對於非工具相關的問題，直接回答即可。
 
 現在時間：${now.toISOString()}
-使用繁體中文回答。`,
+使用繁體中文回答。${attachmentContext}`,
       tools: {
+        // ─── Summarize Chat Tool ───
         summarize_chat: tool({
-          description: `你是一個商用聊天軟體中的「對話總結助理」。
-
-你的任務是：
-- 從一段聊天室對話中
-- 提取可行的資訊與結論
-- 不加入個人推測
-- 不補充對話中不存在的內容
-
-你必須遵守：
-- 只根據提供的對話紀錄
-- 不引用範圍外資訊
-- 不猜測參與者意圖`,
+          description: `從聊天室對話中提取並總結訊息。`,
           inputSchema: z.object({
             scope_type: z
               .enum(["relative_time", "message_count", "segment"])
@@ -202,8 +226,166 @@ export async function POST(req: Request) {
             }
           },
         }),
+
+        // ─── Translation Tool → delegates to Translation Agent ───
+        translate_text: tool({
+          description: `翻譯文字到指定語言。呼叫獨立的 Translation Agent（小模型 + 快取）。`,
+          inputSchema: z.object({
+            text: z.string().describe("要翻譯的文字"),
+            targetLanguage: z
+              .string()
+              .describe("目標語言，例如 English、日本語、한국어"),
+          }),
+          execute: async ({ text, targetLanguage }) => {
+            try {
+              const result = await translateText(
+                provider,
+                apiKey,
+                text,
+                targetLanguage,
+              );
+              return {
+                translation: result.translation,
+                cached: result.cached,
+                targetLanguage,
+              };
+            } catch (error) {
+              console.error("Translate tool error:", error);
+              return { error: "翻譯時發生錯誤，請稍後再試。" };
+            }
+          },
+        }),
+
+        // ─── Calendar Tool → delegates to Calendar Agent ───
+        create_schedule: tool({
+          description: `從使用者訊息中提取行程/排程資訊。呼叫獨立的 Calendar Agent（中階模型）進行智能提取。
+當使用者說到要安排會議、提醒、約定時間、或任何行事曆事件時使用。`,
+          inputSchema: z.object({
+            user_message: z.string().describe("使用者關於排程的原始訊息"),
+          }),
+          execute: async ({ user_message }) => {
+            try {
+              // 取得對話上下文
+              let conversationContext = "";
+              if (roomId) {
+                const recentMsgs = await getMessages(roomId, 20);
+                conversationContext = getConversationContextFromMessages(
+                  formatMessages(recentMsgs),
+                );
+              }
+
+              // 呼叫 Calendar Agent (extractTask) — 使用中階模型
+              const taskExtraction = await extractTask(
+                provider,
+                apiKey,
+                user_message,
+                conversationContext,
+                now.toISOString(),
+              );
+
+              // 判斷是否需要確認
+              if (needsConfirmation(taskExtraction)) {
+                const missing: string[] = [];
+                if (!taskExtraction.date) missing.push("日期");
+                if (!taskExtraction.time) missing.push("時間");
+                if (!taskExtraction.duration_minutes) missing.push("時長");
+
+                return {
+                  type: "confirm_schedule",
+                  task: taskExtraction,
+                  needsConfirmation: true,
+                  missingFields: missing,
+                  message: `📅 Calendar Agent 已提取行程資訊：\n\n**標題**：${taskExtraction.title}\n${taskExtraction.description ? `**說明**：${taskExtraction.description}\n` : ""}**日期**：${taskExtraction.date || "⚠️ 未指定"}\n**時間**：${taskExtraction.time || "⚠️ 未指定"}\n**時長**：${taskExtraction.duration_minutes ? `${taskExtraction.duration_minutes} 分鐘` : "⚠️ 未指定（預設 60 分鐘）"}\n**信心度**：${Math.round(taskExtraction.confidence * 100)}%\n**時間解析**：${taskExtraction.temporal_resolution}\n\n${missing.length > 0 ? `需要補充：${missing.join("、")}` : ""}`,
+                };
+              }
+
+              // 信心度夠高，建立事件
+              const event = buildCalendarEvent(taskExtraction);
+              if (!event) {
+                return {
+                  type: "confirm_schedule",
+                  task: taskExtraction,
+                  needsConfirmation: true,
+                  message: "資訊不足，請補充日期。",
+                };
+              }
+
+              // TODO: 實際呼叫行事曆 API (Google / Apple / Outlook)
+              const accessToken =
+                (await cookies()).get("zev_oauth_google_token")?.value ?? "";
+              const calendar = await googleCalendar(accessToken);
+
+              await createGoogleCalendarEvent(calendar, "primary", {
+                summary: event.title,
+                description: event.description,
+                start: {
+                  dateTime: new Date(`${event.start}`).toISOString(),
+                },
+                end: {
+                  dateTime: new Date(
+                    new Date(event.start).getTime() +
+                      event.duration_minutes * 60 * 1000,
+                  ).toISOString(),
+                },
+              });
+              return {
+                type: "schedule_created",
+                task: taskExtraction,
+                event,
+                message: `✅ 已建立行事曆事件：「${event.title}」於 ${event.start}，時長 ${event.duration_minutes} 分鐘`,
+              };
+            } catch (error) {
+              console.error("Calendar Agent error:", error);
+              return {
+                error: "Calendar Agent 處理排程時發生錯誤，請稍後再試。",
+              };
+            }
+          },
+        }),
+
+        // ─── Attachment Tool → delegates to Attachment Agent ───
+        analyze_attachment: tool({
+          description: `分析附件（圖片或文件）。呼叫獨立的 Attachment Agent。
+圖片會使用 Vision Agent（大模型）分析內容；文件會使用 Document Agent（中模型）分析元資料。
+使用此工具時無需指定附件 — 系統會自動取得當前訊息的所有附件。`,
+          inputSchema: z.object({
+            user_question: z.string().describe("使用者關於附件的問題或指令"),
+          }),
+          execute: async ({ user_question }) => {
+            try {
+              if (!hasAttachments) {
+                return {
+                  error: "目前訊息沒有附帶任何附件。",
+                };
+              }
+
+              // 呼叫 Attachment Agent — 內部自動分流圖片/文件
+              const result = await processAttachments(
+                provider,
+                apiKey,
+                attachmentList,
+                user_question,
+              );
+
+              return {
+                type: "attachment_reply",
+                responses: result.responses.map((r) => ({
+                  filename: r.filename,
+                  category: r.category,
+                  reply: r.reply,
+                })),
+                summary: result.summary,
+              };
+            } catch (error) {
+              console.error("Attachment Agent error:", error);
+              return {
+                error: "Attachment Agent 處理附件時發生錯誤，請稍後再試。",
+              };
+            }
+          },
+        }),
       },
-      stopWhen: stepCountIs(3),
+      stopWhen: stepCountIs(5),
     });
 
     return result.toUIMessageStreamResponse();

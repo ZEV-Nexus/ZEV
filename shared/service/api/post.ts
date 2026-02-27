@@ -57,7 +57,7 @@ export async function fetchGitHubRepos(page: string) {
 }
 
 export async function disconnectGitHub() {
-  return fetchApi<void>("github/connect/disconnect", {
+  return fetchApi<void>("third-part/oauth/github/connect/disconnect", {
     method: "POST",
   });
 }

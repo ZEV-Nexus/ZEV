@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     // Get the user's GitHub username from DB
     await connectMongoose();
     const dbUser = await userModel.findOne({ userId: user.userId });
-    const githubUsername = (dbUser as any)?.githubUsername;
+    const githubUsername = dbUser?.githubUsername;
 
     if (!githubUsername) {
       return apiResponse({
