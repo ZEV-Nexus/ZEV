@@ -42,6 +42,7 @@ import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { Dialog, DialogContent } from "@/shared/shadcn/components/ui/dialog";
 import { useTranslations } from "next-intl";
+import LogoImage from "@/shared/components/logo-image";
 
 const PANEL_WIDTH = "22rem";
 
@@ -243,13 +244,7 @@ export default function AppActivityBar() {
               setIsSearchOpen(false);
             }}
           >
-            <Image
-              src="/icons/logo-light.svg"
-              alt="Logo"
-              width={28}
-              height={28}
-              className="opacity-80 hover:opacity-100 transition-opacity"
-            />
+            <LogoImage />
           </Link>
         </SidebarHeader>
 

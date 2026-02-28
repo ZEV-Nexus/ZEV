@@ -27,6 +27,7 @@ import useLogin from "./hooks/useLogin";
 import { use, useState } from "react";
 import { Suspense } from "react";
 import { useTranslations } from "next-intl";
+import LogoImage from "@/shared/components/logo-image";
 
 export default function Login({
   searchParams,
@@ -38,18 +39,13 @@ export default function Login({
   const params = use(searchParams);
   const [showPassword, setShowPassword] = useState(false);
   const t = useTranslations("auth");
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className=" flex justify-center items-center  md:flex-row  flex-col h-dvh    ">
         <Card className="flex-1 w-full h-full rounded-none bg-background/50 backdrop-blur-xs">
           <CardHeader className="flex flex-row  items-center  gap-4 ">
-            <Image
-              src="/icons/logo-with-text-light-removebg.png"
-              alt="Chat.to Logo"
-              width={100}
-              height={32}
-              className=" aspect-video   object-cover rounded-md"
-            />
+            <LogoImage withText={true} size="lg" />
           </CardHeader>
           <CardContent className="flex flex-col max-w-lg mx-auto w-full items-center justify-center flex-1 space-y-3">
             <CardTitle className="text-center text-3xl ">

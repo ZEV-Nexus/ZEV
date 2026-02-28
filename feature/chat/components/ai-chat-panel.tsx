@@ -22,7 +22,7 @@ import {
 } from "@/shared/shadcn/components/ui/select";
 import { AI_MODELS, AIModel, useAIStore } from "@/shared/store/ai-store";
 import { UIMessage } from "ai";
-import Image from "next/image";
+
 import { useTranslations } from "next-intl";
 export interface AIMessage {
   id: string;
