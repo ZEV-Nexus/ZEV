@@ -5,8 +5,8 @@ const userOAuthAccountSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   provider: { type: String, enum: ["google", "github"], required: true },
   providerService: { type: String, required: true },
-  accessToken: { type: String, required: true },
-  refreshToken: { type: String },
+
+  refreshToken: { type: String, required: true },
   expiresAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

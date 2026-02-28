@@ -1,8 +1,8 @@
 import { oauthClient } from "./google-auth";
 import { calendar_v3, google } from "googleapis";
 
-export async function googleCalendar(accessToken: string) {
-  oauthClient.setCredentials({ access_token: accessToken });
+export async function googleCalendar(refreshToken: string) {
+  oauthClient.setCredentials({ refresh_token: refreshToken });
   const calendar = google.calendar({ version: "v3", auth: oauthClient });
   return calendar;
 }

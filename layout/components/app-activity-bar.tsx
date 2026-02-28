@@ -10,8 +10,8 @@ import {
   RiChat1Fill,
   RiNotificationLine,
   RiNotificationFill,
-  RiHome4Line,
-  RiHome4Fill,
+  RiHome5Line,
+  RiHome5Fill,
 } from "@remixicon/react";
 
 import {
@@ -43,7 +43,6 @@ import { Dialog, DialogContent } from "@/shared/shadcn/components/ui/dialog";
 
 const PANEL_WIDTH = "22rem";
 
-/** Top-level navigation items shown in the Activity Bar */
 const navItems: {
   id: "home" | "search" | "chat" | "notifications";
   icon: React.ElementType;
@@ -54,8 +53,8 @@ const navItems: {
 }[] = [
   {
     id: "home",
-    icon: RiHome4Line,
-    activeIcon: RiHome4Fill,
+    icon: RiHome5Line,
+    activeIcon: RiHome5Fill,
     label: "首頁",
     href: "/",
   },
@@ -170,7 +169,7 @@ export default function AppActivityBar() {
                   className={cn(
                     "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
                     isActive
-                      ? "text-foreground/50 hover:text-foreground"
+                      ? "text-foreground/70 hover:text-foreground"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -280,7 +279,7 @@ export default function AppActivityBar() {
                         <SidebarMenuButton
                           tooltip={item.label}
                           isActive={isActive}
-                          className="relative text-foreground/50 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                          className="relative text-foreground/70 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                           onClick={() => {
                             if (item.id === "search") {
                               closePanel();
@@ -322,7 +321,7 @@ export default function AppActivityBar() {
                       <SidebarMenuButton
                         tooltip={item.label}
                         isActive={isActive}
-                        className="[&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                        className=" text-foreground/70 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                         asChild
                       >
                         <Link

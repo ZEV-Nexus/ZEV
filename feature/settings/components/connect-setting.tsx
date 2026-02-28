@@ -5,14 +5,26 @@ import {
   CardTitle,
 } from "@/shared/shadcn/components/ui/card";
 import { cn } from "@/shared/shadcn/lib/utils";
-import { RiLinkM, RiLinkUnlinkM } from "@remixicon/react";
+import { RiLinkM, RiLinkUnlinkM, RiLoader2Line } from "@remixicon/react";
 import Image from "next/image";
-import { THIRD_PARTY_PROVIDERS } from "@/shared/config/third-part";
-import { useThirdPart } from "../hooks/use-third-part";
+import {
+  THIRD_PARTY_PROVIDERS,
+  ThirdPartyProvider,
+} from "@/shared/config/third-part";
+
 import { Badge } from "@/shared/shadcn/components/ui/badge";
 import { Button } from "@/shared/shadcn/components/ui/button";
-export default function ConnectSetting() {
-  const { handleConnect, userOAuths } = useThirdPart();
+import { UserOAuthAccount } from "@/shared/types";
+type ConnectSettingProps = {
+  handleConnect: (connectPayload: ThirdPartyProvider) => void;
+  userOAuths: UserOAuthAccount[];
+  isLoading: boolean;
+};
+export default function ConnectSetting({
+  handleConnect,
+  userOAuths,
+  isLoading,
+}: ConnectSettingProps) {
   return (
     <div className="space-y-6">
       <div>
@@ -55,8 +67,10 @@ export default function ConnectSetting() {
                       {provider.provider}
                       {isConnected ? `．${isConnected?.createdAt}` : ""}
                     </p>
-
-                    {isConnected ? (
+                    {userOAuths.length === 0 && isLoading && (
+                      <RiLoader2Line className="animate-spin" />
+                    )}
+                    {isConnected && !isLoading ? (
                       <Button
                         variant={"destructive"}
                         onClick={() => handleConnect(provider)}

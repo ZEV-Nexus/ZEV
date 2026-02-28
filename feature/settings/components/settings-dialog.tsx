@@ -32,6 +32,7 @@ import { ApiKeySettings } from "./api-key-settings";
 import { NotificationSettings } from "./notification-settings";
 import { AppearanceSettings } from "./appearance-settings";
 import ConnectSetting from "./connect-setting";
+import { useThirdPart } from "../hooks/use-third-part";
 
 const tabs = [
   { value: "general", label: "一般", icon: RiSettings3Line },
@@ -43,7 +44,7 @@ const tabs = [
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
-
+  const { handleConnect, userOAuths, isLoading } = useThirdPart();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -85,7 +86,11 @@ export function SettingsDialog() {
               <ApiKeySettings />
             </TabsContent>
             <TabsContent value="connections">
-              <ConnectSetting />
+              <ConnectSetting
+                handleConnect={handleConnect}
+                userOAuths={userOAuths}
+                isLoading={isLoading}
+              />
             </TabsContent>
 
             <TabsContent value="notifications">

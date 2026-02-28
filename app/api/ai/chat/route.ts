@@ -15,7 +15,8 @@ import {
   createGoogleCalendarEvent,
   googleCalendar,
 } from "@/shared/lib/google-calendar";
-import { cookies } from "next/headers";
+
+import { findRefreshTokenByService } from "@/shared/service/server/user-oauth-account";
 
 export const maxDuration = 60;
 
@@ -311,28 +312,34 @@ export async function POST(req: Request) {
               }
 
               // TODO: 實際呼叫行事曆 API (Google / Apple / Outlook)
-              const accessToken =
-                (await cookies()).get("zev_oauth_google_token")?.value ?? "";
-              const calendar = await googleCalendar(accessToken);
+              const refreshToken = await findRefreshTokenByService(
+                user.id,
+                "calendar",
+              );
+              const calendar = await googleCalendar(refreshToken);
 
-              await createGoogleCalendarEvent(calendar, "primary", {
-                summary: event.title,
-                description: event.description,
-                start: {
-                  dateTime: new Date(`${event.start}`).toISOString(),
+              const calendarEvent = await createGoogleCalendarEvent(
+                calendar,
+                "primary",
+                {
+                  summary: event.title,
+                  description: event.description,
+                  start: {
+                    dateTime: new Date(`${event.start}`).toISOString(),
+                  },
+                  end: {
+                    dateTime: new Date(
+                      new Date(event.start).getTime() +
+                        event.duration_minutes * 60 * 1000,
+                    ).toISOString(),
+                  },
                 },
-                end: {
-                  dateTime: new Date(
-                    new Date(event.start).getTime() +
-                      event.duration_minutes * 60 * 1000,
-                  ).toISOString(),
-                },
-              });
+              );
               return {
                 type: "schedule_created",
                 task: taskExtraction,
                 event,
-                message: `✅ 已建立行事曆事件：「${event.title}」於 ${event.start}，時長 ${event.duration_minutes} 分鐘`,
+                message: `✅ 已建立行事曆事件：「${calendarEvent.summary}」於 ${calendarEvent.start}到 ${calendarEvent.end}`,
               };
             } catch (error) {
               console.error("Calendar Agent error:", error);

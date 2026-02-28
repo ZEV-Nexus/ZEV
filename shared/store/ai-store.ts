@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export type AIProvider = "openai" | "google" | "anthropic";
 
@@ -38,14 +38,14 @@ interface AIState {
   apiKeys: UserApiKey;
   /** Masked representations of DB-stored keys (e.g. "••••••••"), empty string means not set */
   maskedKeys: UserApiKey;
-  selectedModel: AIModel;
+  selectedModel: AIModel | null;
 }
 
 interface AIAction {
   setApiKey: (provider: AIProvider, key: string, id: string) => void;
   setMaskedKey: (provider: AIProvider, masked: string) => void;
   setMaskedKeys: (masked: UserApiKey) => void;
-  setSelectedModel: (model: AIModel) => void;
+  setSelectedModel: (model: AIModel | null) => void;
   getApiKey: (provider: AIProvider) => UserApiKey[AIProvider];
 }
 
@@ -62,7 +62,7 @@ export const useAIStore = create<AIState & AIAction>()(
         google: { key: "", id: "" },
         anthropic: { key: "", id: "" },
       },
-      selectedModel: { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
+      selectedModel: null,
 
       setApiKey: (provider, key, id) =>
         set((state) => ({
@@ -85,6 +85,7 @@ export const useAIStore = create<AIState & AIAction>()(
     }),
     {
       name: "ai-store",
+      storage: createJSONStorage(() => sessionStorage),
     },
   ),
 );

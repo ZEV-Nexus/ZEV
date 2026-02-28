@@ -9,15 +9,16 @@ import {
 } from "@/shared/service/server/user-oauth-account";
 
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
-    const origin = new URL(req.url).origin;
+    const url = new URL(req.url);
+    const origin = url.origin;
     if (!user) {
       return renderClosePopup(origin, false, "Unauthorized");
     }
-    const url = new URL(req.url);
+
     const code = url.searchParams.get("code");
     const { service } = JSON.parse(url.searchParams.get("state") || "{}");
     const error = url.searchParams.get("error");
@@ -42,17 +43,6 @@ export async function GET(req: Request) {
         tokens?.refresh_token ?? "",
       );
     }
-    const cookieStore = await cookies();
-
-    cookieStore.set({
-      name: "zev_oauth_google_token",
-      value: tokens.access_token,
-      path: "/",
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-    });
 
     return renderClosePopup(origin, true, "Google 帳號連結成功");
   } catch (error: unknown) {

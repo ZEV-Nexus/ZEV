@@ -93,7 +93,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   });
 
   return (
-    <SidebarMenuItem key={item.id} className=" border-none">
+    <SidebarMenuItem key={item.id} className=" border-none overflow-hidden">
       <SidebarMenuButton
         tooltip={
           room.roomType === "dm" ? recipient?.nickname : (room?.name ?? "")
@@ -102,7 +102,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
       >
         <Link
           href={`/c/${room?.roomId}`}
-          className="px-3 py-2 h-fit border-none  flex min-w-0 w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
+          className="px-3 py-2 h-fit border-none  flex min-w-0 max-w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
         >
           <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">
             <Avatar>
@@ -115,7 +115,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                   : (room?.name?.charAt(0) ?? "")}
               </AvatarFallback>
             </Avatar>
-            <div className="self-start min-w-0 flex-1 overflow-hidden">
+            <div className="self-start min-w-0 flex-1 overflow-hidden w-0">
               <p className="truncate">
                 {room.roomType === "dm"
                   ? recipient?.nickname
@@ -151,7 +151,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                       <MentionText
                         content={room.lastMessage?.content || ""}
                         members={members!}
-                        className=" pointer-events-none"
+                        className="pointer-events-none truncate"
                       />
                     )}
                   </p>

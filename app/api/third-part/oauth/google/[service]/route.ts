@@ -23,6 +23,7 @@ export async function GET(
   const oAuthUrl = oauthClient.generateAuthUrl({
     access_type: "offline",
     scope,
+    prompt: "consent",
     state: JSON.stringify({
       service,
     }),

@@ -14,6 +14,16 @@ export async function findUserOAuthByService(userId: string, service: string) {
     })
     .select("-refreshToken");
 }
+export async function findRefreshTokenByService(
+  userId: string,
+  service: string,
+) {
+  const userOAuth = await userOAuthAccountModel.findOne({
+    user: userId,
+    providerService: service,
+  });
+  return userOAuth?.refreshToken ?? "";
+}
 
 export async function createUserOAuth(
   userId: string,

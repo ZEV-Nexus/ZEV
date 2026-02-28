@@ -20,9 +20,9 @@ import {
   SelectLabel,
   SelectItem,
 } from "@/shared/shadcn/components/ui/select";
-import { AI_MODELS, AIModel } from "@/shared/store/ai-store";
+import { AI_MODELS, AIModel, useAIStore } from "@/shared/store/ai-store";
 import { UIMessage } from "ai";
-
+import Image from "next/image";
 export interface AIMessage {
   id: string;
   role: "user" | "assistant";
@@ -48,6 +48,7 @@ export const AIChatPanel = memo(function AIChatPanel({
 }: AIChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [fullScreen, setFullScreen] = useState(false);
+  const { selectedModel } = useAIStore();
 
   useEffect(() => {
     if (isOpen) {
@@ -73,13 +74,16 @@ export const AIChatPanel = memo(function AIChatPanel({
       <Card className="shadow-lg border-primary/20 bg-background/95 backdrop-blur-md">
         <CardContent className="p-0">
           <div className="rounded-xl overflow-hidden">
-            {/* Panel Header */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 bg-muted/30">
+            <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 ">
               <div className="flex items-center gap-2">
-                <div className="bg-linear-to-br from-primary to-primary/80 p-1 rounded-md">
-                  <RiSparklingFill className="h-3.5 w-3.5 text-primary-foreground" />
-                </div>
-                <span className="text-sm font-semibold">AI 助理</span>
+                <Image
+                  src="/icons/zev-icon-apple-IOS-Default.png"
+                  alt="AI Assistant"
+                  width={25}
+                  height={25}
+                />
+
+                <span className="text-sm font-semibold">ZEVAI</span>
                 {isLoading && (
                   <RiLoader2Line className="h-3.5 w-3.5 animate-spin text-primary" />
                 )}
@@ -90,7 +94,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                     const model = AI_MODELS.find((m) => m.id === e);
                     if (model) onSelectModel(model);
                   }}
-                  defaultValue="gpt-4o"
+                  value={selectedModel?.id || ""}
                 >
                   <SelectTrigger className="text-muted-foreground hover:text-foreground">
                     <SelectValue placeholder="Select a model" />
