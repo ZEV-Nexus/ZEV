@@ -27,6 +27,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useAIStore } from "@/shared/store/ai-store";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 
 interface ChatRoomProps {
   room: ChatRoomType;
@@ -49,6 +50,7 @@ export default function ChatRoom({
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const { updateRoomLastMessage, setCurrentRoom } = useChatStore();
   const { selectedModel, setSelectedModel, maskedKeys } = useAIStore();
+  const t = useTranslations("chat");
 
   const {
     messages: aiMessages,
@@ -126,7 +128,7 @@ export default function ChatRoom({
       }
     } catch (error: unknown) {
       console.log(error);
-      toast.error("載入更多訊息失敗");
+      toast.error(t("loadMoreFailed"));
     } finally {
       setIsLoadingMore(false);
     }
@@ -143,7 +145,7 @@ export default function ChatRoom({
     }
 
     if (!currentMember) {
-      toast.error("無法發送訊息：找不到成員資訊");
+      toast.error(t("memberNotFound"));
       return;
     }
 
@@ -218,9 +220,7 @@ export default function ChatRoom({
       setLocalMessages((prev) =>
         prev.filter((msg) => msg.id !== optimisticMessage.id),
       );
-      toast.error(
-        error instanceof Error ? error.message : "訊息發送失敗，請重試",
-      );
+      toast.error(error instanceof Error ? error.message : t("sendFailed"));
     } finally {
       stopTyping();
     }
@@ -258,7 +258,7 @@ export default function ChatRoom({
               : "raw",
         }));
       } catch {
-        toast.error("附件上傳失敗，僅傳送文字訊息。");
+        toast.error(t("uploadFailed"));
       }
     }
 
@@ -293,7 +293,7 @@ export default function ChatRoom({
     try {
       await editMessageApi(messageId, content);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "編輯失敗，請重試");
+      toast.error(error instanceof Error ? error.message : t("editFailed"));
     }
   };
 
@@ -310,7 +310,7 @@ export default function ChatRoom({
     try {
       await deleteMessageApi(messageId);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "刪除失敗，請重試");
+      toast.error(error instanceof Error ? error.message : t("deleteFailed"));
     }
   };
 
@@ -360,7 +360,7 @@ export default function ChatRoom({
                         <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></span>
                       </div>
                       <span className="text-muted-foreground">
-                        {typingUsers.size} 人正在輸入...
+                        {t("typingIndicator", { count: typingUsers.size })}
                       </span>
                     </div>
                   </div>

@@ -100,3 +100,23 @@ export const updateRoomInfo = async (
     body: JSON.stringify(info),
   });
 };
+
+export const findOrCreateDM = async (
+  targetUserId: string,
+  targetUser: {
+    userId: string;
+    nickname: string;
+    avatar?: string;
+    email?: string;
+  },
+) => {
+  const response = await fetchApi<{
+    room: ChatRoom;
+    members: Member[];
+    isExisting: boolean;
+  }>("rooms/dm", {
+    method: "POST",
+    body: JSON.stringify({ targetUserId, targetUser }),
+  });
+  return response;
+};

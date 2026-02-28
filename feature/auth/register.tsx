@@ -25,14 +25,16 @@ import { useState } from "react";
 import useRegister from "./hooks/ussRegister";
 
 import AuthGlobe from "./components/auth-globe";
+import { useTranslations } from "next-intl";
 export default function Register() {
   const { mutate, isPending, error, registerData, setRegisterData } =
     useRegister();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const t = useTranslations("auth");
   return (
     <div className="flex justify-center items-center  md:flex-row  flex-col h-dvh  ">
-      <AuthGlobe title="Join." />
+      <AuthGlobe title={t("firstTime")} />
       <Card className="flex-1 w-full h-full rounded-none bg-background/50 backdrop-blur-xs ">
         <CardHeader className="flex flex-row  items-center  gap-4 ">
           <Image
@@ -44,8 +46,12 @@ export default function Register() {
           />
         </CardHeader>
         <CardContent className="flex flex-col max-w-lg mx-auto w-full items-center justify-center flex-1 space-y-3">
-          <CardTitle className="text-center text-3xl ">初次見面</CardTitle>
-          <CardDescription className="text-base">加入 ZEV</CardDescription>
+          <CardTitle className="text-center text-3xl ">
+            {t("firstTime")}
+          </CardTitle>
+          <CardDescription className="text-base">
+            {t("joinZev")}
+          </CardDescription>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -54,10 +60,10 @@ export default function Register() {
             className=" space-y-2 w-10/12 flex flex-col items-center justify-center"
           >
             <div className="grid gap-2 w-10/12">
-              <Label htmlFor="nickname">暱稱</Label>
+              <Label htmlFor="nickname">{t("nickname")}</Label>
               <Input
                 id="nickname"
-                placeholder="輸入您的暱稱"
+                placeholder={t("nicknamePlaceholder")}
                 type="text"
                 value={registerData.nickname}
                 onChange={(e) =>
@@ -69,10 +75,10 @@ export default function Register() {
               />
             </div>
             <div className="grid gap-2 w-10/12">
-              <Label htmlFor="email">電子郵件</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
-                placeholder="輸入您的電子郵件"
+                placeholder={t("emailPlaceholder")}
                 type="email"
                 value={registerData.email}
                 onChange={(e) =>
@@ -84,11 +90,11 @@ export default function Register() {
               />
             </div>
             <div className="grid gap-2 w-10/12">
-              <Label htmlFor="password">密碼</Label>
+              <Label htmlFor="password">{t("password")}</Label>
               <div className="relative">
                 <Input
                   id="password"
-                  placeholder="設定您的密碼"
+                  placeholder={t("setPassword")}
                   type={showPassword ? "text" : "password"}
                   value={registerData.password}
                   onChange={(e) =>
@@ -113,11 +119,11 @@ export default function Register() {
               </div>
             </div>
             <div className="grid gap-2 w-10/12">
-              <Label htmlFor="confirm_password">確認密碼</Label>
+              <Label htmlFor="confirm_password">{t("confirmPassword")}</Label>
               <div className="relative">
                 <Input
                   id="confirm_password"
-                  placeholder="確認您的密碼"
+                  placeholder={t("confirmPasswordPlaceholder")}
                   type={showConfirmPassword ? "text" : "password"}
                   value={registerData.confirmPassword}
                   onChange={(e) =>
@@ -147,7 +153,7 @@ export default function Register() {
               disabled={isPending}
               className="w-10/12  h-10"
             >
-              註冊
+              {t("register")}
               {isPending && (
                 <RiLoader2Fill size={24} className="animate-spin" />
               )}
@@ -157,7 +163,7 @@ export default function Register() {
           <CardAction className="w-full flex flex-col space-y-2 items-center justify-center">
             <Link href="/auth/login">
               <Button variant={"link"} className="  h-10">
-                回到登入 <RiArrowDropRightLine size={24} />
+                {t("goToLogin")} <RiArrowDropRightLine size={24} />
               </Button>
             </Link>
           </CardAction>

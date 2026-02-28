@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/shared/shadcn/components/ui/badge";
 import { Button } from "@/shared/shadcn/components/ui/button";
 import { UserOAuthAccount } from "@/shared/types";
+import { useTranslations } from "next-intl";
 type ConnectSettingProps = {
   handleConnect: (connectPayload: ThirdPartyProvider) => void;
   userOAuths: UserOAuthAccount[];
@@ -25,12 +26,13 @@ export default function ConnectSetting({
   userOAuths,
   isLoading,
 }: ConnectSettingProps) {
+  const t = useTranslations("settings");
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium">代理連結</h3>
+        <h3 className="text-lg font-medium">{t("connections")}</h3>
         <p className="text-sm text-muted-foreground">
-          自訂應用程式與第三方服務的連結設定，讓代理能夠存取相關資料和功能。
+          {t("connectionsDescription")}
         </p>
       </div>
       <div className="grid gap-4 ">
@@ -59,7 +61,7 @@ export default function ConnectSetting({
                           : "text-red-500 border-red-500",
                       )}
                     >
-                      {isConnected ? "已連結" : "未連結"}
+                      {isConnected ? t("connected") : t("notConnected")}
                     </Badge>
                   </CardTitle>
                   <CardDescription className="flex items-center justify-between">
@@ -81,7 +83,7 @@ export default function ConnectSetting({
                       >
                         <RiLinkUnlinkM size={14} />
 
-                        <p>斷開連結</p>
+                        <p>{t("disconnect")}</p>
                       </Button>
                     ) : (
                       <Button
@@ -92,7 +94,7 @@ export default function ConnectSetting({
                       >
                         <RiLinkM size={14} />
 
-                        <p>連結</p>
+                        <p>{t("connect")}</p>
                       </Button>
                     )}
                   </CardDescription>

@@ -7,6 +7,7 @@ import { Switch } from "@/shared/shadcn/components/ui/switch";
 import { AIProvider } from "@/shared/store/ai-store";
 import { RiEyeLine, RiEyeOffLine } from "@remixicon/react";
 import { useKey } from "../hooks/use-key";
+import { useTranslations } from "next-intl";
 
 const providers: { id: AIProvider; label: string; placeholder: string }[] = [
   { id: "openai", label: "OpenAI API Key", placeholder: "sk-..." },
@@ -25,19 +26,19 @@ export function ApiKeySettings() {
     isEditing,
     setIsEditing,
   } = useKey();
+  const t = useTranslations("settings");
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium">API 金鑰</h3>
+        <h3 className="text-lg font-medium">{t("apiKeys")}</h3>
         <p className="text-sm text-muted-foreground">
-          設定您的 AI 提供商 API
-          金鑰。金鑰會加密後儲存於伺服器，不會以明文傳回前端。
+          {t("apiKeysDescription")}
         </p>
       </div>
 
       <div className="flex items-center gap-2">
-        <Label htmlFor="edit-mode">編輯模式</Label>
+        <Label htmlFor="edit-mode">{t("editMode")}</Label>
         <Switch
           checked={isEditing}
           onCheckedChange={setIsEditing}
@@ -52,7 +53,7 @@ export function ApiKeySettings() {
               {provider.label}
               {!isEditing && maskedKeys[provider.id] && (
                 <span className="ml-2 text-xs text-green-500 font-normal">
-                  已設定
+                  {t("configured")}
                 </span>
               )}
             </Label>
@@ -85,7 +86,7 @@ export function ApiKeySettings() {
                     ? provider.placeholder
                     : maskedKeys[provider.id]
                       ? maskedKeys[provider.id].key
-                      : "（未設定）"
+                      : t("notConfigured")
                 }
                 disabled={!isEditing || saveUserApiKeysMutation.isPending}
                 className="pr-10"
@@ -113,7 +114,7 @@ export function ApiKeySettings() {
           disabled={!isEditing || saveUserApiKeysMutation.isPending}
           onClick={() => saveUserApiKeysMutation.mutate(apiKeys)}
         >
-          {saveUserApiKeysMutation.isPending ? "儲存中..." : "儲存設定"}
+          {saveUserApiKeysMutation.isPending ? t("saving") : t("saveSettings")}
         </Button>
       </div>
     </div>

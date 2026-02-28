@@ -9,15 +9,40 @@ import { Card, CardContent } from "@/shared/shadcn/components/ui/card";
 import { Label } from "@/shared/shadcn/components/ui/label";
 import { Button } from "@/shared/shadcn/components/ui/button";
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
+import { RiSunLine, RiMoonLine, RiComputerLine } from "@remixicon/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/shadcn/components/ui/select";
+import { useTranslations } from "next-intl";
+import { useLocaleStore, Locale } from "@/shared/store/locale-store";
+
+const themeOptions = [
+  { value: "light", labelKey: "themeLight", icon: RiSunLine },
+  { value: "dark", labelKey: "themeDark", icon: RiMoonLine },
+  { value: "system", labelKey: "themeSystem", icon: RiComputerLine },
+] as const;
+
+const localeOptions = [
+  { value: "zh-TW", label: "繁體中文" },
+  { value: "en", label: "English" },
+] as const;
 
 export function GeneralSettings() {
   const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
+  const t = useTranslations("settings");
+  const { locale, setLocale } = useLocaleStore();
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium">一般</h3>
+        <h3 className="text-lg font-medium">{t("general")}</h3>
         <p className="text-sm text-muted-foreground">
-          管理您的帳號和偏好設定。
+          {t("generalDescription")}
         </p>
       </div>
 
@@ -39,15 +64,52 @@ export function GeneralSettings() {
               </div>
             </div>
 
-            <Button variant="destructive">登出</Button>
+            <Button variant="destructive">{t("logout")}</Button>
           </CardContent>
         </Card>
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>語言</Label>
-            <p className="text-sm text-muted-foreground">選擇介面顯示語言</p>
+            <Label>{t("language")}</Label>
+            <p className="text-sm text-muted-foreground">
+              {t("languageDescription")}
+            </p>
           </div>
-          <span className="text-sm text-muted-foreground">繁體中文</span>
+          <Select value={locale} onValueChange={(v) => setLocale(v as Locale)}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {localeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label>{t("theme")}</Label>
+            <p className="text-sm text-muted-foreground">
+              {t("themeDescription")}
+            </p>
+          </div>
+          <Select value={theme} onValueChange={setTheme}>
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder={t("selectTheme")} />
+            </SelectTrigger>
+            <SelectContent>
+              {themeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <div className="flex items-center gap-2">
+                    <option.icon className="h-4 w-4" />
+                    {t(option.labelKey)}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>

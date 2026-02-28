@@ -6,6 +6,8 @@ import { Toaster } from "@/shared/shadcn/components/ui/sonner";
 import ClientLayout from "@/layout/client-layout";
 import { TooltipProvider } from "@/shared/shadcn/components/ui/tooltip";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "@/shared/components/provider/theme-provider";
+import IntlProvider from "@/shared/components/provider/intl-provider";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -105,11 +107,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
+
   alternates: {
     canonical: SITE_URL,
   },
@@ -142,7 +140,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
@@ -152,12 +150,21 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
-        <TooltipProvider>
-          <SessionProvider>
-            <ClientLayout>{children}</ClientLayout>
-            <Toaster />
-          </SessionProvider>
-        </TooltipProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <IntlProvider>
+            <TooltipProvider>
+              <SessionProvider>
+                <ClientLayout>{children}</ClientLayout>
+                <Toaster />
+              </SessionProvider>
+            </TooltipProvider>
+          </IntlProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

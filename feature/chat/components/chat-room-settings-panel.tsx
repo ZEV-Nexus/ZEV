@@ -55,6 +55,7 @@ import {
   RoomInfoUpdatedPayload,
 } from "@/shared/hooks/use-ably-notification";
 import { useOnlineStore } from "@/shared/store/online-store";
+import { useTranslations } from "next-intl";
 
 interface ChatRoomSettingsPanelProps {
   open: boolean;
@@ -89,6 +90,7 @@ export function ChatRoomSettingsPanel({
   const [localRoom, setLocalRoom] = useState<ChatRoom>(room);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
   const { onlineUsers } = useOnlineStore();
+  const t = useTranslations("chatSettings");
 
   // Sync with prop changes
   useEffect(() => {
@@ -146,16 +148,18 @@ export function ChatRoomSettingsPanel({
 
       try {
         await updateMemberRole(room.roomId, memberId, newRole);
-        toast.success("角色已更新");
+        toast.success(t("roleUpdated"));
       } catch (error: unknown) {
         // Revert on failure
         setLocalMembers(members);
-        toast.error(error instanceof Error ? error.message : "更新角色失敗");
+        toast.error(
+          error instanceof Error ? error.message : t("roleUpdateFailed"),
+        );
       } finally {
         setUpdatingMemberId(null);
       }
     },
-    [room.roomId, members],
+    [room.roomId, members, t],
   );
 
   const handleRoomInfoUpdated = useCallback(
@@ -225,8 +229,8 @@ export function ChatRoomSettingsPanel({
         className="w-full sm:max-w-sm p-0 flex flex-col overflow-auto"
       >
         <SheetHeader className="sr-only">
-          <SheetTitle>聊天室設定</SheetTitle>
-          <SheetDescription>管理聊天室相關設定</SheetDescription>
+          <SheetTitle>{t("title")}</SheetTitle>
+          <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea>
@@ -244,8 +248,8 @@ export function ChatRoomSettingsPanel({
               <h3 className="text-lg font-semibold">{displayName}</h3>
               <p className="text-sm text-muted-foreground">
                 {room.roomType === "dm"
-                  ? "私人對話"
-                  : `${members.length} 位成員`}
+                  ? t("privateConversation")
+                  : t("membersCount", { count: members.length })}
               </p>
               {room.roomType !== "dm" && canChangeRole && (
                 <Button
@@ -255,7 +259,7 @@ export function ChatRoomSettingsPanel({
                   onClick={() => setEditDialogOpen(true)}
                 >
                   <RiEditLine className="h-3.5 w-3.5 mr-1" />
-                  編輯資訊
+                  {t("editInfo")}
                 </Button>
               )}
 
@@ -273,13 +277,13 @@ export function ChatRoomSettingsPanel({
             {/* Quick Settings */}
             <div className="px-4 py-3">
               <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                快速設定
+                {t("quickSettings")}
               </h4>
               <div className="space-y-1">
                 <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <RiNotificationLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">通知</span>
+                    <span className="text-sm">{t("notification")}</span>
                   </div>
                   <Switch
                     checked={notificationEnabled}
@@ -289,7 +293,7 @@ export function ChatRoomSettingsPanel({
                 <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <RiPushpinLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">釘選對話</span>
+                    <span className="text-sm">{t("pinConversation")}</span>
                   </div>
                   <Switch
                     checked={pinned}
@@ -305,7 +309,7 @@ export function ChatRoomSettingsPanel({
             <div className="px-4 py-3">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  成員 ({members.length})
+                  {t("membersLabel", { count: members.length })}
                 </h4>
                 {room.roomType !== "dm" && (
                   <InviteMemberDialog
@@ -317,7 +321,7 @@ export function ChatRoomSettingsPanel({
                       size="sm"
                       className="h-7 px-2 text-xs"
                     >
-                      邀請
+                      {t("invite")}
                     </Button>
                   </InviteMemberDialog>
                 )}
@@ -334,12 +338,12 @@ export function ChatRoomSettingsPanel({
 
                   const roleLabel =
                     member.role === "owner"
-                      ? "擁有者"
+                      ? t("roleOwner")
                       : member.role === "admin"
-                        ? "管理員"
+                        ? t("roleAdmin")
                         : member.role === "guest"
-                          ? "訪客"
-                          : "成員";
+                          ? t("roleGuest")
+                          : t("roleMember");
 
                   return (
                     <div
@@ -359,7 +363,7 @@ export function ChatRoomSettingsPanel({
                           {member.user.nickname}
                           {isCurrentUser && (
                             <span className="text-muted-foreground font-normal ml-1">
-                              (你)
+                              {t("youLabel")}
                             </span>
                           )}
                         </p>
@@ -403,20 +407,20 @@ export function ChatRoomSettingsPanel({
                                 {currentUserRole === "owner" && (
                                   <SelectItem value="owner">
                                     <RiVipCrownLine className="h-3 w-3 text-amber-500" />
-                                    擁有者
+                                    {t("roleOwner")}
                                   </SelectItem>
                                 )}
                                 <SelectItem value="admin">
                                   <RiShieldLine className="h-3 w-3 text-blue-500" />
-                                  管理員
+                                  {t("roleAdmin")}
                                 </SelectItem>
                                 <SelectItem value="member">
                                   <RiUserLine className="h-3 w-3" />
-                                  成員
+                                  {t("roleMember")}
                                 </SelectItem>
                                 <SelectItem value="guest">
                                   <RiUserLine className="h-3 w-3" />
-                                  訪客
+                                  {t("roleGuest")}
                                 </SelectItem>
                               </SelectContent>
                             </Select>
@@ -431,7 +435,7 @@ export function ChatRoomSettingsPanel({
                     onClick={() => setMembersDialogOpen(true)}
                     className="flex items-center justify-center gap-1 w-full py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors text-sm text-muted-foreground cursor-pointer"
                   >
-                    查看全部 {localMembers.length} 位成員
+                    {t("viewAllMembers", { count: localMembers.length })}
                     <RiArrowRightSLine className="h-4 w-4" />
                   </button>
                 )}
@@ -454,27 +458,27 @@ export function ChatRoomSettingsPanel({
             {/* Shared Media */}
             <div className="px-4 py-3">
               <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                共享內容
+                {t("sharedContent")}
               </h4>
               <div className="space-y-0.5">
                 <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <RiImageLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">圖片與影片</span>
+                    <span className="text-sm">{t("imagesAndVideos")}</span>
                   </div>
                   <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
                 </button>
                 <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <RiFileTextLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">檔案</span>
+                    <span className="text-sm">{t("files")}</span>
                   </div>
                   <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
                 </button>
                 <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <RiLinksLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">連結</span>
+                    <span className="text-sm">{t("links")}</span>
                   </div>
                   <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -486,13 +490,13 @@ export function ChatRoomSettingsPanel({
             {/* Privacy & Danger Zone */}
             <div className="px-4 py-3">
               <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                隱私與安全
+                {t("privacyAndSecurity")}
               </h4>
               <div className="space-y-0.5">
                 <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <RiShieldLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">隱私設定</span>
+                    <span className="text-sm">{t("privacySettings")}</span>
                   </div>
                   <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -508,7 +512,9 @@ export function ChatRoomSettingsPanel({
                 className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 <RiLogoutBoxLine className="h-4 w-4 mr-3" />
-                {room.roomType === "dm" ? "刪除對話" : "離開聊天室"}
+                {room.roomType === "dm"
+                  ? t("deleteConversation")
+                  : t("leaveRoom")}
               </Button>
             </div>
           </div>

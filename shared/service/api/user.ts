@@ -24,3 +24,17 @@ export async function updateUsername(username: string) {
     body: JSON.stringify({ username }),
   });
 }
+
+export async function updateProfile(data: {
+  nickname?: string;
+  bio?: string;
+  avatar?: string;
+}) {
+  return await fetchApi<{ nickname: string; bio: string; avatar: string }>(
+    "user/profile",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
+}

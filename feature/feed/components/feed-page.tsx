@@ -15,12 +15,15 @@ import {
   RiArrowDownLine,
 } from "@remixicon/react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function FeedPage() {
   const { data: session, status } = useSession();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const t = useTranslations("feed");
+  const tAuth = useTranslations("auth");
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["feed-posts", page],
@@ -82,11 +85,9 @@ export default function FeedPage() {
         <div className="relative max-w-2xl mx-auto px-4 py-10 sm:py-14">
           <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
-              動態牆
+              {t("title")}
             </h1>
-            <p className="text-muted-foreground text-base">
-              分享你的想法、專案和靈感
-            </p>
+            <p className="text-muted-foreground text-base">{t("subtitle")}</p>
           </div>
         </div>
       </div>
@@ -100,10 +101,10 @@ export default function FeedPage() {
           <div className="rounded-xl border border-border/60 bg-card p-6 text-center shadow-sm">
             <RiQuillPenLine className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground mb-3">
-              登入以發布貼文和互動
+              {tAuth("loginToPost")}
             </p>
             <Button asChild>
-              <Link href="/auth/login">登入</Link>
+              <Link href="/auth/login">{tAuth("login")}</Link>
             </Button>
           </div>
         )}
@@ -132,9 +133,7 @@ export default function FeedPage() {
         ) : allPosts.length === 0 ? (
           <div className="text-center py-16">
             <RiQuillPenLine className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              還沒有任何貼文，成為第一個發文的人吧！
-            </p>
+            <p className="text-muted-foreground">{t("noPosts")}</p>
           </div>
         ) : (
           <>
@@ -163,7 +162,7 @@ export default function FeedPage() {
                   ) : (
                     <RiArrowDownLine className="h-4 w-4" />
                   )}
-                  載入更多
+                  {t("loadMore")}
                 </Button>
               </div>
             )}

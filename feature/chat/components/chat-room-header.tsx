@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { ChatRoomSettingsPanel } from "./chat-room-settings-panel";
 import { useOnlineStore } from "@/shared/store/online-store";
 import { RoomInfoUpdatedPayload } from "@/shared/hooks/use-ably-notification";
+import { useTranslations } from "next-intl";
 
 interface ChatRoomHeaderProps {
   room: ChatRoom;
@@ -41,6 +42,7 @@ export function ChatRoomHeader({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [localRoom, setLocalRoom] = useState<ChatRoom>(room);
   const { onlineUsers } = useOnlineStore();
+  const t = useTranslations("chat");
 
   // Sync with prop changes
   useEffect(() => {
@@ -120,17 +122,19 @@ export function ChatRoomHeader({
                   onlineUsers.has(recipient?.user.userId || "") ? (
                     <>
                       <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      在線上
+                      {t("online")}
                     </>
                   ) : (
-                    <>離線</>
+                    <>{t("offline")}</>
                   )
                 ) : members.filter((m) => onlineUsers.has(m.user.id)).length >
                   0 ? (
-                  `${members.filter((m) => onlineUsers.has(m.user.id)).length}
-                    位成員在線`
+                  t("membersOnline", {
+                    count: members.filter((m) => onlineUsers.has(m.user.id))
+                      .length,
+                  })
                 ) : (
-                  "離線"
+                  t("offline")
                 )}
               </p>
             </div>

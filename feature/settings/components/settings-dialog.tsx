@@ -23,28 +23,31 @@ import {
   RiKey2Line,
   RiSettings3Line,
   RiNotification3Line,
-  RiPaletteLine,
   RiLinksLine,
 } from "@remixicon/react";
 
 import { GeneralSettings } from "./general-settings";
 import { ApiKeySettings } from "./api-key-settings";
 import { NotificationSettings } from "./notification-settings";
-import { AppearanceSettings } from "./appearance-settings";
 import ConnectSetting from "./connect-setting";
 import { useThirdPart } from "../hooks/use-third-part";
+import { useTranslations } from "next-intl";
 
 const tabs = [
-  { value: "general", label: "一般", icon: RiSettings3Line },
-  { value: "api-keys", label: "API 金鑰", icon: RiKey2Line },
-  { value: "connections", label: "連結代理", icon: RiLinksLine },
-  { value: "notifications", label: "通知", icon: RiNotification3Line },
-  { value: "appearance", label: "外觀", icon: RiPaletteLine },
+  { value: "general", labelKey: "general", icon: RiSettings3Line },
+  { value: "api-keys", labelKey: "apiKeys", icon: RiKey2Line },
+  { value: "connections", labelKey: "connections", icon: RiLinksLine },
+  {
+    value: "notifications",
+    labelKey: "notifications",
+    icon: RiNotification3Line,
+  },
 ] as const;
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const { handleConnect, userOAuths, isLoading } = useThirdPart();
+  const t = useTranslations("settings");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -55,7 +58,7 @@ export function SettingsDialog() {
             </button>
           </DialogTrigger>
         </TooltipTrigger>
-        <TooltipContent side="right">設定</TooltipContent>
+        <TooltipContent side="right">{t("title")}</TooltipContent>
       </Tooltip>
 
       <DialogContent className="sm:max-w-[700px] p-0 gap-0">
@@ -72,7 +75,7 @@ export function SettingsDialog() {
                 className="w-full flex-0 justify-start  gap-2 px-3 py-2 text-sm"
               >
                 <tab.icon className="h-4 w-4" />
-                {tab.label}
+                {t(tab.labelKey)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -95,9 +98,6 @@ export function SettingsDialog() {
 
             <TabsContent value="notifications">
               <NotificationSettings />
-            </TabsContent>
-            <TabsContent value="appearance">
-              <AppearanceSettings />
             </TabsContent>
           </div>
         </Tabs>

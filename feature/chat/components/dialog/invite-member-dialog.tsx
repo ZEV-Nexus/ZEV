@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/shared/shadcn/components/ui/table";
 import { Checkbox } from "@/shared/shadcn/components/ui/checkbox";
-import { Input } from "@/shared/shadcn/components/ui/input";
+
 import {
   Avatar,
   AvatarFallback,
@@ -40,6 +40,7 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "@/shared/shadcn/components/ui/input-group";
+import { useTranslations } from "next-intl";
 
 export default function InviteMemberDialog({
   roomId,
@@ -54,6 +55,7 @@ export default function InviteMemberDialog({
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const t = useTranslations("chatDialog");
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ["users", query],
@@ -86,16 +88,14 @@ export default function InviteMemberDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Invite Member</DialogTitle>
-          <DialogDescription>
-            Search users to add to this group chat.
-          </DialogDescription>
+          <DialogTitle>{t("inviteTitle")}</DialogTitle>
+          <DialogDescription>{t("inviteDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <InputGroup>
             <InputGroupInput
-              placeholder="Search users..."
+              placeholder={t("searchUsers")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -109,7 +109,7 @@ export default function InviteMemberDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
-                  <TableHead>User</TableHead>
+                  <TableHead>{t("user")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -178,7 +178,7 @@ export default function InviteMemberDialog({
                       colSpan={2}
                       className="h-24 text-center text-muted-foreground"
                     >
-                      {query ? "No users found" : "Type to search users"}
+                      {query ? t("noUsersFound") : t("typeToSearch")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -189,7 +189,7 @@ export default function InviteMemberDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t("cancel")}</Button>
           </DialogClose>
           <Button
             onClick={() => mutate()}
@@ -198,7 +198,7 @@ export default function InviteMemberDialog({
             {isPending && (
               <RiLoader2Line className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Invite ({selectedUserIds.length})
+            {t("invite")} ({selectedUserIds.length})
           </Button>
         </DialogFooter>
       </DialogContent>

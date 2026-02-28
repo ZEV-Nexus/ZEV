@@ -22,6 +22,7 @@ import { useAblyChat } from "../hooks/use-ably-chat";
 import { useChatStore } from "@/shared/store/chat-store";
 
 import { MentionText } from "./mention-text";
+import { useTranslations } from "next-intl";
 
 export function NavRoomItemSkeleton() {
   return (
@@ -60,6 +61,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   );
   const { updateRoomLastMessage, incrementUnreadCount, currentRoom } =
     useChatStore();
+  const t = useTranslations("chat");
 
   // Get typing users for this room (excluding self)
   const typingByRoom = useTypingStore((s) => s.typingByRoom);
@@ -124,8 +126,8 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
               {filteredTypers.length > 0 ? (
                 <p className="text-xs text-primary font-medium flex items-center truncate">
                   {filteredTypers.length === 1
-                    ? `${filteredTypers[0].nickname} 正在輸入`
-                    : `${filteredTypers.length} 人正在輸入`}
+                    ? `${filteredTypers[0].nickname} ${t("typing", { name: "" }).trim()}`
+                    : t("typingMultiple", { count: filteredTypers.length })}
 
                   <TypingDots />
                 </p>
@@ -140,7 +142,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                     )}
                   >
                     {room.lastMessage.member.user.id === session?.user?.id
-                      ? "你: "
+                      ? t("youPrefix")
                       : room.lastMessage.member.user.nickname
                         ? `${room.lastMessage.member.user.nickname}: `
                         : ""}

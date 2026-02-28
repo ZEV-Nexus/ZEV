@@ -23,14 +23,18 @@ import {
   markAsRead,
 } from "@/shared/service/api/notification";
 import { formatDistanceToNow } from "date-fns";
-import { zhTW } from "date-fns/locale";
+import { zhTW, enUS } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { Notification } from "@/shared/types";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
+import { useLocaleStore } from "@/shared/store/locale-store";
 
 export default function NotificationPanel() {
   const router = useRouter();
+  const t = useTranslations("common");
+  const { locale } = useLocaleStore();
   const {
     notifications,
     unreadCount,
@@ -107,22 +111,23 @@ export default function NotificationPanel() {
   const getText = (notification: Notification) => {
     switch (notification.type) {
       case "post_like":
-        return "按讚了你的貼文";
+        return t("likedYourPost");
       case "post_comment":
-        return "回覆了你的貼文";
+        return t("commentedYourPost");
       case "room_invite":
-        return `邀請你加入「${notification.room?.name || "聊天室"}」`;
+        return t("invitedToRoom", { name: notification.room?.name || "Chat" });
       default:
-        return "有一則新通知";
+        return t("newNotification");
     }
   };
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
       <div className="border-b border-border p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-foreground">通知</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            {t("notificationTitle")}
+          </h2>
           {unreadCount > 0 && (
             <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full font-bold">
               {unreadCount > 99 ? "99+" : unreadCount}
@@ -137,7 +142,7 @@ export default function NotificationPanel() {
           disabled={unreadCount === 0}
         >
           <RiCheckDoubleLine className="h-3.5 w-3.5" />
-          全部已讀
+          {t("markAllRead")}
         </Button>
       </div>
 
@@ -151,10 +156,8 @@ export default function NotificationPanel() {
           <div className="p-3">
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <RiNotificationLine className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm">暫無通知</p>
-              <p className="text-xs mt-1 opacity-60">
-                新的訊息和更新會顯示在這裡
-              </p>
+              <p className="text-sm">{t("noNotifications")}</p>
+              <p className="text-xs mt-1 opacity-60">{t("newUpdatesHere")}</p>
             </div>
           </div>
         ) : (
@@ -210,7 +213,7 @@ export default function NotificationPanel() {
                   <p className="text-[10px] text-muted-foreground/60">
                     {formatDistanceToNow(new Date(notification.createdAt), {
                       addSuffix: true,
-                      locale: zhTW,
+                      locale: locale === "zh-TW" ? zhTW : enUS,
                     })}
                   </p>
                 </div>

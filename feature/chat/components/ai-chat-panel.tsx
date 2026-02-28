@@ -23,6 +23,7 @@ import {
 import { AI_MODELS, AIModel, useAIStore } from "@/shared/store/ai-store";
 import { UIMessage } from "ai";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 export interface AIMessage {
   id: string;
   role: "user" | "assistant";
@@ -49,6 +50,7 @@ export const AIChatPanel = memo(function AIChatPanel({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [fullScreen, setFullScreen] = useState(false);
   const { selectedModel } = useAIStore();
+  const t = useTranslations("ai");
 
   useEffect(() => {
     if (isOpen) {
@@ -75,46 +77,33 @@ export const AIChatPanel = memo(function AIChatPanel({
         <CardContent className="p-0">
           <div className="rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 ">
-              <div className="flex items-center gap-2">
-                <Image
-                  src="/icons/zev-icon-apple-IOS-Default.png"
-                  alt="AI Assistant"
-                  width={25}
-                  height={25}
-                />
-
-                <span className="text-sm font-semibold">ZEVAI</span>
-                {isLoading && (
-                  <RiLoader2Line className="h-3.5 w-3.5 animate-spin text-primary" />
-                )}
-              </div>
+              {" "}
+              <Select
+                onValueChange={(e) => {
+                  const model = AI_MODELS.find((m) => m.id === e);
+                  if (model) onSelectModel(model);
+                }}
+                value={selectedModel?.id || ""}
+              >
+                <SelectTrigger className="text-muted-foreground hover:text-foreground">
+                  <SelectValue placeholder={t("selectModel")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(aiModelsGroupByProvider).map(
+                    ([provider, models]) => (
+                      <SelectGroup key={provider}>
+                        <SelectLabel>{provider}</SelectLabel>
+                        {models.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ),
+                  )}
+                </SelectContent>
+              </Select>
               <div className="flex items-center gap-1">
-                <Select
-                  onValueChange={(e) => {
-                    const model = AI_MODELS.find((m) => m.id === e);
-                    if (model) onSelectModel(model);
-                  }}
-                  value={selectedModel?.id || ""}
-                >
-                  <SelectTrigger className="text-muted-foreground hover:text-foreground">
-                    <SelectValue placeholder="Select a model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(aiModelsGroupByProvider).map(
-                      ([provider, models]) => (
-                        <SelectGroup key={provider}>
-                          <SelectLabel>{provider}</SelectLabel>
-                          {models.map((model) => (
-                            <SelectItem key={model.id} value={model.id}>
-                              {model.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-
                 {fullScreen ? (
                   <RiCollapseDiagonalLine
                     className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-pointer"
@@ -151,10 +140,10 @@ export const AIChatPanel = memo(function AIChatPanel({
                       <RiSparklingFill className="h-6 w-6 text-primary" />
                     </div>
                     <p className="text-sm font-medium text-foreground">
-                      我可以如何協助您？
+                      {t("howCanIHelp")}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 px-4">
-                      輸入訊息後按 Enter 即可開始對話
+                      {t("pressEnterToStart")}
                     </p>
                   </div>
                 ) : (

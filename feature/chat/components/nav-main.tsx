@@ -56,6 +56,7 @@ import CreateCategoryDialog from "@/shared/components/dialog/create-category-dia
 import EditCategoryDialog from "@/shared/components/dialog/edit-category-dialog";
 import { useSession } from "next-auth/react";
 import { Badge } from "@/shared/shadcn/components/ui/badge";
+import { useTranslations } from "next-intl";
 
 export function NavMain() {
   const isMobile = useIsMobile();
@@ -64,6 +65,7 @@ export function NavMain() {
   const [isEditMode, setIsEditMode] = useState(false);
 
   const { chatCategorys, setChatCategorys } = useChatStore();
+  const t = useTranslations("chat");
 
   const { data: fetchedCategories, isLoading: isQueryLoading } = useQuery({
     queryKey: ["user-rooms", session?.user?.userId],
@@ -83,7 +85,9 @@ export function NavMain() {
   return (
     <SidebarGroup>
       <span className=" flex justify-between">
-        <SidebarGroupLabel className="text-base">Chat</SidebarGroupLabel>
+        <SidebarGroupLabel className="text-base">
+          {t("title")}
+        </SidebarGroupLabel>
         {isEditMode ? (
           <Button
             variant={"ghost"}
@@ -114,12 +118,12 @@ export function NavMain() {
             >
               <CreateChatDialog>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <RiChatAiLine /> Add New Chat
+                  <RiChatAiLine /> {t("addNewChat")}
                 </DropdownMenuItem>
               </CreateChatDialog>
               <CreateCategoryDialog>
                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <RiFolderAddLine /> Add New Category
+                  <RiFolderAddLine /> {t("addNewCategory")}
                 </DropdownMenuItem>
               </CreateCategoryDialog>
               {!isEditMode && (
@@ -127,7 +131,7 @@ export function NavMain() {
                   onClick={() => setIsEditMode((prev) => !prev)}
                 >
                   <RiPencilLine />
-                  Edit Groups
+                  {t("editGroups")}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -278,7 +282,7 @@ export function NavMain() {
                           <DropdownMenuItem
                             onSelect={(e) => e.preventDefault()}
                           >
-                            <RiChatAiLine /> Add New Chat
+                            <RiChatAiLine /> {t("addNewChat")}
                           </DropdownMenuItem>
                         </CreateChatDialog>
                         <EditCategoryDialog
@@ -288,7 +292,7 @@ export function NavMain() {
                           <DropdownMenuItem
                             onSelect={(e) => e.preventDefault()}
                           >
-                            <RiPencilLine /> Edit Category
+                            <RiPencilLine /> {t("editCategory")}
                           </DropdownMenuItem>
                         </EditCategoryDialog>
                         <DropdownMenuSeparator />
@@ -312,7 +316,7 @@ export function NavMain() {
                             }}
                           >
                             <RiDeleteBinLine />
-                            Delete Group
+                            {t("deleteGroup")}
                           </DropdownMenuItem>
                         </DropdownMenuGroup>
                       </DropdownMenuContent>

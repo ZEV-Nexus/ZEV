@@ -21,6 +21,7 @@ import { updateRoomInfo } from "@/shared/service/api/room";
 import { uploadFileToCloudinary } from "@/shared/service/api/upload";
 import { toast } from "sonner";
 import { RiCameraLine, RiLoader2Line, RiCloseLine } from "@remixicon/react";
+import { useTranslations } from "next-intl";
 
 interface EditRoomInfoDialogProps {
   open: boolean;
@@ -42,6 +43,7 @@ export default function EditRoomInfoDialog({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const t = useTranslations("chatDialog");
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -53,13 +55,13 @@ export default function EditRoomInfoDialog({
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast.error("請選擇圖片檔案");
+      toast.error(t("selectImage"));
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("圖片不能超過 5MB");
+      toast.error(t("imageTooLarge"));
       return;
     }
 
@@ -84,7 +86,7 @@ export default function EditRoomInfoDialog({
 
     const trimmedName = name.trim();
     if (!trimmedName) {
-      toast.error("群組名稱不能為空");
+      toast.error(t("groupNameEmpty"));
       return;
     }
 
@@ -117,10 +119,10 @@ export default function EditRoomInfoDialog({
 
       await updateRoomInfo(room.roomId, updates);
       onUpdated?.(updates);
-      toast.success("群組資訊已更新");
+      toast.success(t("groupInfoUpdated"));
       onOpenChange(false);
-    } catch (error: any) {
-      toast.error(error?.message || "更新失敗");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : t("updateFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -140,8 +142,8 @@ export default function EditRoomInfoDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>編輯群組資訊</DialogTitle>
-          <DialogDescription>更新群組名稱和頭像</DialogDescription>
+          <DialogTitle>{t("editRoomTitle")}</DialogTitle>
+          <DialogDescription>{t("editRoomDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col items-center gap-4 py-4">
@@ -188,7 +190,7 @@ export default function EditRoomInfoDialog({
             />
           </div>
 
-          <p className="text-xs text-muted-foreground">點擊頭像以上傳新圖片</p>
+          <p className="text-xs text-muted-foreground">{t("clickToUpload")}</p>
 
           {/* Name Input */}
           <div className="w-full space-y-2">
@@ -196,13 +198,13 @@ export default function EditRoomInfoDialog({
               htmlFor="room-name"
               className="text-sm font-medium text-foreground"
             >
-              群組名稱
+              {t("groupNameLabel")}
             </label>
             <Input
               id="room-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="輸入群組名稱..."
+              placeholder={t("groupNamePlaceholder")}
               maxLength={50}
             />
             <p className="text-xs text-muted-foreground text-right">
@@ -217,13 +219,13 @@ export default function EditRoomInfoDialog({
             onClick={() => handleOpenChange(false)}
             disabled={isSaving}
           >
-            取消
+            {t("cancel")}
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving && (
               <RiLoader2Line className="mr-2 h-4 w-4 animate-spin" />
             )}
-            儲存
+            {t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>
