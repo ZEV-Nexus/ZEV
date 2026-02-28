@@ -442,9 +442,7 @@ export default function UserProfile({
                     disabled={isProfilePending}
                   >
                     <RiCloseLine className="h-3.5 w-3.5 mr-1" />
-                    {tAuth("goToLogin") ? undefined : undefined}
-                    {t("updateFailed") ? undefined : undefined}
-                    Cancel
+                    {tCommon("cancel")}
                   </Button>
                   <Button
                     size="sm"
@@ -456,9 +454,7 @@ export default function UserProfile({
                     ) : (
                       <RiCheckLine className="h-3.5 w-3.5 mr-1" />
                     )}
-                    {isProfilePending
-                      ? t("saving")
-                      : t("profileUpdated").split(" ")[0] || "Save"}
+                    {isProfilePending ? t("saving") : tCommon("save")}
                   </Button>
                 </div>
               </>
