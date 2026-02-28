@@ -1,4 +1,4 @@
-import { roomModel, memberModel } from "@/shared/schema";
+import { roomModel } from "@/shared/schema";
 import { createDMKey } from "@/shared/lib/utils";
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { apiResponse } from "@/shared/service/server/response";
@@ -84,6 +84,7 @@ export async function POST(req: Request) {
       const notificationPayload = {
         type: "room-created",
         room: roomData,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         members: members.map((m: any) => ({
           id: m.id || m._id?.toString(),
           user: {

@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { nickname, bio, avatar } = body;
 
-    const update: Record<string, any> = {};
+    const update: Record<string, string> = {};
 
     if (nickname !== undefined) {
       const trimmed = nickname.trim();
