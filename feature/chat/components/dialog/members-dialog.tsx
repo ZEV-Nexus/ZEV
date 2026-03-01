@@ -127,15 +127,15 @@ export default function MembersDialog({
       try {
         await updateMemberRole(roomId, memberId, newRole);
         toast.success(t("roleUpdated"));
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Revert on failure
         setMembers(initialMembers);
-        toast.error(error?.message || t("roleUpdateFailed"));
+        toast.error((error as Error)?.message || t("roleUpdateFailed"));
       } finally {
         setUpdatingMemberId(null);
       }
     },
-    [roomId, initialMembers],
+    [roomId, initialMembers, t],
   );
 
   // Sort members: owner first, then admin, then member, then guest

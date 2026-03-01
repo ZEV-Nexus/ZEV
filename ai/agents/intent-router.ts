@@ -9,6 +9,7 @@ export const IntentType = z.enum([
   "create_schedule",
   "translate",
   "reply_with_attachment",
+  "gmail_draft",
   "none",
 ]);
 
@@ -37,6 +38,7 @@ Possible intents:
 - create_schedule: The user wants to create a calendar event, meeting, reminder, or schedule something.
 - translate: The user explicitly asks to translate text to another language.
 - reply_with_attachment: The message contains or references attachments (images, files) and asks about them.
+- gmail_draft: The user wants to compose, reply to, read, or manage emails/Gmail.
 - none: General conversation, questions, or anything that doesn't fit above.
 
 Rules:

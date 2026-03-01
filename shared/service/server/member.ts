@@ -21,7 +21,7 @@ export async function createMember({
   nickname?: string;
   notificationSetting?: "all" | "mentions" | "mute";
   pinned?: boolean;
-  roomCategory?: IRoomCategory;
+  roomCategory?: string;
 }) {
   const member = await memberModel.findOne({
     user: userId,
@@ -47,12 +47,16 @@ export async function createMember({
 export const getRoomMembers = async (roomId: string) => {
   const members = await memberModel
     .find({ room: roomId })
-    .populate({
+    .populate<{
+      user: User & { id: string };
+    }>({
       path: "user",
       select: "nickname avatar _id userId email username",
     })
-    .populate({ path: "roomCategory", select: "title index" })
-    .exec();
+    .populate<{ roomCategory: IRoomCategory & { id: string } }>({
+      path: "roomCategory",
+      select: "title index",
+    });
 
   return members;
 };

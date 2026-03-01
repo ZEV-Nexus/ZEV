@@ -4,6 +4,7 @@ import { ChatSidebar } from "@/feature/chat/components/chat-sidebar";
 import { usePathname } from "next/navigation";
 import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import React from "react";
+import { useKey } from "@/feature/settings/hooks/use-key";
 
 export default function ChatLayout({
   children,
@@ -13,7 +14,7 @@ export default function ChatLayout({
   const pathname = usePathname();
   const isMobile = useIsMobile();
   const isRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
-
+  useKey();
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* Desktop: always show; Mobile: only show on /c (chat list) */}

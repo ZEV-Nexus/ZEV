@@ -6,12 +6,14 @@ import { useSession } from "next-auth/react";
 import { useChatStore } from "@/shared/store/chat-store";
 import { useOnlineStore, OnlineUser } from "@/shared/store/online-store";
 import { useTypingStore } from "@/shared/store/typing-store";
-import { ChatRoom, Member, Notification, Message, User } from "@/shared/types";
+import { ChatRoom, Member, Notification, Message } from "@/shared/types";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
 import { getRoomMembers } from "@/shared/service/api/room";
 import { useNotificationStore } from "@/shared/store/notification-store";
 import { getNotifications } from "@/shared/service/api/notification";
+import { usePrivacyStore } from "@/shared/store/privacy-store";
+import { getPrivacySettings } from "@/shared/service/api/user";
 
 // Notification event types
 export type NotificationType =
@@ -24,7 +26,6 @@ export interface ChatMessagePayload {
   roomId: string;
   message: Message;
 }
-
 
 export interface NotificationPayload {
   type: NotificationType;
@@ -212,13 +213,57 @@ export function useAblyNotification() {
       },
     );
 
+    // === Load privacy settings into store ===
+    const privacyStore = usePrivacyStore.getState();
+    if (!privacyStore.isLoaded) {
+      getPrivacySettings()
+        .then((data) => {
+          if (data) {
+            usePrivacyStore.getState().setSettings(data);
+          }
+        })
+        .catch((err) => {
+          console.error("[Privacy] Failed to load settings:", err);
+        });
+    }
+
     // === 2. Global Presence ===
     const presenceChannel = realtime.channels.get(GLOBAL_PRESENCE_CHANNEL);
 
-    presenceChannel.presence.enter({
-      userId,
-      nickname: nickname || userId,
-      avatar: avatar || null,
+    // Respect showOnlineStatus privacy setting
+    const enterPresence = () => {
+      const { showOnlineStatus } = usePrivacyStore.getState().settings;
+      if (showOnlineStatus) {
+        presenceChannel.presence.enter({
+          userId,
+          nickname: nickname || userId,
+          avatar: avatar || null,
+        });
+      }
+    };
+    enterPresence();
+
+    // Listen for privacy settings changes to toggle presence on/off
+    const handlePrivacyChange = () => {
+      const { showOnlineStatus } = usePrivacyStore.getState().settings;
+      if (showOnlineStatus) {
+        presenceChannel.presence.enter({
+          userId,
+          nickname: nickname || userId,
+          avatar: avatar || null,
+        });
+      } else {
+        presenceChannel.presence.leave().catch(() => {});
+      }
+    };
+
+    // Subscribe to store changes
+    const unsubscribePrivacy = usePrivacyStore.subscribe((state, prevState) => {
+      if (
+        state.settings.showOnlineStatus !== prevState.settings.showOnlineStatus
+      ) {
+        handlePrivacyChange();
+      }
     });
 
     const syncPresence = async () => {
@@ -246,6 +291,7 @@ export function useAblyNotification() {
       presenceChannel.presence.leave().catch(() => {});
       presenceChannel.presence.unsubscribe();
       notificationChannel.unsubscribe();
+      unsubscribePrivacy();
       realtime.connection.off();
       realtime.close();
       clientRef.current = null;

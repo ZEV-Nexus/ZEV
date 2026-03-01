@@ -63,7 +63,6 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
     useChatStore();
   const t = useTranslations("chat");
 
-  // Get typing users for this room (excluding self)
   const typingByRoom = useTypingStore((s) => s.typingByRoom);
   const roomTypingMap = typingByRoom.get(room.id);
   const filteredTypers = roomTypingMap
@@ -72,7 +71,6 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
       )
     : [];
 
-  // Get online status for DM recipient
   const { onlineUsers } = useOnlineStore();
   const isRecipientOnline =
     room.roomType === "dm" && recipient
@@ -86,7 +84,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
     onMessage: (message) => {
       updateRoomLastMessage(room.id, message);
       if (
-        message.member.user.userId !== session?.user?.userId &&
+        message.member.user.id !== session?.user?.id &&
         currentRoom?.id !== room.id
       ) {
         incrementUnreadCount(room.id);

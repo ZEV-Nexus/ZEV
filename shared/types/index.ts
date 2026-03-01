@@ -1,5 +1,11 @@
 import type { LoginMethod } from "@/feature/auth/types";
 
+export interface PrivacySettings {
+  showReadReceipts: boolean;
+  showTypingIndicator: boolean;
+  showOnlineStatus: boolean;
+}
+
 export interface User {
   id: string;
   userId: string;
@@ -12,6 +18,7 @@ export interface User {
   provider: LoginMethod;
   emailVerified: boolean;
   githubUsername?: string;
+  privacySettings?: PrivacySettings;
 }
 export interface ChatNavCategory {
   id: string;

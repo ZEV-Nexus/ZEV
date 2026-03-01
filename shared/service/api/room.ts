@@ -101,6 +101,42 @@ export const updateRoomInfo = async (
   });
 };
 
+export interface RoomMediaItem {
+  id: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  resourceType: string;
+  uploadedAt: string;
+  messageId: string;
+  senderNickname: string;
+  senderAvatar?: string;
+}
+
+export interface RoomLinkItem {
+  url: string;
+  messageId: string;
+  content: string;
+  senderNickname: string;
+  senderAvatar?: string;
+  createdAt: string;
+}
+
+export const getRoomSharedMedia = async (
+  roomId: string,
+  type: "image" | "file" | "link",
+  limit: number = 50,
+  before?: string,
+) => {
+  const params = new URLSearchParams({ type, limit: String(limit) });
+  if (before) params.set("before", before);
+  const response = await fetchApi<RoomMediaItem[] | RoomLinkItem[]>(
+    `rooms/${roomId}/media?${params.toString()}`,
+  );
+  return response.data;
+};
+
 export const findOrCreateDM = async (
   targetUserId: string,
   targetUser: {

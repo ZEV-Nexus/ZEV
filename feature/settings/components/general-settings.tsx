@@ -20,11 +20,13 @@ import {
 } from "@/shared/shadcn/components/ui/select";
 import { useTranslations } from "next-intl";
 import { useLocaleStore, Locale } from "@/shared/store/locale-store";
+import LogoImage from "@/shared/components/logo-image";
+import Link from "next/link";
 
 const themeOptions = [
-  { value: "light", labelKey: "themeLight", icon: RiSunLine },
-  { value: "dark", labelKey: "themeDark", icon: RiMoonLine },
-  { value: "system", labelKey: "themeSystem", icon: RiComputerLine },
+  { value: "light", labelKey: "settings.themeLight", icon: RiSunLine },
+  { value: "dark", labelKey: "settings.themeDark", icon: RiMoonLine },
+  { value: "system", labelKey: "settings.themeSystem", icon: RiComputerLine },
 ] as const;
 
 const localeOptions = [
@@ -35,43 +37,64 @@ const localeOptions = [
 export function GeneralSettings() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
-  const t = useTranslations("settings");
+  const t = useTranslations();
   const { locale, setLocale } = useLocaleStore();
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium">{t("general")}</h3>
+        <h3 className="text-lg font-medium">{t("settings.general")}</h3>
         <p className="text-sm text-muted-foreground">
-          {t("generalDescription")}
+          {t("settings.generalDescription")}
         </p>
       </div>
 
       <div className="grid gap-4">
-        <Card className="flex-row items-center justify-between">
-          <CardContent className=" w-full flex  items-center   justify-between">
-            <div className="flex flex-row items-center">
-              <Avatar>
-                <AvatarImage src={session?.user?.avatar || undefined} />
-                <AvatarFallback>
-                  {session?.user?.nickname?.charAt(0).toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="ml-4">
-                <p className="text-sm font-medium">{session?.user?.nickname}</p>
-                <p className="text-sm text-muted-foreground">
-                  {session?.user?.email}
-                </p>
+        {session?.user ? (
+          <Card className="flex-row items-center justify-between">
+            <CardContent className=" w-full flex  items-center   justify-between">
+              <div className="flex flex-row items-center">
+                <Avatar>
+                  <AvatarImage src={session?.user?.avatar || undefined} />
+                  <AvatarFallback>
+                    {session?.user?.nickname?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="ml-4">
+                  <p className="text-sm font-medium">
+                    {session?.user?.nickname}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {session?.user?.email}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <Button variant="destructive">{t("logout")}</Button>
-          </CardContent>
-        </Card>
+              <Button variant="destructive">{t("settings.logout")}</Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="flex-row items-center justify-between">
+            <CardContent className=" w-full flex  items-center   justify-between">
+              <div className="flex flex-row items-center">
+                <LogoImage />
+                <div className="ml-4">
+                  <p className="text-sm font-medium">{t("auth.login")}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.loginDescription")}
+                  </p>
+                </div>
+              </div>
+              <Link href="/auth/login">
+                <Button>{t("auth.login")}</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>{t("language")}</Label>
+            <Label>{t("settings.language")}</Label>
             <p className="text-sm text-muted-foreground">
-              {t("languageDescription")}
+              {t("settings.languageDescription")}
             </p>
           </div>
           <Select value={locale} onValueChange={(v) => setLocale(v as Locale)}>
@@ -90,14 +113,14 @@ export function GeneralSettings() {
 
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label>{t("theme")}</Label>
+            <Label>{t("settings.theme")}</Label>
             <p className="text-sm text-muted-foreground">
-              {t("themeDescription")}
+              {t("settings.themeDescription")}
             </p>
           </div>
           <Select value={theme} onValueChange={setTheme}>
             <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder={t("selectTheme")} />
+              <SelectValue placeholder={t("settings.selectTheme")} />
             </SelectTrigger>
             <SelectContent>
               {themeOptions.map((option) => (

@@ -12,6 +12,7 @@ import { useChatStore } from "@/shared/store/chat-store";
 import { markAsRead } from "@/shared/service/api/message";
 import { useTranslations } from "next-intl";
 import { useLocaleStore } from "@/shared/store/locale-store";
+import { usePrivacyStore } from "@/shared/store/privacy-store";
 interface ChatMessageListProps {
   roomId: string;
   messages: Message[];
@@ -189,15 +190,19 @@ export function ChatMessageList({
     });
   }, []);
 
+  const handleMarkAsRead = useCallback((roomId: string) => {
+    markAsRead(roomId);
+  }, []);
+
   // Mark as read when messages update and we are at bottom
   useEffect(() => {
     if (atBottom && messages.length > 0) {
       clearUnreadCount(roomId);
-      markAsRead(roomId);
+      handleMarkAsRead(roomId);
     }
 
     prevAtBottom.current = atBottom;
-  }, [messages, atBottom, roomId, clearUnreadCount]);
+  }, [messages, atBottom, roomId, clearUnreadCount, handleMarkAsRead]);
 
   // Empty state
   if (messages.length === 0) {
@@ -225,7 +230,7 @@ export function ChatMessageList({
           setAtBottom(bottom);
           if (bottom) {
             clearUnreadCount(roomId);
-            markAsRead(roomId);
+            handleMarkAsRead(roomId);
             prevAtBottom.current = atBottom;
           }
         }}

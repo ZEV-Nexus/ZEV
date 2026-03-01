@@ -97,7 +97,24 @@
         "viewAllMembersDescription": "查看聊天室中的所有成員",
         "canChangeRole": "，你可以更改成員的角色",
         "onlineStatus": "在線上",
-        "offlineStatus": "離線"
+        "offlineStatus": "離線",
+        "mediaLoadError": "載入內容失敗",
+        "retry": "重試",
+        "noImages": "尚未分享任何圖片或影片",
+        "noFiles": "尚未分享任何檔案",
+        "noLinks": "尚未分享任何連結",
+        "messagePrivacy": "訊息隱私",
+        "readReceipts": "已讀回執",
+        "readReceiptsDescription": "讓其他人知道你已閱讀他們的訊息",
+        "typingIndicator": "輸入指示器",
+        "typingIndicatorDescription": "顯示你正在輸入訊息",
+        "visibility": "可見性",
+        "showOnlineStatus": "在線狀態",
+        "showOnlineStatusDescription": "向其他成員顯示你的在線狀態",
+        "blocking": "封鎖",
+        "blockUser": "封鎖使用者",
+        "privacyLoadError": "載入隱私設定失敗",
+        "privacyUpdateError": "更新隱私設定失敗"
     },
     "chatDialog": {
         "inviteTitle": "Invite Member",
@@ -137,6 +154,7 @@
         "notificationsDescription": "管理您的通知偏好設定。",
         "language": "語言",
         "languageDescription": "選擇介面顯示語言",
+        "loginDescription": "登入以啟用更多功能，例如發布貼文、與其他使用者互動，以及個人化設定。",
         "logout": "登出",
         "theme": "主題",
         "themeDescription": "選擇應用程式的色彩主題",
@@ -156,7 +174,9 @@
         "connected": "已連結",
         "notConnected": "未連結",
         "disconnect": "斷開連結",
-        "connect": "連結"
+        "connect": "連結",
+        "privacy": "隱私",
+        "privacyDescription": "管理您的隱私設定，訊息隱私、已讀回執、輸入指示器和在線狀態的顯示"
     },
     "feed": {
         "title": "動態牆",

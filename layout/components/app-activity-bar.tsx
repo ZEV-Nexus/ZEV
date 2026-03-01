@@ -34,7 +34,7 @@ import { useAppSidebarStore } from "@/shared/store/app-sidebar-store";
 import SearchPanel from "./search-panel";
 import NotificationPanel from "./notification-panel";
 import { AnimatePresence, motion } from "motion/react";
-import Image from "next/image";
+
 import { useNotificationStore } from "@/shared/store/notification-store";
 import { SettingsDialog } from "@/feature/settings/components/settings-dialog";
 

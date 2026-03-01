@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/shared/service/server/auth";
 import { updateMemberRole } from "@/shared/service/server/member";
 import { publishBulkUserNotification } from "@/shared/lib/server-ably";
 import { memberModel, roomModel } from "@/shared/schema";
+import type { User } from "@/shared/types";
 
 export async function POST(
   req: Request,
@@ -40,11 +41,13 @@ export async function POST(
     if (room) {
       const allMembers = await memberModel
         .find({ room: room._id })
-        .populate({ path: "user", select: "userId" });
+        .populate<{
+          user: Pick<User, "userId">;
+        }>({ path: "user", select: "userId" });
 
       const memberUserIds = allMembers
-        .map((m) => (m.user as any)?.userId)
-        .filter(Boolean);
+        .map((m) => m.user?.userId)
+        .filter((id): id is string => Boolean(id));
 
       await publishBulkUserNotification(memberUserIds, "member-role-updated", {
         roomId,
@@ -58,15 +61,14 @@ export async function POST(
     }
 
     return NextResponse.json({ success: true, data: updatedMember });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "";
     console.error("Error updating member role:", error);
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      { error: message || "Internal Server Error" },
       {
         status:
-          error.message?.includes("Only") || error.message?.includes("Cannot")
-            ? 403
-            : 500,
+          message?.includes("Only") || message?.includes("Cannot") ? 403 : 500,
       },
     );
   }

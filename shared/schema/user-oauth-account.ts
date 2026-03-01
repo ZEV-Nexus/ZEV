@@ -13,7 +13,7 @@ const userOAuthAccountSchema = new mongoose.Schema({
 });
 
 userOAuthAccountSchema.index(
-  { provider: 1, providerService: 1 },
+  { provider: 1, providerService: 1, user: 1 },
   { unique: true },
 );
 

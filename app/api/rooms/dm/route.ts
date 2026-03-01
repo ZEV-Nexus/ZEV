@@ -84,11 +84,10 @@ export async function POST(req: Request) {
       const notificationPayload = {
         type: "room-created",
         room: roomData,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        members: members.map((m: any) => ({
+        members: members.map((m) => ({
           id: m.id || m._id?.toString(),
           user: {
-            id: m.user?.id || m.user?._id?.toString(),
+            id: m.user?.id,
             userId: m.user?.userId,
             nickname: m.user?.nickname,
             avatar: m.user?.avatar,

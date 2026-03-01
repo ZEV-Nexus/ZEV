@@ -36,7 +36,10 @@ export const THIRD_PARTY_PROVIDERS: ThirdPartyProvider[] = [
     service: "gmail",
     authType: "oauth",
     image: "/provider/google-gmail-icon.svg",
-    scope: ["https://mail.google.com/auth/gmail.modify"],
+    scope: [
+      "https://www.googleapis.com/auth/gmail.modify",
+      "https://www.googleapis.com/auth/gmail.readonly",
+    ],
   },
   {
     id: "google_meet",

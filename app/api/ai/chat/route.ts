@@ -12,9 +12,21 @@ import {
 } from "@/ai/agents/calendar-agent";
 import { processAttachments } from "@/ai/agents/attachment-agent";
 import {
+  extractGmailDraft,
+  needsClarification,
+  buildGmailFallbackConfirmation,
+  buildGmailSendPayload,
+} from "@/ai/agents/gmail-agent";
+import {
   createGoogleCalendarEvent,
   googleCalendar,
 } from "@/shared/lib/google-calendar";
+import {
+  googleGmail,
+  sendGmailMessage,
+  listGmailMessages,
+  readGmailMessage,
+} from "@/shared/lib/google-gmail";
 
 import { findRefreshTokenByService } from "@/shared/service/server/user-oauth-account";
 
@@ -134,6 +146,13 @@ export async function POST(req: Request) {
 此工具會呼叫 Attachment Agent：
 - 圖片 → Vision Agent（大模型，可分析圖片內容）
 - 文件 → Document Agent（中模型，分析文件元資料）
+
+### Gmail 郵件
+當使用者要求撰寫郵件、回覆郵件、查看收件匣、或任何與 Gmail 相關的操作時，使用 gmail_action 工具。
+此工具會呼叫 Gmail Agent（中階模型）：
+- 撰寫/回覆郵件 → 提取草稿 → 要求使用者確認後才寄送
+- 查看收件匣 → 列出最近郵件
+- 讀取郵件 → 顯示郵件內容
 
 ## 一般對話
 對於非工具相關的問題，直接回答即可。
@@ -387,6 +406,182 @@ export async function POST(req: Request) {
               console.error("Attachment Agent error:", error);
               return {
                 error: "Attachment Agent 處理附件時發生錯誤，請稍後再試。",
+              };
+            }
+          },
+        }),
+
+        // ─── Gmail Tool → delegates to Gmail Agent ───
+        gmail_action: tool({
+          description: `處理 Gmail 相關操作：撰寫郵件、回覆郵件、查看收件匣、讀取郵件。
+呼叫獨立的 Gmail Agent（中階模型）進行意圖解析。
+寄送郵件前必須經過使用者確認。`,
+          inputSchema: z.object({
+            user_message: z.string().describe("使用者關於郵件的原始訊息"),
+            action_type: z
+              .enum(["draft", "list", "read", "send_confirmed"])
+              .describe(
+                "操作類型：draft=撰寫/回覆草稿、list=列出收件匣、read=讀取郵件、send_confirmed=使用者已確認寄送",
+              ),
+            message_id: z
+              .string()
+              .optional()
+              .describe("郵件 ID（讀取郵件或確認寄送時使用）"),
+            confirmed_draft: z
+              .object({
+                to: z.string(),
+                subject: z.string(),
+                body: z.string(),
+                threadId: z.string().optional(),
+              })
+              .optional()
+              .describe("使用者已確認的郵件草稿（send_confirmed 時使用）"),
+          }),
+          execute: async ({
+            user_message,
+            action_type,
+            message_id,
+            confirmed_draft,
+          }) => {
+            try {
+              const refreshToken = await findRefreshTokenByService(
+                user.id,
+                "gmail",
+              );
+
+              if (!refreshToken) {
+                return {
+                  error:
+                    "尚未連結 Google Gmail 帳號，請前往設定頁面連結 Gmail。",
+                };
+              }
+
+              const gmail = await googleGmail(refreshToken);
+
+              // ─── List inbox ───
+              if (action_type === "list") {
+                const messages = await listGmailMessages(gmail, 10);
+                return {
+                  type: "gmail_messages",
+                  messages: messages.map((m) => ({
+                    id: m.id,
+                    from: m.from,
+                    subject: m.subject,
+                    date: m.date,
+                    snippet: m.snippet,
+                  })),
+                  message: `📬 以下是最近的郵件：\n${messages
+                    .map(
+                      (m, i) =>
+                        `${i + 1}. **${m.subject || "(無主旨)"}** — ${m.from}\n   ${m.snippet}`,
+                    )
+                    .join("\n\n")}`,
+                };
+              }
+
+              // ─── Read specific message ───
+              if (action_type === "read" && message_id) {
+                const msg = await readGmailMessage(gmail, message_id);
+                return {
+                  type: "gmail_message_detail",
+                  emailData: {
+                    id: msg.id,
+                    from: msg.from,
+                    to: msg.to,
+                    subject: msg.subject,
+                    date: msg.date,
+                    body: msg.body,
+                    threadId: msg.threadId,
+                    messageId: msg.messageId,
+                  },
+                  message: `📧 **${msg.subject}**\n\n**寄件者**：${msg.from}\n**日期**：${msg.date}\n\n${msg.body}`,
+                };
+              }
+
+              // ─── Send confirmed draft ───
+              if (action_type === "send_confirmed" && confirmed_draft) {
+                const result = await sendGmailMessage(gmail, confirmed_draft);
+                return {
+                  type: "gmail_sent",
+                  messageId: result.id,
+                  threadId: result.threadId,
+                  message: `✅ 郵件已成功寄送給 ${confirmed_draft.to}`,
+                };
+              }
+
+              // ─── Draft: Extract intent with Gmail Agent ───
+              let conversationContext = "";
+              if (roomId) {
+                const recentMsgs = await getMessages(roomId, 20);
+                conversationContext = getConversationContextFromMessages(
+                  formatMessages(recentMsgs),
+                );
+              }
+
+              const draft = await extractGmailDraft(
+                provider,
+                apiKey,
+                user_message,
+                conversationContext,
+              );
+
+              // If clarification needed
+              if (needsClarification(draft)) {
+                return {
+                  type: "gmail_clarification",
+                  draft,
+                  message:
+                    draft.clarification_needed ||
+                    "需要更多資訊才能撰寫郵件，請補充。",
+                };
+              }
+
+              // For LIST_MESSAGES / READ_MESSAGE actions detected by agent
+              if (draft.action === "LIST_MESSAGES") {
+                const messages = await listGmailMessages(gmail, 10);
+                return {
+                  type: "gmail_messages",
+                  messages: messages.map((m) => ({
+                    id: m.id,
+                    from: m.from,
+                    subject: m.subject,
+                    date: m.date,
+                    snippet: m.snippet,
+                  })),
+                  message: `📬 以下是最近的郵件：\n${messages
+                    .map(
+                      (m, i) =>
+                        `${i + 1}. **${m.subject || "(無主旨)"}** — ${m.from}\n   ${m.snippet}`,
+                    )
+                    .join("\n\n")}`,
+                };
+              }
+
+              if (draft.action === "READ_MESSAGE") {
+                return {
+                  type: "gmail_clarification",
+                  message: "請指定要讀取哪封郵件。你可以先說「查看收件匣」。",
+                };
+              }
+
+              // Draft/Reply: return for confirmation
+              const payload = buildGmailSendPayload(draft);
+              return {
+                type: "confirm_gmail",
+                draft: {
+                  action: draft.action,
+                  to: draft.to,
+                  subject: draft.subject,
+                  body: draft.body,
+                  confidence: draft.confidence,
+                },
+                canSend: !!payload,
+                message: buildGmailFallbackConfirmation(draft),
+              };
+            } catch (error) {
+              console.error("Gmail Agent error:", error);
+              return {
+                error: "Gmail Agent 處理郵件時發生錯誤，請稍後再試。",
               };
             }
           },

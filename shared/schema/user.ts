@@ -17,6 +17,11 @@ const UserProfileSchema = new mongoose.Schema({
   avatar: String,
   githubUsername: { type: String, default: "" },
   emailVerified: { type: Boolean, default: false, required: true },
+  privacySettings: {
+    showReadReceipts: { type: Boolean, default: true },
+    showTypingIndicator: { type: Boolean, default: true },
+    showOnlineStatus: { type: Boolean, default: true },
+  },
   createdAt: {
     type: Date,
     default: Date.now(),

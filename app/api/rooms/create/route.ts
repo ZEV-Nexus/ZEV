@@ -1,4 +1,3 @@
-import { roomModel } from "@/shared/schema";
 import { createMember, getRoomMembers } from "@/shared/service/server/member";
 import { createRoom } from "@/shared/service/server/room";
 import { createDMKey } from "@/shared/lib/utils";
@@ -7,6 +6,7 @@ import { NextResponse } from "next/server";
 import { publishUserNotification } from "@/shared/lib/server-ably";
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { createNotification } from "@/shared/service/server/notification";
+import { apiResponse } from "@/shared/service/server/response";
 
 export async function POST(request: Request) {
   try {
@@ -41,8 +41,10 @@ export async function POST(request: Request) {
     );
     const members = await getRoomMembers(room.id);
 
-    // Get the current user (creator) info for notification
     const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return apiResponse({ ok: false, message: "Unauthorized", status: 401 });
+    }
 
     const roomData = {
       id: room.id,
@@ -52,14 +54,13 @@ export async function POST(request: Request) {
       roomId: room.roomId,
     };
 
-    // Send real-time notifications to all invited members (exclude the creator)
     const notificationPayload = {
       type: "room-created",
       room: roomData,
-      members: members.map((m: any) => ({
+      members: members.map((m) => ({
         id: m.id || m._id?.toString(),
         user: {
-          id: m.user?.id || m.user?._id?.toString(),
+          id: m.user?.id,
           userId: m.user?.userId,
           nickname: m.user?.nickname,
           avatar: m.user?.avatar,
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
           // 2. Persistent Notification (new-notification)
           const p2 = createNotification({
             recipientId: member.id,
-            senderId: currentUser?.id!,
+            senderId: currentUser.id,
             type: "room_invite",
             roomId: room.id,
           }).catch((err) =>

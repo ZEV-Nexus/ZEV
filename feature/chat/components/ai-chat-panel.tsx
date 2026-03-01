@@ -24,6 +24,7 @@ import { AI_MODELS, AIModel, useAIStore } from "@/shared/store/ai-store";
 import { UIMessage } from "ai";
 
 import { useTranslations } from "next-intl";
+import LogoImage from "@/shared/components/logo-image";
 export interface AIMessage {
   id: string;
   role: "user" | "assistant";
@@ -77,7 +78,6 @@ export const AIChatPanel = memo(function AIChatPanel({
         <CardContent className="p-0">
           <div className="rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2 border-b border-border/50 ">
-              {" "}
               <Select
                 onValueChange={(e) => {
                   const model = AI_MODELS.find((m) => m.id === e);
@@ -158,11 +158,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                       >
                         {/* Avatar */}
                         <div className="shrink-0 mt-0.5">
-                          {msg.role === "assistant" && (
-                            <div className="h-8 w-8 rounded-lg bg-linear-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
-                              <RiSparklingFill className="h-4 w-4 text-primary-foreground" />
-                            </div>
-                          )}
+                          {msg.role === "assistant" && <LogoImage />}
                         </div>
 
                         {/* Message Bubble */}

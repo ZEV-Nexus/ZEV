@@ -66,9 +66,6 @@ export default function ChatRoom({
       );
     },
   });
-
-  console.log(status);
-
   const currentMember = members?.find((m) => m.user.userId === currentUserId);
   const nickname = currentMember?.user?.nickname || "Guest";
   useEffect(() => {
@@ -98,8 +95,8 @@ export default function ChatRoom({
       const data = await fetchMessages(room.id, MESSAGE_LIMIT);
       return data ?? [];
     },
-    staleTime: 30 * 1000, // 30s 內視為新鮮，不重新拉取
-    gcTime: 10 * 60 * 1000, // 快取保留 10 分鐘
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {

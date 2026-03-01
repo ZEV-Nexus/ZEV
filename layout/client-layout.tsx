@@ -21,6 +21,7 @@ export default function ClientLayout({
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith("/auth");
   const isMobile = useIsMobile();
+
   useEffect(() => {
     useAIStore.persist.rehydrate();
     useChatStore.persist.rehydrate();

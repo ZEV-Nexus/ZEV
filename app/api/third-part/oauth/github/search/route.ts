@@ -57,7 +57,20 @@ export async function GET(request: Request) {
 
     const data = await githubRes.json();
 
-    const repos = data.map((item: any) => ({
+    interface GitHubRepo {
+      owner: { login: string; avatar_url: string };
+      name: string;
+      full_name: string;
+      html_url: string;
+      description: string | null;
+      stargazers_count: number;
+      language: string | null;
+      forks_count: number;
+      private: boolean;
+      updated_at: string;
+    }
+
+    const repos = data.map((item: GitHubRepo) => ({
       owner: item.owner.login,
       repo: item.name,
       fullName: item.full_name,

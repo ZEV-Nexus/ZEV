@@ -24,6 +24,7 @@ import {
   RiSettings3Line,
   RiNotification3Line,
   RiLinksLine,
+  RiChatPrivateLine,
 } from "@remixicon/react";
 
 import { GeneralSettings } from "./general-settings";
@@ -32,6 +33,8 @@ import { NotificationSettings } from "./notification-settings";
 import ConnectSetting from "./connect-setting";
 import { useThirdPart } from "../hooks/use-third-part";
 import { useTranslations } from "next-intl";
+import { useSession } from "next-auth/react";
+import { PrivacySettings } from "./privacy-setting";
 
 const tabs = [
   { value: "general", labelKey: "general", icon: RiSettings3Line },
@@ -42,12 +45,19 @@ const tabs = [
     labelKey: "notifications",
     icon: RiNotification3Line,
   },
+  {
+    value: "privacy",
+    labelKey: "privacy",
+    icon: RiChatPrivateLine,
+  },
 ] as const;
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
   const { handleConnect, userOAuths, isLoading } = useThirdPart();
+  const { data: session } = useSession();
   const t = useTranslations("settings");
+  const needSession = tabs.filter((tab) => tab.value !== "general");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -72,6 +82,9 @@ export function SettingsDialog() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
+                disabled={
+                  needSession.some((t) => t.value === tab.value) && !session
+                }
                 className="w-full flex-0 justify-start  gap-2 px-3 py-2 text-sm"
               >
                 <tab.icon className="h-4 w-4" />
@@ -85,20 +98,27 @@ export function SettingsDialog() {
             <TabsContent value="general">
               <GeneralSettings />
             </TabsContent>
-            <TabsContent value="api-keys">
-              <ApiKeySettings />
-            </TabsContent>
-            <TabsContent value="connections">
-              <ConnectSetting
-                handleConnect={handleConnect}
-                userOAuths={userOAuths}
-                isLoading={isLoading}
-              />
-            </TabsContent>
+            {session?.user && (
+              <>
+                <TabsContent value="api-keys">
+                  <ApiKeySettings />
+                </TabsContent>
+                <TabsContent value="connections">
+                  <ConnectSetting
+                    handleConnect={handleConnect}
+                    userOAuths={userOAuths}
+                    isLoading={isLoading}
+                  />
+                </TabsContent>
+                <TabsContent value="privacy">
+                  <PrivacySettings />
+                </TabsContent>
 
-            <TabsContent value="notifications">
-              <NotificationSettings />
-            </TabsContent>
+                <TabsContent value="notifications">
+                  <NotificationSettings />
+                </TabsContent>
+              </>
+            )}
           </div>
         </Tabs>
       </DialogContent>

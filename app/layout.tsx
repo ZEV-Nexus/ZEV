@@ -160,6 +160,7 @@ export default function RootLayout({
             <TooltipProvider>
               <SessionProvider>
                 <ClientLayout>{children}</ClientLayout>
+
                 <Toaster />
               </SessionProvider>
             </TooltipProvider>

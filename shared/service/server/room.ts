@@ -44,7 +44,7 @@ export const createRoom = async ({
     nickname: roomName,
     notificationSetting: "all",
     pinned: false,
-    roomCategory: categoryId as any,
+    roomCategory: categoryId,
   });
   const savedRoom = await room.save();
 
@@ -64,7 +64,7 @@ export const updateRoomInfo = async (
   const room = await roomModel.findOne({ roomId });
   if (!room) throw new Error("Room not found");
 
-  const update: Record<string, any> = {};
+  const update: Record<string, string> = {};
   if (updates.name !== undefined) update.name = updates.name;
   if (updates.avatar !== undefined) update.avatar = updates.avatar;
 

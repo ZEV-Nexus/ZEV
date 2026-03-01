@@ -71,7 +71,7 @@ export async function GET(request: Request) {
     );
 
     const tokenData = await tokenRes.json();
-
+    console.log("GitHub token response:", tokenData);
     if (tokenData.error || !tokenData.access_token) {
       return renderClosePopup(
         origin,
@@ -80,7 +80,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Fetch GitHub user profile
     const profileRes = await fetch("https://api.github.com/user", {
       headers: {
         Authorization: `Bearer ${tokenData.access_token}`,
