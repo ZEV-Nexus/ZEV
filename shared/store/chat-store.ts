@@ -30,7 +30,6 @@ interface ChatAction {
     },
   ) => void;
   setCurrentRoom: (room: ChatRoom) => void;
-
   updateRoomLastMessage: (roomId: string, message: Message) => void;
   incrementUnreadCount: (roomId: string) => void;
   clearUnreadCount: (roomId: string) => void;

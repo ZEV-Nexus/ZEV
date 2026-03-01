@@ -15,6 +15,7 @@ import { getNotifications } from "@/shared/service/api/notification";
 import { usePrivacyStore } from "@/shared/store/privacy-store";
 import { getPrivacySettings } from "@/shared/service/api/user";
 import MessageToast from "../components/toast/message-toast";
+import { isMentioned } from "../lib/mention";
 
 // Notification event types
 export type NotificationType =
@@ -189,11 +190,24 @@ export function useAblyNotification() {
 
       // Update last message
       updateRoomLastMessage(roomId, chatMessage);
+      const members = useChatStore
+        .getState()
+        .chatCategorys.find((cat) =>
+          cat.items.some((item) => item.room?.id === roomId),
+        )
+        ?.items.find((item) => item.room?.id === roomId)?.members;
+      const current = members?.find((m) => m.user.id === userId);
 
       // If not in this room, increment unread count
       if (currentActiveRoomId !== roomId) {
         incrementUnreadCount(roomId);
-        MessageToast(chatMessage);
+        if (
+          (current?.notificationSetting === "mentions" &&
+            isMentioned(chatMessage?.content ?? "", userId)) ||
+          current?.notificationSetting === "all"
+        ) {
+          MessageToast(chatMessage);
+        }
       }
     });
 

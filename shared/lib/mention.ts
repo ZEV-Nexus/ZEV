@@ -79,6 +79,13 @@ export function hasMentions(content: string): boolean {
 }
 
 /**
+ * 檢查訊息是否包含特定 userId 的 mention
+ */
+export function isMentioned(content: string, userId: string): boolean {
+  return content.includes(`<@${userId}>`);
+}
+
+/**
  * 從訊息中提取所有被 mention 的 userId
  */
 export function extractMentionedUserIds(content: string): string[] {

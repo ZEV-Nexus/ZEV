@@ -32,6 +32,9 @@ import {
   DropdownMenuRadioGroup,
 } from "@/shared/shadcn/components/ui/dropdown-menu";
 import { notificationOptions } from "@/shared/config/notification";
+import { updateRoomSettings } from "@/shared/service/api/room";
+import { useChatStore } from "@/shared/store/chat-store";
+import { toast } from "sonner";
 
 interface ChatRoomHeaderProps {
   room: ChatRoom;
@@ -51,6 +54,7 @@ export function ChatRoomHeader({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [localRoom, setLocalRoom] = useState<ChatRoom>(room);
   const { onlineUsers } = useOnlineStore();
+  const [current, setCurrent] = useState<Member | null>(null);
   const t = useTranslations("chat");
 
   // Sync with prop changes
@@ -76,7 +80,12 @@ export function ChatRoomHeader({
       window.removeEventListener("room-info-updated", handleRoomInfoUpdate);
   }, [room.id]);
 
+  useEffect(() => {
+    setCurrent(members.find((m) => m.user.id === currentUserId) || null);
+  }, [members, currentUserId]);
+
   const recipient = members?.find((member) => member.user.id !== currentUserId);
+
   const isMobile = useIsMobile();
   const router = useRouter();
   const displayName =
@@ -181,7 +190,37 @@ export function ChatRoomHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuRadioGroup value="all">
+                <DropdownMenuRadioGroup
+                  value={current?.notificationSetting}
+                  onValueChange={async (value) => {
+                    const setting = value as "all" | "mentions" | "mute";
+                    const prev = current?.notificationSetting;
+                    setCurrent((prev) => {
+                      if (prev) {
+                        return { ...prev, notificationSetting: setting };
+                      }
+                      return prev;
+                    });
+                    useChatStore
+                      .getState()
+                      .updateRoomSettings(room.id, currentUserId, {
+                        notificationSetting: setting,
+                      });
+                    try {
+                      await updateRoomSettings(room.id, {
+                        notificationSetting: setting,
+                      });
+                    } catch (error) {
+                      console.error(error);
+                      useChatStore
+                        .getState()
+                        .updateRoomSettings(room.id, currentUserId, {
+                          notificationSetting: prev,
+                        });
+                      toast.error("Failed to update notification settings");
+                    }
+                  }}
+                >
                   {notificationOptions.map((option) => (
                     <DropdownMenuRadioItem
                       value={option.value}

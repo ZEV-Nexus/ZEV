@@ -79,7 +79,7 @@ export const getUserRooms = async (userId: string) => {
             select: "nickname avatar user",
             populate: {
               path: "user",
-              select: "nickname avatar username",
+              select: "nickname avatar username ",
             },
           },
           {
