@@ -82,7 +82,7 @@ export default function EditRoomInfoDialog({
   };
 
   const handleSave = async () => {
-    if (!room.roomId) return;
+    if (!room.id) return;
 
     const trimmedName = name.trim();
     if (!trimmedName) {
@@ -117,7 +117,7 @@ export default function EditRoomInfoDialog({
         return;
       }
 
-      await updateRoomInfo(room.roomId, updates);
+      await updateRoomInfo(room.id, updates);
       onUpdated?.(updates);
       toast.success(t("groupInfoUpdated"));
       onOpenChange(false);

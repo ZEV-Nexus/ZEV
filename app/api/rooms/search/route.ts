@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
 
     const result = rooms.map((room) => ({
       id: room._id.toString(),
-      roomId: room.roomId,
       name: room.name,
       avatar: room.avatar,
       roomType: room.roomType,

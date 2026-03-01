@@ -189,7 +189,7 @@ export default function UserProfile({
       if (!data.isExisting) {
         addChatRoom(data.room, data.members);
       }
-      router.push(`/c/${data.room.roomId}`);
+      router.push(`/c/${data.room.id}`);
     },
     onError(error: unknown) {
       toast.error((error as Error)?.message || t("updateFailed"));
