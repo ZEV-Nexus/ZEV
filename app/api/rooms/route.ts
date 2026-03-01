@@ -59,7 +59,7 @@ export async function GET() {
         unreadCount,
         room: {
           id: room.id,
-          roomId: room.roomId ?? "",
+
           name: room.name ?? "",
           roomType: room.roomType ?? "dm",
           createdAt: new Date(room.createdAt || new Date()).toISOString(),

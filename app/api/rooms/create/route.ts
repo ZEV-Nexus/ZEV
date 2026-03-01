@@ -1,4 +1,3 @@
-import { roomModel } from "@/shared/schema";
 import { createMember, getRoomMembers } from "@/shared/service/server/member";
 import { createRoom } from "@/shared/service/server/room";
 import { createDMKey } from "@/shared/lib/utils";
@@ -7,6 +6,7 @@ import { NextResponse } from "next/server";
 import { publishUserNotification } from "@/shared/lib/server-ably";
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { createNotification } from "@/shared/service/server/notification";
+import { apiResponse } from "@/shared/service/server/response";
 
 export async function POST(request: Request) {
   try {
@@ -25,9 +25,7 @@ export async function POST(request: Request) {
     });
     await Promise.all(
       roomMembers.map(
-        (
-          member: Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">,
-        ) =>
+        (member: Pick<User, "id" | "email" | "nickname" | "avatar">) =>
           createMember({
             userId: member.id,
             roomId: room.id,
@@ -41,26 +39,26 @@ export async function POST(request: Request) {
     );
     const members = await getRoomMembers(room.id);
 
-    // Get the current user (creator) info for notification
     const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return apiResponse({ ok: false, message: "Unauthorized", status: 401 });
+    }
 
     const roomData = {
       id: room.id,
       name: roomName,
       roomType,
       createdAt: room.createdAt,
-      roomId: room.roomId,
     };
 
-    // Send real-time notifications to all invited members (exclude the creator)
     const notificationPayload = {
       type: "room-created",
       room: roomData,
-      members: members.map((m: any) => ({
+      members: members.map((m) => ({
         id: m.id || m._id?.toString(),
         user: {
-          id: m.user?.id || m.user?._id?.toString(),
-          userId: m.user?.userId,
+          id: m.user?.id,
+
           nickname: m.user?.nickname,
           avatar: m.user?.avatar,
           email: m.user?.email,
@@ -72,7 +70,6 @@ export async function POST(request: Request) {
       })),
       inviter: {
         id: currentUser?.id,
-        userId: currentUser?.userId,
         nickname: currentUser?.nickname,
         avatar: currentUser?.avatar,
       },
@@ -81,39 +78,31 @@ export async function POST(request: Request) {
     // Notify each invited member (skip the creator)
     const notifyPromises = roomMembers
       .filter(
-        (
-          member: Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">,
-        ) => member.userId !== currentUser?.userId,
+        (member: Pick<User, "id" | "email" | "nickname" | "avatar">) =>
+          member.id !== currentUser?.id,
       )
-      .map(
-        (
-          member: Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">,
-        ) => {
-          // 1. Sidebar Sync (room-created)
-          const p1 = publishUserNotification(
-            member.userId,
-            "room-created",
-            notificationPayload,
-          ).catch((err) =>
-            console.error(`Failed to notify user ${member.userId}:`, err),
-          );
+      .map((member: Pick<User, "id" | "email" | "nickname" | "avatar">) => {
+        // 1. Sidebar Sync (room-created)
+        const p1 = publishUserNotification(
+          member.id,
+          "room-created",
+          notificationPayload,
+        ).catch((err) =>
+          console.error(`Failed to notify user ${member.id}:`, err),
+        );
 
-          // 2. Persistent Notification (new-notification)
-          const p2 = createNotification({
-            recipientId: member.id,
-            senderId: currentUser?.id!,
-            type: "room_invite",
-            roomId: room.id,
-          }).catch((err) =>
-            console.error(
-              `Failed to create notification for ${member.userId}:`,
-              err,
-            ),
-          );
+        // 2. Persistent Notification (new-notification)
+        const p2 = createNotification({
+          recipientId: member.id,
+          senderId: currentUser.id,
+          type: "room_invite",
+          roomId: room.id,
+        }).catch((err) =>
+          console.error(`Failed to create notification for ${member.id}:`, err),
+        );
 
-          return Promise.all([p1, p2]);
-        },
-      );
+        return Promise.all([p1, p2]);
+      });
 
     // Don't await — fire and forget so the response isn't blocked
     Promise.allSettled(notifyPromises).catch(() => {});

@@ -1,6 +1,6 @@
 "use client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React from "react";
+import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import AppActivityBar from "./components/app-activity-bar";
 import AblyNotificationProvider from "@/shared/components/provider/ably-notification-provider";
@@ -9,6 +9,8 @@ import {
   SidebarProvider,
 } from "@/shared/shadcn/components/ui/sidebar";
 import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
+import { useAIStore } from "@/shared/store/ai-store";
+import { useChatStore } from "@/shared/store/chat-store";
 
 export default function ClientLayout({
   children,
@@ -19,6 +21,11 @@ export default function ClientLayout({
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith("/auth");
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    useAIStore.persist.rehydrate();
+    useChatStore.persist.rehydrate();
+  }, []);
 
   return (
     <QueryClientProvider client={client}>

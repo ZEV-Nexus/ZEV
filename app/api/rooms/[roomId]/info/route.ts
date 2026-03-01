@@ -19,9 +19,7 @@ export async function POST(
 
     // Check if user is admin/owner
     const members = await getMembersByRoomId(roomId);
-    const currentMember = members.find(
-      (m) => (m.user as any)?.userId === user.userId,
-    );
+    const currentMember = members.find((m) => m.user?.id === user.id);
 
     if (
       !currentMember ||
@@ -37,24 +35,26 @@ export async function POST(
 
     // Publish real-time notification to all room members
     const memberUserIds = members
-      .map((m) => (m.user as any)?.userId)
-      .filter(Boolean);
+      .map((m) => m.user?.id)
+      .filter((id): id is string => Boolean(id));
 
     await publishBulkUserNotification(memberUserIds, "room-info-updated", {
       roomId,
       name: updatedRoom?.name,
       avatar: updatedRoom?.avatar,
       updatedBy: {
-        userId: user.userId,
+        userId: user.id,
         nickname: user.nickname,
       },
     });
 
     return NextResponse.json({ success: true, data: updatedRoom });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating room info:", error);
     return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
+      {
+        error: error instanceof Error ? error.message : "Internal Server Error",
+      },
       { status: 500 },
     );
   }

@@ -21,7 +21,7 @@ export async function createMember({
   nickname?: string;
   notificationSetting?: "all" | "mentions" | "mute";
   pinned?: boolean;
-  roomCategory?: IRoomCategory;
+  roomCategory?: string;
 }) {
   const member = await memberModel.findOne({
     user: userId,
@@ -47,12 +47,16 @@ export async function createMember({
 export const getRoomMembers = async (roomId: string) => {
   const members = await memberModel
     .find({ room: roomId })
-    .populate({
+    .populate<{
+      user: User & { id: string };
+    }>({
       path: "user",
-      select: "nickname avatar _id userId email username",
+      select: "nickname avatar  userId email username",
     })
-    .populate({ path: "roomCategory", select: "title index" })
-    .exec();
+    .populate<{ roomCategory: IRoomCategory & { id: string } }>({
+      path: "roomCategory",
+      select: "title index",
+    });
 
   return members;
 };
@@ -64,7 +68,7 @@ export const getUserRooms = async (userId: string) => {
       room: ChatRoom;
     }>({
       path: "room",
-      select: "name roomType roomId lastMessage createdAt",
+      select: "name roomType lastMessage createdAt",
       populate: {
         path: "lastMessage",
         select: "content createdAt member attachments",
@@ -96,7 +100,7 @@ export const getUserRooms = async (userId: string) => {
 };
 
 export const getMembersByRoomId = async (roomId: string) => {
-  const roomDoc = await roomModel.findOne({ roomId });
+  const roomDoc = await roomModel.findById(roomId);
 
   if (!roomDoc) {
     return [];
@@ -106,11 +110,10 @@ export const getMembersByRoomId = async (roomId: string) => {
     .find({ room: roomDoc._id })
     .populate<{
       user: User;
-    }>({ path: "user", select: "nickname avatar  _id userId email username" })
+    }>({ path: "user", select: "nickname avatar userId email username" })
     .populate<{
       room: ChatRoom;
-    }>({ path: "room", select: "name roomType roomId lastMessage" })
-    .exec();
+    }>({ path: "room", select: "name roomType lastMessage" });
 
   return members;
 };
@@ -143,11 +146,7 @@ export async function updateMemberSettings(
   notificationSetting?: "all" | "mentions" | "mute",
   pinned?: boolean,
 ) {
-  // Try to find by _id first (if passed directly from internal logic) or public roomId
-  let room = await roomModel.findById(roomId);
-  if (!room) {
-    room = await roomModel.findOne({ roomId });
-  }
+  const room = await roomModel.findById(roomId);
 
   if (!room) throw new Error("Room not found");
 
@@ -157,14 +156,14 @@ export async function updateMemberSettings(
   if (pinned !== undefined) update.pinned = pinned;
 
   return await memberModel.findOneAndUpdate(
-    { user: userId, room: room._id },
+    { user: userId, room: room.id },
     update,
     { new: true },
   );
 }
 
 export async function inviteMembers(roomId: string, userIds: string[]) {
-  const room = await roomModel.findOne({ roomId });
+  const room = await roomModel.findById(roomId);
   if (!room) throw new Error("Room not found");
 
   const results = [];
@@ -172,12 +171,12 @@ export async function inviteMembers(roomId: string, userIds: string[]) {
   for (const userId of userIds) {
     const existing = await memberModel.findOne({
       user: userId,
-      room: room._id,
+      room: room.id,
     });
     if (!existing) {
       const newMember = await createMember({
         userId,
-        roomId: room._id as unknown as string,
+        roomId: room.id,
         role: "member",
         roomType: room.roomType as RoomType,
       });
@@ -194,13 +193,12 @@ export async function updateMemberRole(
   targetMemberId: string,
   newRole: "admin" | "owner" | "member" | "guest",
 ) {
-  const room = await roomModel.findOne({ roomId });
+  const room = await roomModel.findById(roomId);
   if (!room) throw new Error("Room not found");
 
-  // Find operator member to check permissions
   const operatorMember = await memberModel.findOne({
     user: operatorUserId,
-    room: room._id,
+    room: room.id,
   });
   if (!operatorMember) throw new Error("Operator is not a member of this room");
   if (!["admin", "owner"].includes(operatorMember.role || ""))
@@ -213,11 +211,7 @@ export async function updateMemberRole(
   if (!targetMember) throw new Error("Target member not found");
 
   // Cannot change own role
-  if (
-    targetMember.user?.toString() === operatorUserId ||
-    targetMember.user?.userId === operatorUserId ||
-    targetMember.user?.id === operatorUserId
-  )
+  if (targetMember.user.id === operatorUserId)
     throw new Error("Cannot change your own role");
 
   // Owner cannot be demoted by admin

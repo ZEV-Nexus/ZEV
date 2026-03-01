@@ -18,10 +18,9 @@ import { Skeleton } from "@/shared/shadcn/components/ui/skeleton";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { useTypingStore } from "@/shared/store/typing-store";
 import { useOnlineStore } from "@/shared/store/online-store";
-import { useAblyChat } from "../hooks/use-ably-chat";
-import { useChatStore } from "@/shared/store/chat-store";
 
 import { MentionText } from "./mention-text";
+import { useTranslations } from "next-intl";
 
 export function NavRoomItemSkeleton() {
   return (
@@ -53,47 +52,28 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   const { data: session } = useSession();
   const { members, room } = item;
   const recipient = members?.find(
-    (member) => member.user.userId !== session?.user?.userId,
+    (member) => member.user.id !== session?.user?.id,
   )?.user;
   const currentUser = members?.find(
-    (member) => member.user.userId === session?.user?.userId,
+    (member) => member.user.id === session?.user?.id,
   );
-  const { updateRoomLastMessage, incrementUnreadCount, currentRoom } =
-    useChatStore();
 
-  // Get typing users for this room (excluding self)
+  const t = useTranslations("chat");
+
   const typingByRoom = useTypingStore((s) => s.typingByRoom);
   const roomTypingMap = typingByRoom.get(room.id);
   const filteredTypers = roomTypingMap
     ? Array.from(roomTypingMap.values()).filter(
-        (t) => t.userId !== session?.user?.userId,
+        (t) => t.id !== session?.user?.id,
       )
     : [];
 
-  // Get online status for DM recipient
   const { onlineUsers } = useOnlineStore();
   const isRecipientOnline =
-    room.roomType === "dm" && recipient
-      ? onlineUsers.has(recipient.userId)
-      : false;
-
-  useAblyChat({
-    roomId: room.id,
-    userId: session?.user?.userId || "",
-    nickname: session?.user?.nickname || "",
-    onMessage: (message) => {
-      updateRoomLastMessage(room.id, message);
-      if (
-        message.member.user.userId !== session?.user?.userId &&
-        currentRoom?.id !== room.id
-      ) {
-        incrementUnreadCount(room.id);
-      }
-    },
-  });
+    room.roomType === "dm" && recipient ? onlineUsers.has(recipient.id) : false;
 
   return (
-    <SidebarMenuItem key={item.id} className=" border-none">
+    <SidebarMenuItem key={item.id} className=" border-none overflow-hidden">
       <SidebarMenuButton
         tooltip={
           room.roomType === "dm" ? recipient?.nickname : (room?.name ?? "")
@@ -101,8 +81,8 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
         asChild
       >
         <Link
-          href={`/c/${room?.roomId}`}
-          className="px-3 py-2 h-fit border-none  flex min-w-0 w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
+          href={`/c/${room.id}`}
+          className="px-3 py-2 h-fit border-none  flex min-w-0 max-w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
         >
           <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">
             <Avatar>
@@ -115,7 +95,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                   : (room?.name?.charAt(0) ?? "")}
               </AvatarFallback>
             </Avatar>
-            <div className="self-start min-w-0 flex-1 overflow-hidden">
+            <div className="self-start min-w-0 flex-1 overflow-hidden w-0">
               <p className="truncate">
                 {room.roomType === "dm"
                   ? recipient?.nickname
@@ -124,8 +104,8 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
               {filteredTypers.length > 0 ? (
                 <p className="text-xs text-primary font-medium flex items-center truncate">
                   {filteredTypers.length === 1
-                    ? `${filteredTypers[0].nickname} 正在輸入`
-                    : `${filteredTypers.length} 人正在輸入`}
+                    ? `${filteredTypers[0].nickname} ${t("typing", { name: "" }).trim()}`
+                    : t("typingMultiple", { count: filteredTypers.length })}
 
                   <TypingDots />
                 </p>
@@ -140,7 +120,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                     )}
                   >
                     {room.lastMessage.member.user.id === session?.user?.id
-                      ? "你: "
+                      ? t("youPrefix")
                       : room.lastMessage.member.user.nickname
                         ? `${room.lastMessage.member.user.nickname}: `
                         : ""}
@@ -151,7 +131,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                       <MentionText
                         content={room.lastMessage?.content || ""}
                         members={members!}
-                        className=" pointer-events-none"
+                        className="pointer-events-none truncate"
                       />
                     )}
                   </p>

@@ -33,28 +33,29 @@ import {
   RiUserLine,
   RiLoader2Line,
 } from "@remixicon/react";
+import { useTranslations } from "next-intl";
 
 const ROLE_CONFIG = {
   owner: {
-    label: "擁有者",
+    labelKey: "roleOwner" as const,
     icon: RiVipCrownLine,
     color: "text-amber-500",
     badgeVariant: "default" as const,
   },
   admin: {
-    label: "管理員",
+    labelKey: "roleAdmin" as const,
     icon: RiShieldLine,
     color: "text-blue-500",
     badgeVariant: "secondary" as const,
   },
   member: {
-    label: "成員",
+    labelKey: "roleMember" as const,
     icon: RiUserLine,
     color: "text-muted-foreground",
     badgeVariant: "outline" as const,
   },
   guest: {
-    label: "訪客",
+    labelKey: "roleGuest" as const,
     icon: RiUserLine,
     color: "text-muted-foreground",
     badgeVariant: "outline" as const,
@@ -83,6 +84,7 @@ export default function MembersDialog({
   const [members, setMembers] = useState<Member[]>(initialMembers);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
   const { onlineUsers } = useOnlineStore();
+  const t = useTranslations("chatSettings");
 
   const canChangeRole =
     isGroup && (currentUserRole === "admin" || currentUserRole === "owner");
@@ -124,16 +126,16 @@ export default function MembersDialog({
 
       try {
         await updateMemberRole(roomId, memberId, newRole);
-        toast.success("角色已更新");
-      } catch (error: any) {
+        toast.success(t("roleUpdated"));
+      } catch (error: unknown) {
         // Revert on failure
         setMembers(initialMembers);
-        toast.error(error?.message || "更新角色失敗");
+        toast.error((error as Error)?.message || t("roleUpdateFailed"));
       } finally {
         setUpdatingMemberId(null);
       }
     },
-    [roomId, initialMembers],
+    [roomId, initialMembers, t],
   );
 
   // Sort members: owner first, then admin, then member, then guest
@@ -146,10 +148,12 @@ export default function MembersDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>全部成員 ({members.length})</DialogTitle>
+          <DialogTitle>
+            {t("allMembers", { count: members.length })}
+          </DialogTitle>
           <DialogDescription>
-            查看聊天室中的所有成員
-            {canChangeRole && "，你可以更改成員的角色"}
+            {t("viewAllMembersDescription")}
+            {canChangeRole && t("canChangeRole")}
           </DialogDescription>
         </DialogHeader>
 
@@ -158,8 +162,8 @@ export default function MembersDialog({
             {sortedMembers.map((member) => {
               const roleConfig = ROLE_CONFIG[member.role] || ROLE_CONFIG.member;
               const RoleIcon = roleConfig.icon;
-              const isCurrentUser = member.user.userId === currentUserId;
-              const isOnline = onlineUsers.has(member.user.userId);
+              const isCurrentUser = member.user.id === currentUserId;
+              const isOnline = onlineUsers.has(member.user.id);
               const isUpdating = updatingMemberId === member.id;
 
               // Can the current user change this member's role?
@@ -189,7 +193,7 @@ export default function MembersDialog({
                         {member.user.nickname}
                         {isCurrentUser && (
                           <span className="text-muted-foreground font-normal ml-1">
-                            (你)
+                            {t("youLabel")}
                           </span>
                         )}
                       </p>
@@ -201,12 +205,13 @@ export default function MembersDialog({
                           <RoleIcon
                             className={`h-2.5 w-2.5 mr-0.5 ${roleConfig.color}`}
                           />
-                          {roleConfig.label}
+                          {t(roleConfig.labelKey)}
                         </Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      {member.user.email || (isOnline ? "在線上" : "離線")}
+                      {member.user.email ||
+                        (isOnline ? t("onlineStatus") : t("offlineStatus"))}
                     </p>
                   </div>
 
@@ -234,20 +239,20 @@ export default function MembersDialog({
                             {currentUserRole === "owner" && (
                               <SelectItem value="owner">
                                 <RiVipCrownLine className="h-3 w-3 text-amber-500" />
-                                擁有者
+                                {t("roleOwner")}
                               </SelectItem>
                             )}
                             <SelectItem value="admin">
                               <RiShieldLine className="h-3 w-3 text-blue-500" />
-                              管理員
+                              {t("roleAdmin")}
                             </SelectItem>
                             <SelectItem value="member">
                               <RiUserLine className="h-3 w-3" />
-                              成員
+                              {t("roleMember")}
                             </SelectItem>
                             <SelectItem value="guest">
                               <RiUserLine className="h-3 w-3" />
-                              訪客
+                              {t("roleGuest")}
                             </SelectItem>
                           </SelectContent>
                         </Select>

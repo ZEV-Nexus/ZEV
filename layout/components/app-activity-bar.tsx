@@ -10,8 +10,8 @@ import {
   RiChat1Fill,
   RiNotificationLine,
   RiNotificationFill,
-  RiHome4Line,
-  RiHome4Fill,
+  RiHome5Line,
+  RiHome5Fill,
 } from "@remixicon/react";
 
 import {
@@ -34,43 +34,45 @@ import { useAppSidebarStore } from "@/shared/store/app-sidebar-store";
 import SearchPanel from "./search-panel";
 import NotificationPanel from "./notification-panel";
 import { AnimatePresence, motion } from "motion/react";
-import Image from "next/image";
+
 import { useNotificationStore } from "@/shared/store/notification-store";
 import { SettingsDialog } from "@/feature/settings/components/settings-dialog";
+
 import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { Dialog, DialogContent } from "@/shared/shadcn/components/ui/dialog";
+import { useTranslations } from "next-intl";
+import LogoImage from "@/shared/components/logo-image";
 
 const PANEL_WIDTH = "22rem";
 
-/** Top-level navigation items shown in the Activity Bar */
 const navItems: {
   id: "home" | "search" | "chat" | "notifications";
   icon: React.ElementType;
   activeIcon: React.ElementType;
-  label: string;
+  labelKey: string;
   href?: string;
   panel?: boolean;
 }[] = [
   {
     id: "home",
-    icon: RiHome4Line,
-    activeIcon: RiHome4Fill,
-    label: "首頁",
+    icon: RiHome5Line,
+    activeIcon: RiHome5Fill,
+    labelKey: "home",
     href: "/",
   },
   {
     id: "search",
     icon: RiSearchLine,
     activeIcon: RiSearchFill,
-    label: "搜尋",
+    labelKey: "search",
     panel: true,
   },
   {
     id: "chat",
     icon: RiChat1Line,
     activeIcon: RiChat1Fill,
-    label: "聊天",
+    labelKey: "chatNav",
     href: "/c",
     panel: true,
   },
@@ -78,7 +80,7 @@ const navItems: {
     id: "notifications",
     icon: RiNotificationLine,
     activeIcon: RiNotificationFill,
-    label: "通知",
+    labelKey: "notificationsNav",
     panel: true,
   },
 ];
@@ -91,6 +93,7 @@ export default function AppActivityBar() {
   const { unreadCount } = useNotificationStore();
   const isMobile = useIsMobile();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const t = useTranslations("common");
 
   const isChatPage = pathname.startsWith("/c");
   const isChatRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
@@ -170,7 +173,7 @@ export default function AppActivityBar() {
                   className={cn(
                     "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
                     isActive
-                      ? "text-foreground"
+                      ? "text-foreground/70 hover:text-foreground"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >
@@ -182,7 +185,9 @@ export default function AppActivityBar() {
                       </span>
                     )}
                   </span>
-                  <span className="text-[10px] leading-none">{item.label}</span>
+                  <span className="text-[10px] leading-none">
+                    {t(item.labelKey)}
+                  </span>
                 </motion.button>
               );
             })}
@@ -211,7 +216,7 @@ export default function AppActivityBar() {
                     {session.user.nickname?.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] leading-none">個人</span>
+                <span className="text-[10px] leading-none">{t("profile")}</span>
               </Link>
             )}
           </div>
@@ -239,20 +244,14 @@ export default function AppActivityBar() {
               setIsSearchOpen(false);
             }}
           >
-            <Image
-              src="/icons/logo-light.svg"
-              alt="Logo"
-              width={28}
-              height={28}
-              className="opacity-80 hover:opacity-100 transition-opacity"
-            />
+            <LogoImage />
           </Link>
         </SidebarHeader>
 
         {/* Nav items */}
-        <SidebarContent className="overflow-visible!">
+        <SidebarContent className="overflow-visible! ">
           <SidebarGroup>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2">
               {navItems.map((item) => {
                 const isActive =
                   item.id === "search"
@@ -278,9 +277,9 @@ export default function AppActivityBar() {
                         }}
                       >
                         <SidebarMenuButton
-                          tooltip={item.label}
+                          tooltip={t(item.labelKey)}
                           isActive={isActive}
-                          className="relative [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                          className="relative text-foreground/70 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                           onClick={() => {
                             if (item.id === "search") {
                               closePanel();
@@ -320,9 +319,9 @@ export default function AppActivityBar() {
                       }}
                     >
                       <SidebarMenuButton
-                        tooltip={item.label}
+                        tooltip={t(item.labelKey)}
                         isActive={isActive}
-                        className="[&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
+                        className=" text-foreground/70 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                         asChild
                       >
                         <Link
@@ -349,7 +348,7 @@ export default function AppActivityBar() {
           {session?.user && (
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton tooltip="個人檔案" asChild>
+                <SidebarMenuButton tooltip={t("profilePage")} asChild>
                   <Link
                     href={`/${session.user.username}`}
                     onClick={() => {

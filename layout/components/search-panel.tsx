@@ -20,10 +20,11 @@ import { getUserByQuery } from "@/shared/service/api/user";
 import { searchRooms, type SearchRoom } from "@/shared/service/api/room";
 import type { User } from "@/shared/types";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 type SearchUser = Pick<
   User,
-  "id" | "userId" | "email" | "nickname" | "avatar" | "username"
+  "id" | "email" | "nickname" | "avatar" | "username"
 >;
 
 interface SearchPanelProps {
@@ -34,6 +35,7 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 400);
   const router = useRouter();
+  const t = useTranslations("common");
 
   const hasQuery = debouncedQuery.trim().length > 0;
 
@@ -59,19 +61,21 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
 
   const handleRoomClick = (room: SearchRoom) => {
     onClose?.();
-    router.push(`/c/${room.roomId}`);
+    router.push(`/c/${room.id}`);
   };
 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b border-border p-4">
-        <h2 className="text-base font-semibold text-foreground mb-3">搜尋</h2>
+        <h2 className="text-base font-semibold text-foreground mb-3">
+          {t("searchTitle")}
+        </h2>
         <div className="relative">
           <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             autoFocus
-            placeholder="搜尋使用者或聊天室..."
+            placeholder={t("searchPlaceholder")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-9 h-9 bg-muted/50 border-none focus-visible:ring-1 focus-visible:ring-primary/50"
@@ -85,17 +89,17 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
           {!query.trim() ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <RiSearchLine className="h-10 w-10 mb-3 opacity-30" />
-              <p className="text-sm">輸入關鍵字開始搜尋</p>
+              <p className="text-sm">{t("typeToSearch")}</p>
             </div>
           ) : isLoading && !hasResults ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <RiLoader2Line className="h-6 w-6 animate-spin mb-3" />
-              <p className="text-sm">搜尋中...</p>
+              <p className="text-sm">{t("searching")}</p>
             </div>
           ) : !hasResults ? (
             <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
               <p className="text-sm">
-                沒有找到 &quot;{debouncedQuery}&quot; 的結果
+                {t("noResults")} &quot;{debouncedQuery}&quot;
               </p>
             </div>
           ) : (
@@ -106,7 +110,7 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
                   <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
                     <RiUserLine className="h-3.5 w-3.5 text-muted-foreground" />
                     <p className="text-xs font-medium text-muted-foreground">
-                      使用者 ({users.length})
+                      {t("users")} ({users.length})
                     </p>
                   </div>
                   <div className="space-y-0.5">
@@ -142,7 +146,7 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
                   <div className="flex items-center gap-1.5 px-2 py-1.5 mb-1">
                     <RiChat1Line className="h-3.5 w-3.5 text-muted-foreground" />
                     <p className="text-xs font-medium text-muted-foreground">
-                      聊天室 ({rooms.length})
+                      {t("chatRooms")} ({rooms.length})
                     </p>
                   </div>
                   <div className="space-y-0.5">
@@ -163,7 +167,9 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
                             {room.name}
                           </p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {room.roomType === "group" ? "群組" : "頻道"}
+                            {room.roomType === "group"
+                              ? t("group")
+                              : t("channel")}
                           </p>
                         </div>
                       </button>

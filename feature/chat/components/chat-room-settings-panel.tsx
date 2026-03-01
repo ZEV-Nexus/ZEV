@@ -55,6 +55,16 @@ import {
   RoomInfoUpdatedPayload,
 } from "@/shared/hooks/use-ably-notification";
 import { useOnlineStore } from "@/shared/store/online-store";
+import { useTranslations } from "next-intl";
+import { SharedMediaPanel } from "@/feature/chat/components/shared-media-panel";
+import { PrivacySettingsPanel } from "@/feature/chat/components/privacy-settings-panel";
+
+type PanelView =
+  | "main"
+  | "media-image"
+  | "media-file"
+  | "media-link"
+  | "privacy";
 
 interface ChatRoomSettingsPanelProps {
   open: boolean;
@@ -71,9 +81,7 @@ export function ChatRoomSettingsPanel({
   members,
   currentUserId,
 }: ChatRoomSettingsPanelProps) {
-  const currentUserMember = members.find(
-    (m) => m.user.userId === currentUserId,
-  );
+  const currentUserMember = members.find((m) => m.user.id === currentUserId);
   const currentUserRole = currentUserMember?.role || "member";
   const isGroup = room.roomType === "group";
   const canChangeRole =
@@ -88,7 +96,16 @@ export function ChatRoomSettingsPanel({
   const [localMembers, setLocalMembers] = useState<Member[]>(members);
   const [localRoom, setLocalRoom] = useState<ChatRoom>(room);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+  const [currentPanel, setCurrentPanel] = useState<PanelView>("main");
   const { onlineUsers } = useOnlineStore();
+  const t = useTranslations("chatSettings");
+
+  // Reset panel when sheet closes
+  useEffect(() => {
+    if (!open) {
+      setCurrentPanel("main");
+    }
+  }, [open]);
 
   // Sync with prop changes
   useEffect(() => {
@@ -103,7 +120,7 @@ export function ChatRoomSettingsPanel({
   useEffect(() => {
     const handleRoleUpdate = (event: Event) => {
       const detail = (event as CustomEvent<MemberRoleUpdatedPayload>).detail;
-      if (detail.roomId === room.roomId) {
+      if (detail.roomId === room.id) {
         setLocalMembers((prev) =>
           prev.map((m) =>
             m.id === detail.memberId ? { ...m, role: detail.newRole } : m,
@@ -114,7 +131,7 @@ export function ChatRoomSettingsPanel({
 
     const handleRoomInfoUpdate = (event: Event) => {
       const detail = (event as CustomEvent<RoomInfoUpdatedPayload>).detail;
-      if (detail.roomId === room.roomId) {
+      if (detail.roomId === room.id) {
         setLocalRoom((prev) => ({
           ...prev,
           ...(detail.name !== undefined && { name: detail.name }),
@@ -129,14 +146,14 @@ export function ChatRoomSettingsPanel({
       window.removeEventListener("member-role-updated", handleRoleUpdate);
       window.removeEventListener("room-info-updated", handleRoomInfoUpdate);
     };
-  }, [room.roomId]);
+  }, [room.id]);
 
   const handleRoleChange = useCallback(
     async (
       memberId: string,
       newRole: "admin" | "owner" | "member" | "guest",
     ) => {
-      if (!room.roomId) return;
+      if (!room.id) return;
       setUpdatingMemberId(memberId);
 
       // Optimistic update
@@ -145,17 +162,19 @@ export function ChatRoomSettingsPanel({
       );
 
       try {
-        await updateMemberRole(room.roomId, memberId, newRole);
-        toast.success("角色已更新");
+        await updateMemberRole(room.id, memberId, newRole);
+        toast.success(t("roleUpdated"));
       } catch (error: unknown) {
         // Revert on failure
         setLocalMembers(members);
-        toast.error(error instanceof Error ? error.message : "更新角色失敗");
+        toast.error(
+          error instanceof Error ? error.message : t("roleUpdateFailed"),
+        );
       } finally {
         setUpdatingMemberId(null);
       }
     },
-    [room.roomId, members],
+    [room, members, t],
   );
 
   const handleRoomInfoUpdated = useCallback(
@@ -165,9 +184,7 @@ export function ChatRoomSettingsPanel({
     [],
   );
 
-  const recipient = members?.find(
-    (member) => member.user.userId !== currentUserId,
-  );
+  const recipient = members?.find((member) => member.user.id !== currentUserId);
 
   const displayName =
     room.roomType === "dm" ? recipient?.user.nickname : localRoom.name;
@@ -179,19 +196,19 @@ export function ChatRoomSettingsPanel({
     room.roomType === "dm" ? recipient?.user.avatar : localRoom.avatar;
 
   const handleNotificationToggle = async (checked: boolean) => {
-    if (!room.roomId) return;
+    if (!room.id) return;
     setNotificationEnabled(checked);
-    useChatStore.getState().updateRoomSettings(room.roomId, currentUserId, {
+    useChatStore.getState().updateRoomSettings(room.id, currentUserId, {
       notificationSetting: checked ? "all" : "mute",
     });
     try {
-      await updateRoomSettings(room.roomId, {
+      await updateRoomSettings(room.id, {
         notificationSetting: checked ? "all" : "mute",
       });
     } catch (error) {
       console.error(error);
       setNotificationEnabled(!checked);
-      useChatStore.getState().updateRoomSettings(room.roomId, currentUserId, {
+      useChatStore.getState().updateRoomSettings(room.id, currentUserId, {
         notificationSetting: !checked ? "all" : "mute",
       });
       toast.error("Failed to update notification settings");
@@ -225,294 +242,356 @@ export function ChatRoomSettingsPanel({
         className="w-full sm:max-w-sm p-0 flex flex-col overflow-auto"
       >
         <SheetHeader className="sr-only">
-          <SheetTitle>聊天室設定</SheetTitle>
-          <SheetDescription>管理聊天室相關設定</SheetDescription>
+          <SheetTitle>{t("title")}</SheetTitle>
+          <SheetDescription>{t("description")}</SheetDescription>
         </SheetHeader>
 
-        <ScrollArea>
-          <div className="flex flex-col">
-            <div className="flex flex-col items-center py-6 px-4">
-              <Avatar className="h-16 w-16 mb-3">
-                <AvatarBadge className="bg-green-500 h-3 w-3 ring-2 ring-background" />
-                {displayAvatarUrl && (
-                  <AvatarImage src={displayAvatarUrl} alt={displayName || ""} />
-                )}
-                <AvatarFallback className="text-xl bg-primary text-primary-foreground font-semibold">
-                  {displayAvatar}
-                </AvatarFallback>
-              </Avatar>
-              <h3 className="text-lg font-semibold">{displayName}</h3>
-              <p className="text-sm text-muted-foreground">
-                {room.roomType === "dm"
-                  ? "私人對話"
-                  : `${members.length} 位成員`}
-              </p>
-              {room.roomType !== "dm" && canChangeRole && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 text-xs text-muted-foreground"
-                  onClick={() => setEditDialogOpen(true)}
-                >
-                  <RiEditLine className="h-3.5 w-3.5 mr-1" />
-                  編輯資訊
-                </Button>
-              )}
+        {/* Sub-panel views */}
+        {currentPanel === "media-image" && (
+          <SharedMediaPanel
+            type="image"
+            roomId={room.id}
+            onBack={() => setCurrentPanel("main")}
+          />
+        )}
+        {currentPanel === "media-file" && (
+          <SharedMediaPanel
+            type="file"
+            roomId={room.id}
+            onBack={() => setCurrentPanel("main")}
+          />
+        )}
+        {currentPanel === "media-link" && (
+          <SharedMediaPanel
+            type="link"
+            roomId={room.id}
+            onBack={() => setCurrentPanel("main")}
+          />
+        )}
+        {currentPanel === "privacy" && (
+          <PrivacySettingsPanel
+            onBack={() => setCurrentPanel("main")}
+            roomType={room.roomType}
+          />
+        )}
 
-              {/* Edit Room Info Dialog */}
-              <EditRoomInfoDialog
-                open={editDialogOpen}
-                onOpenChange={setEditDialogOpen}
-                room={localRoom}
-                onUpdated={handleRoomInfoUpdated}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Quick Settings */}
-            <div className="px-4 py-3">
-              <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                快速設定
-              </h4>
-              <div className="space-y-1">
-                <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <RiNotificationLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">通知</span>
-                  </div>
-                  <Switch
-                    checked={notificationEnabled}
-                    onCheckedChange={handleNotificationToggle}
-                  />
-                </div>
-                <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <RiPushpinLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">釘選對話</span>
-                  </div>
-                  <Switch
-                    checked={pinned}
-                    onCheckedChange={handlePinnedToggle}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Members */}
-            <div className="px-4 py-3">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  成員 ({members.length})
-                </h4>
-                {room.roomType !== "dm" && (
-                  <InviteMemberDialog
-                    roomId={room.roomId || ""}
-                    existingMembers={members}
+        {/* Main settings view */}
+        {currentPanel === "main" && (
+          <ScrollArea>
+            <div className="flex flex-col">
+              <div className="flex flex-col items-center py-6 px-4">
+                <Avatar className="h-16 w-16 mb-3">
+                  {room.roomType === "dm"
+                    ? onlineUsers.has(recipient?.user.id || "") && (
+                        <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                      )
+                    : members.filter((m) => onlineUsers.has(m.user.id)).length >
+                        0 && (
+                        <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                      )}
+                  {displayAvatarUrl && (
+                    <AvatarImage
+                      src={displayAvatarUrl}
+                      alt={displayName || ""}
+                    />
+                  )}
+                  {displayAvatarUrl && (
+                    <AvatarImage
+                      src={displayAvatarUrl}
+                      alt={displayName || ""}
+                    />
+                  )}
+                  <AvatarFallback className="text-xl bg-primary text-primary-foreground font-semibold">
+                    {displayAvatar}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-lg font-semibold">{displayName}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {room.roomType === "dm"
+                    ? t("privateConversation")
+                    : t("membersCount", { count: members.length })}
+                </p>
+                {room.roomType !== "dm" && canChangeRole && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-xs text-muted-foreground"
+                    onClick={() => setEditDialogOpen(true)}
                   >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                    >
-                      邀請
-                    </Button>
-                  </InviteMemberDialog>
+                    <RiEditLine className="h-3.5 w-3.5 mr-1" />
+                    {t("editInfo")}
+                  </Button>
                 )}
+
+                {/* Edit Room Info Dialog */}
+                <EditRoomInfoDialog
+                  open={editDialogOpen}
+                  onOpenChange={setEditDialogOpen}
+                  room={localRoom}
+                  onUpdated={handleRoomInfoUpdated}
+                />
               </div>
-              <div className="space-y-0.5">
-                {localMembers.slice(0, 5).map((member) => {
-                  const isCurrentUser = member.user.userId === currentUserId;
-                  const isOnline = onlineUsers.has(member.user.userId);
-                  const isUpdating = updatingMemberId === member.id;
-                  const canChangeThisMember =
-                    canChangeRole &&
-                    !isCurrentUser &&
-                    !(currentUserRole === "admin" && member.role === "owner");
 
-                  const roleLabel =
-                    member.role === "owner"
-                      ? "擁有者"
-                      : member.role === "admin"
-                        ? "管理員"
-                        : member.role === "guest"
-                          ? "訪客"
-                          : "成員";
+              <Separator />
 
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 w-full py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors"
+              {/* Quick Settings */}
+              <div className="px-4 py-3">
+                <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                  {t("quickSettings")}
+                </h4>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <RiNotificationLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("notification")}</span>
+                    </div>
+                    <Switch
+                      checked={notificationEnabled}
+                      onCheckedChange={handleNotificationToggle}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <RiPushpinLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("pinConversation")}</span>
+                    </div>
+                    <Switch
+                      checked={pinned}
+                      onCheckedChange={handlePinnedToggle}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Members */}
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {t("membersLabel", { count: members.length })}
+                  </h4>
+                  {room.roomType !== "dm" && (
+                    <InviteMemberDialog
+                      roomId={room.id}
+                      existingMembers={members}
                     >
-                      <Avatar className="h-8 w-8 shrink-0">
-                        {isOnline && (
-                          <AvatarBadge className="bg-green-500 h-2 w-2 ring-2 ring-background" />
-                        )}
-                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                          {member.user.nickname?.[0] || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 text-left min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {member.user.nickname}
-                          {isCurrentUser && (
-                            <span className="text-muted-foreground font-normal ml-1">
-                              (你)
-                            </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                      >
+                        {t("invite")}
+                      </Button>
+                    </InviteMemberDialog>
+                  )}
+                </div>
+                <div className="space-y-0.5">
+                  {localMembers.slice(0, 5).map((member) => {
+                    const isCurrentUser = member.user.id === currentUserId;
+                    const isOnline = onlineUsers.has(member.user.id);
+                    const isUpdating = updatingMemberId === member.id;
+                    const canChangeThisMember =
+                      canChangeRole &&
+                      !isCurrentUser &&
+                      !(currentUserRole === "admin" && member.role === "owner");
+
+                    const roleLabel =
+                      member.role === "owner"
+                        ? t("roleOwner")
+                        : member.role === "admin"
+                          ? t("roleAdmin")
+                          : member.role === "guest"
+                            ? t("roleGuest")
+                            : t("roleMember");
+
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center gap-3 w-full py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <Avatar className="h-8 w-8 shrink-0">
+                          {isOnline && (
+                            <AvatarBadge className="bg-green-500 h-2 w-2 ring-2 ring-background" />
                           )}
-                        </p>
-                        {!canChangeThisMember && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            {member.role === "owner" && (
-                              <RiVipCrownLine className="h-3 w-3 text-amber-500" />
+                          <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                            {member.user.nickname?.[0] || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 text-left min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {member.user.nickname}
+                            {isCurrentUser && (
+                              <span className="text-muted-foreground font-normal ml-1">
+                                {t("youLabel")}
+                              </span>
                             )}
-                            {member.role === "admin" && (
-                              <RiShieldLine className="h-3 w-3 text-blue-500" />
-                            )}
-                            {roleLabel}
                           </p>
-                        )}
-                      </div>
-                      {canChangeThisMember && (
-                        <div className="shrink-0">
-                          {isUpdating ? (
-                            <RiLoader2Line className="h-4 w-4 animate-spin text-muted-foreground" />
-                          ) : (
-                            <Select
-                              value={member.role}
-                              onValueChange={(value) =>
-                                handleRoleChange(
-                                  member.id,
-                                  value as
-                                    | "admin"
-                                    | "owner"
-                                    | "member"
-                                    | "guest",
-                                )
-                              }
-                            >
-                              <SelectTrigger
-                                size="sm"
-                                className="h-6 text-[11px] min-w-20"
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {currentUserRole === "owner" && (
-                                  <SelectItem value="owner">
-                                    <RiVipCrownLine className="h-3 w-3 text-amber-500" />
-                                    擁有者
-                                  </SelectItem>
-                                )}
-                                <SelectItem value="admin">
-                                  <RiShieldLine className="h-3 w-3 text-blue-500" />
-                                  管理員
-                                </SelectItem>
-                                <SelectItem value="member">
-                                  <RiUserLine className="h-3 w-3" />
-                                  成員
-                                </SelectItem>
-                                <SelectItem value="guest">
-                                  <RiUserLine className="h-3 w-3" />
-                                  訪客
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                          {!canChangeThisMember && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              {member.role === "owner" && (
+                                <RiVipCrownLine className="h-3 w-3 text-amber-500" />
+                              )}
+                              {member.role === "admin" && (
+                                <RiShieldLine className="h-3 w-3 text-blue-500" />
+                              )}
+                              {roleLabel}
+                            </p>
                           )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {localMembers.length > 5 && (
+                        {canChangeThisMember && (
+                          <div className="shrink-0">
+                            {isUpdating ? (
+                              <RiLoader2Line className="h-4 w-4 animate-spin text-muted-foreground" />
+                            ) : (
+                              <Select
+                                value={member.role}
+                                onValueChange={(value) =>
+                                  handleRoleChange(
+                                    member.id,
+                                    value as
+                                      | "admin"
+                                      | "owner"
+                                      | "member"
+                                      | "guest",
+                                  )
+                                }
+                              >
+                                <SelectTrigger
+                                  size="sm"
+                                  className="h-6 text-[11px] min-w-20"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {currentUserRole === "owner" && (
+                                    <SelectItem value="owner">
+                                      <RiVipCrownLine className="h-3 w-3 text-amber-500" />
+                                      {t("roleOwner")}
+                                    </SelectItem>
+                                  )}
+                                  <SelectItem value="admin">
+                                    <RiShieldLine className="h-3 w-3 text-blue-500" />
+                                    {t("roleAdmin")}
+                                  </SelectItem>
+                                  <SelectItem value="member">
+                                    <RiUserLine className="h-3 w-3" />
+                                    {t("roleMember")}
+                                  </SelectItem>
+                                  <SelectItem value="guest">
+                                    <RiUserLine className="h-3 w-3" />
+                                    {t("roleGuest")}
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {localMembers.length > 5 && (
+                    <button
+                      onClick={() => setMembersDialogOpen(true)}
+                      className="flex items-center justify-center gap-1 w-full py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors text-sm text-muted-foreground cursor-pointer"
+                    >
+                      {t("viewAllMembers", { count: localMembers.length })}
+                      <RiArrowRightSLine className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Members Dialog */}
+                <MembersDialog
+                  open={membersDialogOpen}
+                  onOpenChange={setMembersDialogOpen}
+                  members={localMembers}
+                  currentUserId={currentUserId}
+                  currentUserRole={currentUserRole}
+                  roomId={room.id}
+                  isGroup={isGroup}
+                />
+              </div>
+
+              <Separator />
+
+              {/* Shared Media */}
+              <div className="px-4 py-3">
+                <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                  {t("sharedContent")}
+                </h4>
+                <div className="space-y-0.5">
                   <button
-                    onClick={() => setMembersDialogOpen(true)}
-                    className="flex items-center justify-center gap-1 w-full py-2 px-2 rounded-lg hover:bg-muted/50 transition-colors text-sm text-muted-foreground cursor-pointer"
+                    onClick={() => setCurrentPanel("media-image")}
+                    className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                   >
-                    查看全部 {localMembers.length} 位成員
-                    <RiArrowRightSLine className="h-4 w-4" />
+                    <div className="flex items-center gap-3">
+                      <RiImageLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("imagesAndVideos")}</span>
+                    </div>
+                    <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
                   </button>
-                )}
+                  <button
+                    onClick={() => setCurrentPanel("media-file")}
+                    className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <RiFileTextLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("files")}</span>
+                    </div>
+                    <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPanel("media-link")}
+                    className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <RiLinksLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("links")}</span>
+                    </div>
+                    <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
               </div>
 
-              {/* Members Dialog */}
-              <MembersDialog
-                open={membersDialogOpen}
-                onOpenChange={setMembersDialogOpen}
-                members={localMembers}
-                currentUserId={currentUserId}
-                currentUserRole={currentUserRole}
-                roomId={room.roomId || ""}
-                isGroup={isGroup}
-              />
-            </div>
+              <Separator />
 
-            <Separator />
+              {/* Privacy & Danger Zone */}
+              <div className="px-4 py-3">
+                <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                  {t("privacyAndSecurity")}
+                </h4>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => setCurrentPanel("privacy")}
+                    className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <RiShieldLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("privacySettings")}</span>
+                    </div>
+                    <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
 
-            {/* Shared Media */}
-            <div className="px-4 py-3">
-              <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                共享內容
-              </h4>
-              <div className="space-y-0.5">
-                <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <RiImageLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">圖片與影片</span>
-                  </div>
-                  <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <RiFileTextLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">檔案</span>
-                  </div>
-                  <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
-                </button>
-                <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <RiLinksLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">連結</span>
-                  </div>
-                  <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
-                </button>
+              <Separator />
+
+              {/* Leave */}
+              <div className="px-4 py-4">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <RiLogoutBoxLine className="h-4 w-4 mr-3" />
+                  {room.roomType === "dm"
+                    ? t("deleteConversation")
+                    : t("leaveRoom")}
+                </Button>
               </div>
             </div>
-
-            <Separator />
-
-            {/* Privacy & Danger Zone */}
-            <div className="px-4 py-3">
-              <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
-                隱私與安全
-              </h4>
-              <div className="space-y-0.5">
-                <button className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-3">
-                    <RiShieldLine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">隱私設定</span>
-                  </div>
-                  <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Leave */}
-            <div className="px-4 py-4">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <RiLogoutBoxLine className="h-4 w-4 mr-3" />
-                {room.roomType === "dm" ? "刪除對話" : "離開聊天室"}
-              </Button>
-            </div>
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        )}
       </SheetContent>
     </Sheet>
   );

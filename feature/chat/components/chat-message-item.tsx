@@ -30,6 +30,7 @@ import { CldImage } from "next-cloudinary";
 import { toast } from "sonner";
 import { Member } from "@/shared/types";
 import { MentionText } from "./mention-text";
+import { useTranslations } from "next-intl";
 
 // Position of a message within a group
 export type BubblePosition = "single" | "first" | "middle" | "last";
@@ -117,6 +118,7 @@ const MessageActions = ({
   formatTime,
   showEdit,
 }: MessageActionsProps) => {
+  const t = useTranslations("chat");
   return (
     <div
       className={cn(
@@ -127,7 +129,7 @@ const MessageActions = ({
       <button
         onClick={() => onReplyMessage?.(message)}
         className="p-1.5 rounded-full hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        title="回覆"
+        title={t("reply")}
       >
         <RiReplyLine className="h-3.5 w-3.5" />
       </button>
@@ -136,7 +138,7 @@ const MessageActions = ({
         <DropdownMenuTrigger asChild>
           <button
             className="p-1.5 rounded-full hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="更多"
+            title={t("more")}
           >
             <RiMoreLine className="h-3.5 w-3.5" />
           </button>
@@ -148,13 +150,13 @@ const MessageActions = ({
           {isAttachment && (
             <DropdownMenuItem onClick={handleDownload}>
               <RiDownloadLine className="h-4 w-4 mr-2" />
-              下載
+              {t("download")}
             </DropdownMenuItem>
           )}
           {message.content && !isAttachment && (
             <DropdownMenuItem onClick={handleCopy}>
               <RiFileCopyLine className="h-4 w-4 mr-2" />
-              複製
+              {t("copy")}
             </DropdownMenuItem>
           )}
 
@@ -166,7 +168,7 @@ const MessageActions = ({
               }}
             >
               <RiEditLine className="h-4 w-4 mr-2" />
-              編輯
+              {t("edit")}
             </DropdownMenuItem>
           )}
 
@@ -179,7 +181,7 @@ const MessageActions = ({
                 className="text-destructive focus:text-destructive"
               >
                 <RiDeleteBinLine className="h-4 w-4 mr-2" />
-                刪除
+                {t("delete")}
               </DropdownMenuItem>
             </>
           )}
@@ -211,6 +213,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
 }: ChatMessageItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content || "");
+  const t = useTranslations("chat");
 
   const handleCopy = () => {
     if (message.content) {
@@ -255,7 +258,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
       document.body.removeChild(a);
     } catch (error) {
       console.error(error);
-      toast.error("下載失敗");
+      toast.error(t("downloadFailed"));
     }
   };
 
@@ -327,13 +330,13 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                 <span>
                   {typeof message.replyTo === "object"
                     ? message.replyTo.member?.user?.nickname
-                    : "回覆訊息"}
+                    : t("replyMessage")}
                 </span>
               </div>
               <p className="truncate max-w-50 opacity-70 italic text-[11px]">
                 {typeof message.replyTo === "object"
                   ? message.replyTo.content
-                  : "查看原訊息"}
+                  : t("viewOriginal")}
               </p>
             </button>
           </div>

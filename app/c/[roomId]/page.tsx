@@ -3,7 +3,12 @@ import { getChatRoomById } from "@/shared/service/server/room";
 import { getMembersByRoomId } from "@/shared/service/server/member";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/shared/service/server/auth";
-
+import { Viewport } from "next";
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 export default async function ChatRoomPage({
   params,
 }: {
@@ -28,7 +33,7 @@ export default async function ChatRoomPage({
 
   return (
     <div className="h-full w-full">
-      <ChatRoom room={room} members={members} currentUserId={user.userId} />
+      <ChatRoom room={room} members={members} currentUserId={user.id} />
     </div>
   );
 }

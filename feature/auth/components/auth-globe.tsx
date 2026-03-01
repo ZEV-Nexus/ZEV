@@ -4,6 +4,7 @@ import { Globe } from "@/shared/shadcn/components/ui/globe";
 import { memo } from "react";
 
 const AuthGlobe = memo(({ title }: { title?: string }) => {
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   return (
     <div className="flex-1 h-full md:static absolute w-full -z-10  overflow-hidden">
       <div className=" relative max-w-full max-h-full  h-full  ">
@@ -17,9 +18,10 @@ const AuthGlobe = memo(({ title }: { title?: string }) => {
             height: 1000,
             phi: 0,
             theta: 0,
-            dark: 0,
+            dark: isDark ? 1 : 0,
             diffuse: 1.2,
             scale: 1,
+
             mapSamples: 16000,
             mapBrightness: 6,
             baseColor: [1, 1, 1],

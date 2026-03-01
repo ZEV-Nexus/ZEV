@@ -5,7 +5,6 @@ export const searchUsers = async (
   user: Pick<
     User,
     | "id"
-    | "userId"
     | "username"
     | "nickname"
     | "avatar"

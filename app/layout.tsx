@@ -6,6 +6,8 @@ import { Toaster } from "@/shared/shadcn/components/ui/sonner";
 import ClientLayout from "@/layout/client-layout";
 import { TooltipProvider } from "@/shared/shadcn/components/ui/tooltip";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "@/shared/components/provider/theme-provider";
+import IntlProvider from "@/shared/components/provider/intl-provider";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -33,6 +35,9 @@ export const metadata: Metadata = {
   description:
     "ZEV is the easiest way for teams and companies to chat, collaborate, and stay connected. Enjoy real-time messaging, organized channels, file sharing, and AI-powered tools — all in one place.",
   keywords: [
+    "zev",
+    "zev Nexus",
+    "Yuzen",
     "team chat",
     "team communication",
     "business messaging",
@@ -58,13 +63,13 @@ export const metadata: Metadata = {
     icon: [
       { url: "/icons/zev-icon-apple-Dark.ico", sizes: "any" },
       {
-        url: "/icons/zev-icon-apple-iOS-Dark.png",
+        url: "/icons/zev-icon-dark.png",
         type: "image/png",
         sizes: "180x180",
       },
     ],
-    apple: "/icons/zev-icon-apple-iOS-Dark.png",
-    shortcut: "/icons/zev-icon-apple-Dark.ico",
+    apple: "/icons/zev-icon-dark.png",
+    shortcut: "/icons/zev-icon-dark.ico",
   },
   openGraph: {
     type: "website",
@@ -76,7 +81,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/icons/logo-with-text-light-removebg.png",
+        url: "/icons/zev-icon-text-light.png",
         width: 1200,
         height: 630,
         alt: "ZEV — Team Communication Hub",
@@ -88,7 +93,7 @@ export const metadata: Metadata = {
     title: "ZEV | Your Team Communication Hub",
     description:
       "ZEV is the easiest way for teams and companies to chat, collaborate, and stay connected. Real-time messaging, channels, file sharing & AI tools.",
-    images: ["/icons/logo-with-text-light-removebg.png"],
+    images: ["/icons/zev-icon-text-dark.png"],
     creator: "@ZEV",
   },
   robots: {
@@ -102,6 +107,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+
   alternates: {
     canonical: SITE_URL,
   },
@@ -134,7 +140,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
@@ -144,12 +150,22 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}
       >
-        <TooltipProvider>
-          <SessionProvider>
-            <ClientLayout>{children}</ClientLayout>
-            <Toaster />
-          </SessionProvider>
-        </TooltipProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <IntlProvider>
+            <TooltipProvider>
+              <SessionProvider>
+                <ClientLayout>{children}</ClientLayout>
+
+                <Toaster />
+              </SessionProvider>
+            </TooltipProvider>
+          </IntlProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

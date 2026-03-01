@@ -26,6 +26,8 @@ import AuthGlobe from "./components/auth-globe";
 import useLogin from "./hooks/useLogin";
 import { use, useState } from "react";
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
+import LogoImage from "@/shared/components/logo-image";
 
 export default function Login({
   searchParams,
@@ -36,23 +38,21 @@ export default function Login({
     useLogin();
   const params = use(searchParams);
   const [showPassword, setShowPassword] = useState(false);
+  const t = useTranslations("auth");
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <div className=" flex justify-center items-center  md:flex-row  flex-col h-dvh    ">
         <Card className="flex-1 w-full h-full rounded-none bg-background/50 backdrop-blur-xs">
           <CardHeader className="flex flex-row  items-center  gap-4 ">
-            <Image
-              src="/icons/logo-with-text-light-removebg.png"
-              alt="Chat.to Logo"
-              width={100}
-              height={32}
-              className=" aspect-video   object-cover rounded-md"
-            />
+            <LogoImage withText={true} size="lg" />
           </CardHeader>
           <CardContent className="flex flex-col max-w-lg mx-auto w-full items-center justify-center flex-1 space-y-3">
-            <CardTitle className="text-center text-3xl ">歡迎</CardTitle>
+            <CardTitle className="text-center text-3xl ">
+              {t("welcome")}
+            </CardTitle>
             <CardDescription className="text-base">
-              登入來使用 ZEV
+              {t("loginToUse")}
             </CardDescription>
             <form
               onSubmit={(e) => {
@@ -64,7 +64,7 @@ export default function Login({
               className="  w-10/12 flex flex-col items-center justify-center space-y-3"
             >
               <div className="grid gap-2 w-10/12">
-                <Label htmlFor="credentials-email">電子郵件</Label>
+                <Label htmlFor="credentials-email">{t("email")}</Label>
                 <Input
                   value={loginData.email}
                   onChange={(e) =>
@@ -74,16 +74,16 @@ export default function Login({
                     }))
                   }
                   id="credentials-email"
-                  placeholder="輸入您的電子郵件"
+                  placeholder={t("emailPlaceholder")}
                   type="email"
                 />
               </div>
               <div className="grid gap-2 w-10/12">
-                <Label htmlFor="credentials-password">密碼</Label>
+                <Label htmlFor="credentials-password">{t("password")}</Label>
                 <div className="relative">
                   <Input
                     id="credentials-password"
-                    placeholder="輸入您的密碼"
+                    placeholder={t("passwordPlaceholder")}
                     type={showPassword ? "text" : "password"}
                     value={loginData.password}
                     onChange={(e) =>
@@ -109,7 +109,7 @@ export default function Login({
               </div>
               {params.error && (
                 <p className="text-destructive text-xs">
-                  Invalid email or password
+                  {t("invalidCredentials")}
                 </p>
               )}
               <Button
@@ -119,7 +119,7 @@ export default function Login({
                 className="w-10/12  h-10"
                 type="submit"
               >
-                登入
+                {t("login")}
                 {loadingMethod === LoginMethod.CREDENTIALS && isPending && (
                   <RiLoader2Line size={24} className=" animate-spin" />
                 )}
@@ -137,7 +137,7 @@ export default function Login({
                 ) : (
                   <SiGoogle size={24} />
                 )}
-                以 Google 帳號繼續
+                {t("continueWithGoogle")}
               </Button>
               <Button
                 onClick={() => mutate({ method: LoginMethod.GITHUB })}
@@ -150,17 +150,17 @@ export default function Login({
                 ) : (
                   <SiGithub size={24} />
                 )}
-                以 Github 帳號繼續
+                {t("continueWithGithub")}
               </Button>
             </CardAction>
             <Link href="/auth/register">
               <Button variant={"link"} className="  h-10">
-                <RiArrowDropLeftLine size={24} /> 回到註冊
+                <RiArrowDropLeftLine size={24} /> {t("goToRegister")}
               </Button>
             </Link>
           </CardContent>
         </Card>
-        <AuthGlobe title="Welcome." />
+        <AuthGlobe title={t("welcome")} />
       </div>
     </Suspense>
   );

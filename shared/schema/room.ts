@@ -2,12 +2,6 @@ import mongoose, { InferSchemaType, Model } from "mongoose";
 import { mongooseIdTransform } from "../service/dto/transform";
 
 const roomSchema = new mongoose.Schema({
-  roomId: {
-    type: String,
-    unique: true,
-    required: true,
-  },
-
   lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
   name: { type: String, default: "" },
   avatar: { type: String, default: "" },

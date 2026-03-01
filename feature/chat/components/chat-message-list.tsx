@@ -10,6 +10,9 @@ import { cn } from "@/shared/shadcn/lib/utils";
 import { RiArrowDownLine, RiLoader2Line } from "@remixicon/react";
 import { useChatStore } from "@/shared/store/chat-store";
 import { markAsRead } from "@/shared/service/api/message";
+import { useTranslations } from "next-intl";
+import { useLocaleStore } from "@/shared/store/locale-store";
+
 interface ChatMessageListProps {
   roomId: string;
   messages: Message[];
@@ -41,10 +44,17 @@ type ListItem =
       key: string;
     };
 
-function formatDateSeparator(date: Date): string {
-  if (isToday(date)) return "今天";
-  if (isYesterday(date)) return "昨天";
-  return format(date, "yyyy年M月d日 EEEE", { locale: zhTW });
+function formatDateSeparator(
+  date: Date,
+  t: (key: string) => string,
+  locale: string,
+): string {
+  if (isToday(date)) return t("today");
+  if (isYesterday(date)) return t("yesterday");
+  if (locale === "zh-TW") {
+    return format(date, "yyyy年M月d日 EEEE", { locale: zhTW });
+  }
+  return format(date, "EEEE, MMMM d, yyyy");
 }
 
 export function ChatMessageList({
@@ -64,6 +74,8 @@ export function ChatMessageList({
   const [atBottom, setAtBottom] = useState(true);
 
   const { clearUnreadCount, unreadCounts } = useChatStore();
+  const t = useTranslations("chat");
+  const currentLocale = useLocaleStore((s) => s.locale);
   const prevAtBottom = useRef(atBottom);
   const unreadCount = atBottom ? 0 : unreadCounts[roomId] || 0;
   const START_INDEX = 100000;
@@ -91,7 +103,7 @@ export function ChatMessageList({
       prevDate = msgDate;
 
       const isCurrentUser =
-        msg.member?.user?.userId === currentUserId ||
+        msg.member?.user?.id === currentUserId ||
         msg.memberId === currentUserId;
 
       // Grouping: same member && timestamp diff < 5min
@@ -100,14 +112,14 @@ export function ChatMessageList({
 
       const sameAsPrev =
         prevMsg &&
-        prevMsg.member?.user?.userId === msg.member?.user?.userId &&
+        prevMsg.member?.user?.id === msg.member?.user?.id &&
         isSameDay(new Date(prevMsg.createdAt), msgDate) &&
         msgDate.getTime() - new Date(prevMsg.createdAt).getTime() <
           GROUP_THRESHOLD_MS;
 
       const sameAsNext =
         nextMsg &&
-        nextMsg.member?.user?.userId === msg.member?.user?.userId &&
+        nextMsg.member?.user?.id === msg.member?.user?.id &&
         isSameDay(new Date(nextMsg.createdAt), msgDate) &&
         new Date(nextMsg.createdAt).getTime() - msgDate.getTime() <
           GROUP_THRESHOLD_MS;
@@ -178,15 +190,19 @@ export function ChatMessageList({
     });
   }, []);
 
+  const handleMarkAsRead = useCallback((roomId: string) => {
+    markAsRead(roomId);
+  }, []);
+
   // Mark as read when messages update and we are at bottom
   useEffect(() => {
     if (atBottom && messages.length > 0) {
       clearUnreadCount(roomId);
-      markAsRead(roomId);
+      handleMarkAsRead(roomId);
     }
 
     prevAtBottom.current = atBottom;
-  }, [messages, atBottom, roomId, clearUnreadCount]);
+  }, [messages, atBottom, roomId, clearUnreadCount, handleMarkAsRead]);
 
   // Empty state
   if (messages.length === 0) {
@@ -214,7 +230,7 @@ export function ChatMessageList({
           setAtBottom(bottom);
           if (bottom) {
             clearUnreadCount(roomId);
-            markAsRead(roomId);
+            handleMarkAsRead(roomId);
             prevAtBottom.current = atBottom;
           }
         }}
@@ -224,7 +240,7 @@ export function ChatMessageList({
               <div className="flex items-center justify-center py-3">
                 <RiLoader2Line className="h-4 w-4 animate-spin text-muted-foreground" />
                 <span className="ml-2 text-xs text-muted-foreground">
-                  載入更多訊息...
+                  {t("loadingMore")}
                 </span>
               </div>
             ) : null,
@@ -239,7 +255,7 @@ export function ChatMessageList({
             return (
               <div className="flex items-center justify-center py-4 px-6 animate-in fade-in duration-200">
                 <div className="px-3 py-1 rounded-full bg-muted/50 text-xs text-muted-foreground font-medium">
-                  {formatDateSeparator(item.date)}
+                  {formatDateSeparator(item.date, t, currentLocale)}
                 </div>
               </div>
             );

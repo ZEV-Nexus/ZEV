@@ -28,7 +28,6 @@ export const createRoom = async ({
   }
 
   const room = await roomModel.create({
-    roomId: crypto.randomUUID(),
     name: roomName,
     roomType,
     dmKey,
@@ -44,7 +43,7 @@ export const createRoom = async ({
     nickname: roomName,
     notificationSetting: "all",
     pinned: false,
-    roomCategory: categoryId as any,
+    roomCategory: categoryId,
   });
   const savedRoom = await room.save();
 
@@ -52,7 +51,7 @@ export const createRoom = async ({
 };
 
 export const getChatRoomById = async (roomId: string) => {
-  const room = await roomModel.findOne({ roomId });
+  const room = await roomModel.findById(roomId);
 
   return room;
 };
@@ -61,10 +60,10 @@ export const updateRoomInfo = async (
   roomId: string,
   updates: { name?: string; avatar?: string },
 ) => {
-  const room = await roomModel.findOne({ roomId });
+  const room = await roomModel.findById(roomId);
   if (!room) throw new Error("Room not found");
 
-  const update: Record<string, any> = {};
+  const update: Record<string, string> = {};
   if (updates.name !== undefined) update.name = updates.name;
   if (updates.avatar !== undefined) update.avatar = updates.avatar;
 

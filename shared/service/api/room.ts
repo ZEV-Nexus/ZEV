@@ -9,7 +9,7 @@ import { fetchApi } from "./fetch";
 
 export type SearchRoom = Pick<
   ChatRoom,
-  "id" | "roomId" | "name" | "avatar" | "roomType" | "createdAt"
+  "id" | "name" | "avatar" | "roomType" | "createdAt"
 >;
 
 export async function searchRooms(query: string) {
@@ -23,7 +23,7 @@ export const createRoom = async (
   userId: string,
   roomName: string,
   roomType: RoomType,
-  roomMembers: Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">[],
+  roomMembers: Pick<User, "id" | "email" | "nickname" | "avatar">[],
   categoryId?: string,
 ) => {
   const response = await fetchApi<{ room: ChatRoom; members: Member[] }>(
@@ -99,4 +99,60 @@ export const updateRoomInfo = async (
     method: "POST",
     body: JSON.stringify(info),
   });
+};
+
+export interface RoomMediaItem {
+  id: string;
+  url: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  resourceType: string;
+  uploadedAt: string;
+  messageId: string;
+  senderNickname: string;
+  senderAvatar?: string;
+}
+
+export interface RoomLinkItem {
+  url: string;
+  messageId: string;
+  content: string;
+  senderNickname: string;
+  senderAvatar?: string;
+  createdAt: string;
+}
+
+export const getRoomSharedMedia = async (
+  roomId: string,
+  type: "image" | "file" | "link",
+  limit: number = 50,
+  before?: string,
+) => {
+  const params = new URLSearchParams({ type, limit: String(limit) });
+  if (before) params.set("before", before);
+  const response = await fetchApi<RoomMediaItem[] | RoomLinkItem[]>(
+    `rooms/${roomId}/media?${params.toString()}`,
+  );
+  return response.data;
+};
+
+export const findOrCreateDM = async (
+  targetUserId: string,
+  targetUser: {
+    userId: string;
+    nickname: string;
+    avatar?: string;
+    email?: string;
+  },
+) => {
+  const response = await fetchApi<{
+    room: ChatRoom;
+    members: Member[];
+    isExisting: boolean;
+  }>("rooms/dm", {
+    method: "POST",
+    body: JSON.stringify({ targetUserId, targetUser }),
+  });
+  return response;
 };

@@ -39,7 +39,6 @@ export async function updateUserApiKey(
   userId: string,
   keyId: string,
   apiKey: string,
-  provider: string,
 ) {
   const { encrypted, iv, tag } = encrypt(apiKey);
   const key = await userApiKeyModel.findOneAndUpdate(

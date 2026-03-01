@@ -39,10 +39,12 @@ import {
 import { toast } from "sonner";
 import type { Post } from "@/shared/types";
 import { formatDistanceToNow } from "date-fns";
-import { zhTW } from "date-fns/locale";
+import { zhTW, enUS } from "date-fns/locale";
 import Link from "next/link";
 import Image from "next/image";
 import PostComments from "./post-comments";
+import { useTranslations } from "next-intl";
+import { useLocaleStore } from "@/shared/store/locale-store";
 
 interface PostCardProps {
   post: Post;
@@ -58,6 +60,8 @@ export default function PostCard({
   const { data: session } = useSession();
   const [showComments, setShowComments] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const t = useTranslations("feed");
+  const { locale } = useLocaleStore();
 
   const currentUserObjectId = session?.user?.id;
   const isLiked = post.likes?.includes(currentUserObjectId || "");
@@ -65,7 +69,7 @@ export default function PostCard({
 
   const handleLike = async () => {
     if (!session?.user) {
-      toast.error("請先登入");
+      toast.error(t("loginRequired"));
       return;
     }
     setIsLiking(true);
@@ -73,7 +77,7 @@ export default function PostCard({
       const result = await togglePostLike(post.id);
       onLikeToggled?.(post.id, result.liked, result.likesCount);
     } catch {
-      toast.error("操作失敗");
+      toast.error(t("actionFailed"));
     } finally {
       setIsLiking(false);
     }
@@ -82,17 +86,17 @@ export default function PostCard({
   const handleDelete = async () => {
     try {
       await deletePostApi(post.id);
-      toast.success("貼文已刪除");
+      toast.success(t("postDeleted"));
       onDeleted?.();
     } catch {
-      toast.error("刪除失敗");
+      toast.error(t("deleteFailed"));
     }
   };
 
   const timeAgo = post.createdAt
     ? formatDistanceToNow(new Date(post.createdAt), {
         addSuffix: true,
-        locale: zhTW,
+        locale: locale === "zh-TW" ? zhTW : enUS,
       })
     : "";
 
@@ -138,7 +142,7 @@ export default function PostCard({
                   className="text-destructive focus:text-destructive"
                 >
                   <RiDeleteBinLine className="h-4 w-4" />
-                  刪除貼文
+                  {t("deletePost")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -260,7 +264,7 @@ export default function PostCard({
             className="gap-1.5 text-muted-foreground ml-auto"
             onClick={() => {
               navigator.clipboard.writeText(window.location.origin);
-              toast.success("已複製連結");
+              toast.success(t("linkCopied"));
             }}
           >
             <RiShareLine className="h-4 w-4" />

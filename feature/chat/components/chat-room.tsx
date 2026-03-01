@@ -27,6 +27,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useAIStore } from "@/shared/store/ai-store";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 
 interface ChatRoomProps {
   room: ChatRoomType;
@@ -49,6 +50,7 @@ export default function ChatRoom({
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const { updateRoomLastMessage, setCurrentRoom } = useChatStore();
   const { selectedModel, setSelectedModel, maskedKeys } = useAIStore();
+  const t = useTranslations("chat");
 
   const {
     messages: aiMessages,
@@ -64,11 +66,9 @@ export default function ChatRoom({
       );
     },
   });
-
-  console.log(status);
-
-  const currentMember = members?.find((m) => m.user.userId === currentUserId);
+  const currentMember = members?.find((m) => m.user.id === currentUserId);
   const nickname = currentMember?.user?.nickname || "Guest";
+
   useEffect(() => {
     setCurrentRoom(room);
   }, [room, setCurrentRoom]);
@@ -96,8 +96,8 @@ export default function ChatRoom({
       const data = await fetchMessages(room.id, MESSAGE_LIMIT);
       return data ?? [];
     },
-    staleTime: 30 * 1000, // 30s 內視為新鮮，不重新拉取
-    gcTime: 10 * 60 * 1000, // 快取保留 10 分鐘
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function ChatRoom({
       }
     } catch (error: unknown) {
       console.log(error);
-      toast.error("載入更多訊息失敗");
+      toast.error(t("loadMoreFailed"));
     } finally {
       setIsLoadingMore(false);
     }
@@ -138,12 +138,12 @@ export default function ChatRoom({
     replyToId?: string,
   ) => {
     if (isAIPanelOpen) {
-      handleSendToAI(content);
+      handleSendToAI(content, attachments);
       return;
     }
 
     if (!currentMember) {
-      toast.error("無法發送訊息：找不到成員資訊");
+      toast.error(t("memberNotFound"));
       return;
     }
 
@@ -218,22 +218,55 @@ export default function ChatRoom({
       setLocalMessages((prev) =>
         prev.filter((msg) => msg.id !== optimisticMessage.id),
       );
-      toast.error(
-        error instanceof Error ? error.message : "訊息發送失敗，請重試",
-      );
+      toast.error(error instanceof Error ? error.message : t("sendFailed"));
     } finally {
       stopTyping();
     }
   };
 
-  const handleSendToAI = (content: string) => {
+  const handleSendToAI = async (content: string, files?: File[]) => {
     if (!content.trim() || status === "streaming") return;
     const aiMessage = { text: content, role: "user" };
 
     const modelKeyId = maskedKeys[selectedModel.provider].id;
 
+    // Upload files and collect attachment metadata for AI agents
+    let attachmentMeta: Array<{
+      url: string;
+      filename: string;
+      mimeType: string;
+      size: number;
+      resourceType?: string;
+    }> = [];
+
+    if (files && files.length > 0) {
+      try {
+        const uploaded = await Promise.all(
+          files.map((file) => uploadFileToCloudinary(file)),
+        );
+        attachmentMeta = uploaded.map((u, i) => ({
+          url: (u as unknown as { url: string }).url,
+          filename: files[i].name,
+          mimeType: files[i].type,
+          size: files[i].size,
+          resourceType: files[i].type.startsWith("image/")
+            ? "image"
+            : files[i].type.startsWith("video/")
+              ? "video"
+              : "raw",
+        }));
+      } catch {
+        toast.error(t("uploadFailed"));
+      }
+    }
+
     sendAiMessage(aiMessage, {
-      body: { modelKeyId, modelId: selectedModel.id, roomId: room.id },
+      body: {
+        modelKeyId,
+        modelId: selectedModel.id,
+        roomId: room.id,
+        ...(attachmentMeta.length > 0 ? { attachments: attachmentMeta } : {}),
+      },
     });
   };
 
@@ -258,7 +291,7 @@ export default function ChatRoom({
     try {
       await editMessageApi(messageId, content);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "編輯失敗，請重試");
+      toast.error(error instanceof Error ? error.message : t("editFailed"));
     }
   };
 
@@ -275,7 +308,7 @@ export default function ChatRoom({
     try {
       await deleteMessageApi(messageId);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "刪除失敗，請重試");
+      toast.error(error instanceof Error ? error.message : t("deleteFailed"));
     }
   };
 
@@ -325,7 +358,7 @@ export default function ChatRoom({
                         <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce"></span>
                       </div>
                       <span className="text-muted-foreground">
-                        {typingUsers.size} 人正在輸入...
+                        {t("typingIndicator", { count: typingUsers.size })}
                       </span>
                     </div>
                   </div>

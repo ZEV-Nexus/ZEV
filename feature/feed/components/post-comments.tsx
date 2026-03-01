@@ -17,8 +17,10 @@ import {
 import { toast } from "sonner";
 import type { Comment } from "@/shared/types";
 import { formatDistanceToNow } from "date-fns";
-import { zhTW } from "date-fns/locale";
+import { zhTW, enUS } from "date-fns/locale";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { useLocaleStore } from "@/shared/store/locale-store";
 
 interface PostCommentsProps {
   postId: string;
@@ -30,6 +32,8 @@ export default function PostComments({ postId }: PostCommentsProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const t = useTranslations("feed");
+  const { locale } = useLocaleStore();
 
   const loadComments = useCallback(async () => {
     if (!postId) return;
@@ -37,11 +41,11 @@ export default function PostComments({ postId }: PostCommentsProps) {
       const data = await fetchComments(postId);
       setComments(data);
     } catch {
-      toast.error("載入留言失敗");
+      toast.error(t("loadCommentsFailed"));
     } finally {
       setIsLoading(false);
     }
-  }, [postId]);
+  }, [postId, t]);
 
   useEffect(() => {
     loadComments();
@@ -56,7 +60,7 @@ export default function PostComments({ postId }: PostCommentsProps) {
       setComments((prev) => [...prev, comment]);
       setNewComment("");
     } catch {
-      toast.error("留言失敗");
+      toast.error(t("commentFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -71,7 +75,7 @@ export default function PostComments({ postId }: PostCommentsProps) {
           </div>
         ) : comments.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-3">
-            還沒有留言，成為第一個留言的人吧！
+            {t("noComments")}
           </p>
         ) : (
           comments.map((comment) => (
@@ -98,7 +102,7 @@ export default function PostComments({ postId }: PostCommentsProps) {
                   <span className="text-[10px] text-muted-foreground">
                     {formatDistanceToNow(new Date(comment.createdAt), {
                       addSuffix: true,
-                      locale: zhTW,
+                      locale: locale === "zh-TW" ? zhTW : enUS,
                     })}
                   </span>
                 </div>
@@ -124,7 +128,7 @@ export default function PostComments({ postId }: PostCommentsProps) {
             </AvatarFallback>
           </Avatar>
           <Input
-            placeholder="寫一則留言..."
+            placeholder={t("commentPlaceholder")}
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             onKeyDown={(e) =>

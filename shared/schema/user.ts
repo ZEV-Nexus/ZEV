@@ -1,7 +1,6 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import { mongooseIdTransform } from "../service/dto/transform";
 const UserProfileSchema = new mongoose.Schema({
-  userId: { type: String, unique: true },
   username: {
     type: String,
     unique: true,
@@ -17,6 +16,11 @@ const UserProfileSchema = new mongoose.Schema({
   avatar: String,
   githubUsername: { type: String, default: "" },
   emailVerified: { type: Boolean, default: false, required: true },
+  privacySettings: {
+    showReadReceipts: { type: Boolean, default: true },
+    showTypingIndicator: { type: Boolean, default: true },
+    showOnlineStatus: { type: Boolean, default: true },
+  },
   createdAt: {
     type: Date,
     default: Date.now(),

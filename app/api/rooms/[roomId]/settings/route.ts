@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+
 import { updateMemberSettings } from "@/shared/service/server/member";
 import { getCurrentUser } from "@/shared/service/server/auth";
 

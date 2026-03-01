@@ -33,6 +33,7 @@ import {
   EmojiPickerContent,
   EmojiPickerFooter,
 } from "@/components/ui/emoji-picker";
+import { useTranslations } from "next-intl";
 
 interface ChatMessageInputProps {
   onSendMessage: (
@@ -65,6 +66,7 @@ export function ChatMessageInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
+  const t = useTranslations("chat");
 
   // 將成員列表轉換成 mention 選項，使用 userId 作為 value
   const mentionSuggestions = useMemo(
@@ -152,7 +154,7 @@ export function ChatMessageInput({
 
     const validFiles = files.filter((file) => {
       if (file.size > maxSize) {
-        toast.error(`${file.name} 超過 10MB 限制`);
+        toast.error(t("fileSizeExceeded", { name: file.name }));
         return false;
       }
       return true;
@@ -187,11 +189,13 @@ export function ChatMessageInput({
                   <div className="flex items-center gap-2">
                     <RiReplyLine className="h-3 w-3 text-primary" />
                     <span className="text-xs font-semibold text-primary">
-                      正在回覆 {replyingMessage.member?.user?.nickname}
+                      {t("replyingTo", {
+                        name: replyingMessage.member?.user?.nickname || "",
+                      })}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    {replyingMessage.content || "附件內容"}
+                    {replyingMessage.content || t("attachmentContent")}
                   </p>
                 </div>
               </div>
@@ -255,7 +259,7 @@ export function ChatMessageInput({
                 className="h-80 w-80 border shadow-lg"
                 onEmojiSelect={handleEmojiSelect}
               >
-                <EmojiPickerSearch placeholder="搜尋表情符號..." />
+                <EmojiPickerSearch placeholder={t("searchEmoji")} />
                 <EmojiPickerContent />
                 <EmojiPickerFooter />
               </EmojiPicker>
@@ -318,11 +322,9 @@ export function ChatMessageInput({
                 onFocus={() => setIsFocused(true)}
                 asChild
                 placeholder={
-                  isAIMode
-                    ? "詢問 AI 助理..."
-                    : "輸入訊息... (@ 提及成員, Shift+Enter 換行)"
+                  isAIMode ? t("aiPlaceholder") : t("messagePlaceholder")
                 }
-                className="flex-1 min-h-10 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+                className="flex-1 min-h-10 resize-none border-0 bg-transparent! shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
               >
                 <Textarea value={message} className="max-h-[7lh]" />
               </MentionInput>
@@ -349,7 +351,7 @@ export function ChatMessageInput({
                 ) : (
                   <div className="px-2 py-3 text-center text-sm text-muted-foreground">
                     <RiAtLine className="h-4 w-4 mx-auto mb-1 opacity-50" />
-                    沒有可提及的成員
+                    {t("noMentionMembers")}
                   </div>
                 )}
               </MentionContent>

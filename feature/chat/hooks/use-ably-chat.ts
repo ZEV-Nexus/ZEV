@@ -2,12 +2,13 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import * as Ably from "ably";
 import { ChatClient, Room } from "@ably/chat";
 import { Message } from "@/shared/types";
+import { usePrivacyStore } from "@/shared/store/privacy-store";
 
 interface UseAblyChatProps {
   roomId: string;
   userId: string;
   nickname: string;
-  onMessage?: (message: Message) => void;
+  onMessage?: (message: Message & { room: string }) => void;
   onTypingChange?: (typers: Set<string>) => void;
 }
 
@@ -18,13 +19,13 @@ export function useAblyChat({
   onMessage,
   onTypingChange,
 }: UseAblyChatProps) {
-  const [chatClient, setChatClient] = useState<ChatClient | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
+
   const realtimeRef = useRef<Ably.Realtime | null>(null);
+  const chatClientRef = useRef<ChatClient | null>(null);
   const [connectionState, setConnectionState] =
     useState<Ably.ConnectionState>("initialized");
 
-  // Initialize Client
   useEffect(() => {
     const realtime = new Ably.Realtime({
       authUrl: `/api/ably/token?clientId=${userId}`,
@@ -33,7 +34,7 @@ export function useAblyChat({
     });
 
     const client = new ChatClient(realtime);
-    setChatClient(client);
+    chatClientRef.current = client;
     realtimeRef.current = realtime;
 
     realtime.connection.on((state) => {
@@ -47,7 +48,7 @@ export function useAblyChat({
   }, [userId]);
 
   useEffect(() => {
-    if (!chatClient || !roomId) return;
+    if (!chatClientRef.current || !roomId) return;
 
     let roomInstance: Room | null = null;
     let unsubscribeMessages: (() => void) | undefined;
@@ -56,17 +57,17 @@ export function useAblyChat({
     const initRoom = async () => {
       try {
         console.log(`Joining Ably room: ${roomId}`);
-        roomInstance = await chatClient.rooms.get(roomId, {});
+        roomInstance = await chatClientRef.current!.rooms.get(roomId, {});
         await roomInstance.attach();
         setRoom(roomInstance);
 
         // --- Messages ---
         const { unsubscribe: unsubMsg } = roomInstance.messages.subscribe(
-          (msg: any) => {
+          (msg) => {
             console.log("Ably received message:", msg);
             const payload = msg.message || msg;
             if (payload.metadata && payload.metadata.dbMessage && onMessage) {
-              onMessage(payload.metadata.dbMessage as Message);
+              onMessage(JSON.parse(payload.metadata.dbMessage as string));
             }
           },
         );
@@ -102,13 +103,13 @@ export function useAblyChat({
         try {
           if (unsubscribeMessages) unsubscribeMessages();
           if (unsubscribeTyping) unsubscribeTyping();
-          chatClient.rooms.release(roomId);
+          chatClientRef.current?.rooms.release(roomId);
         } catch (e) {
           console.error("Error during cleanup", e);
         }
       }
     };
-  }, [chatClient, roomId, nickname]);
+  }, [chatClientRef, roomId, nickname]);
 
   const sendRealtimeMessage = useCallback(
     async (content: string, dbMessage: Message) => {
@@ -117,7 +118,7 @@ export function useAblyChat({
         console.log("Publishing to Ably:", content);
         await room.messages.send({
           text: content,
-          metadata: { dbMessage: dbMessage as any },
+          metadata: { dbMessage: JSON.stringify(dbMessage) },
         });
       } catch (e) {
         console.error("Publish error", e);
@@ -127,6 +128,10 @@ export function useAblyChat({
   );
 
   const startTyping = useCallback(async () => {
+    // Respect privacy setting: don't send typing indicator if disabled
+    const { showTypingIndicator } = usePrivacyStore.getState().settings;
+    if (!showTypingIndicator) return;
+
     if (room) {
       try {
         await room.typing.keystroke();
@@ -141,13 +146,17 @@ export function useAblyChat({
           `room-typing:${roomId}`,
         );
         channel.publish("typing", { userId, nickname });
-      } catch (e) {
-        // Silently ignore
+      } catch (e: unknown) {
+        console.error("Raw typing publish error", e);
       }
     }
   }, [room, roomId, userId, nickname]);
 
   const stopTyping = useCallback(async () => {
+    // Respect privacy setting: don't send stop-typing if disabled
+    const { showTypingIndicator } = usePrivacyStore.getState().settings;
+    if (!showTypingIndicator) return;
+
     if (room) {
       try {
         await room.typing.stop();
@@ -162,8 +171,8 @@ export function useAblyChat({
           `room-typing:${roomId}`,
         );
         channel.publish("stop-typing", { userId });
-      } catch (e) {
-        // Silently ignore
+      } catch (e: unknown) {
+        console.error("Raw typing stop publish error", e);
       }
     }
   }, [room, roomId, userId]);

@@ -28,9 +28,9 @@ export async function POST(req: Request) {
     // Broadcast to room members for sidebar update
     const members = await getMembersByRoomId(roomId);
     const notifyPromises = members
-      .filter((m) => m.user?.userId && m.user.userId !== user.userId)
+      .filter((m) => m.user?.id && m.user.id !== user.id)
       .map((m) =>
-        publishUserNotification(m.user.userId, "chat-message", {
+        publishUserNotification(m.user.id, "chat-message", {
           roomId,
           message,
         }),

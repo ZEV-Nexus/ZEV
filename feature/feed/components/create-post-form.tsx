@@ -36,6 +36,7 @@ import type { GitHubRepo } from "@/shared/types";
 import { Input } from "@/shared/shadcn/components/ui/input";
 import Image from "next/image";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 
 interface CreatePostFormProps {
   onPostCreated: () => void;
@@ -55,6 +56,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
   // GitHub connection state
   const [showGithubConnect, setShowGithubConnect] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const t = useTranslations("feed");
 
   const hasGithubConnected = !!session?.user?.githubUsername;
 
@@ -107,15 +109,15 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
       if (event.data?.type !== "github-connect") return;
 
       if (event.data.success) {
-        toast.success(event.data.message || "GitHub 帳號連結成功！");
+        toast.success(event.data.message || t("githubConnected"));
         setShowGithubConnect(false);
         // Refresh session to get updated githubUsername
         await updateSession();
       } else {
-        toast.error(event.data.message || "GitHub 帳號連結失敗");
+        toast.error(event.data.message || t("githubConnectFailed"));
       }
     },
-    [updateSession],
+    [updateSession, t],
   );
 
   useEffect(() => {
@@ -130,7 +132,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
     const left = window.screenX + (window.outerWidth - width) / 2;
     const top = window.screenY + (window.outerHeight - height) / 2;
     window.open(
-      "/api/github/connect",
+      "/api/third-part/oauth/github",
       "github-connect",
       `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`,
     );
@@ -141,16 +143,16 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
     try {
       const res = await disconnectGitHub();
       if (res.ok) {
-        toast.success("已斷開 GitHub 帳號連結");
+        toast.success(t("githubDisconnected"));
         setSelectedRepo(null);
         setShowGithubSearch(false);
         setGithubQuery("");
         await updateSession();
       } else {
-        toast.error(res.error || "斷開連結失敗");
+        toast.error(res.error || t("githubDisconnectFailed"));
       }
     } catch {
-      toast.error("斷開連結時發生錯誤");
+      toast.error(t("githubDisconnectError"));
     } finally {
       setIsDisconnecting(false);
     }
@@ -169,7 +171,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
       const urls = results.map((r) => r.url).filter(Boolean) as string[];
       setImages((prev) => [...prev, ...urls]);
     } catch {
-      toast.error("圖片上傳失敗");
+      toast.error(t("imageUploadFailed"));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -191,9 +193,9 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
       setSelectedRepo(null);
       setShowGithubSearch(false);
       onPostCreated();
-      toast.success("貼文發布成功！");
+      toast.success(t("postSuccess"));
     } catch {
-      toast.error("貼文發布失敗");
+      toast.error(t("postFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -215,12 +217,12 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 space-y-3">
+          <div className="flex-1 space-y-3 ">
             <Textarea
-              placeholder="分享一些想法..."
+              placeholder={t("sharePlaceholder")}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-20 resize-none border-none bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60"
+              className="min-h-20 p-1 resize-none border-none bg-transparent!  text-sm focus-visible:ring-0 placeholder:text-muted-foreground/60"
             />
 
             {/* Image Previews */}
@@ -273,11 +275,10 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
               <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <RiGithubLine className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">連結 GitHub 帳號</span>
+                  <span className="font-medium">{t("githubConnect")}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  你尚未連結 GitHub 帳號，請透過 GitHub
-                  登入來連結帳號，連結後即可搜尋並分享你的專案。
+                  {t("githubNotConnected")}
                 </p>
                 <Button
                   size="sm"
@@ -285,7 +286,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                   className="gap-2 w-full"
                 >
                   <RiGithubLine className="h-4 w-4" />
-                  使用 GitHub 連結帳號
+                  {t("githubConnectButton")}
                 </Button>
               </div>
             )}
@@ -317,7 +318,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                       ) : (
                         <RiLinkUnlink className="h-3 w-3" />
                       )}
-                      斷開
+                      {t("disconnect")}
                     </Button>
                   </div>
                 </div>
@@ -325,7 +326,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                 {/* Search input — client-side filter */}
                 <div className="relative">
                   <Input
-                    placeholder="篩選專案名稱..."
+                    placeholder={t("filterProjects")}
                     value={githubQuery}
                     onChange={(e) => setGithubQuery(e.target.value)}
                     className="h-8 text-sm"
@@ -391,7 +392,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                         {isFetchingNextPage ? (
                           <RiLoader2Line className="h-3 w-3 animate-spin mr-1" />
                         ) : null}
-                        載入更多
+                        {t("loadMore")}
                       </Button>
                     )}
                   </div>
@@ -402,7 +403,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                   filteredRepos.length === 0 &&
                   allRepos.length > 0 && (
                     <p className="text-xs text-muted-foreground text-center py-2">
-                      找不到相關專案
+                      {t("noProjectsFound")}
                     </p>
                   )}
               </div>
@@ -431,7 +432,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                   ) : (
                     <RiImageAddLine className="h-4 w-4" />
                   )}
-                  圖片
+                  {t("image")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -474,7 +475,7 @@ export default function CreatePostForm({ onPostCreated }: CreatePostFormProps) {
                 ) : (
                   <RiSendPlaneLine className="h-3.5 w-3.5" />
                 )}
-                發布
+                {t("publish")}
               </Button>
             </div>
           </div>

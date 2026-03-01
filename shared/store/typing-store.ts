@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export interface TypingUser {
-  userId: string;
+  id: string;
   nickname: string;
 }
 
@@ -27,7 +27,7 @@ export const useTypingStore = create<TypingStore>()((set, get) => ({
   typingByRoom: new Map(),
 
   setUserTyping: (roomId, user) => {
-    const timerKey = `${roomId}:${user.userId}`;
+    const timerKey = `${roomId}:${user.id}`;
 
     // Clear existing timer
     const existingTimer = typingTimers.get(timerKey);
@@ -35,7 +35,7 @@ export const useTypingStore = create<TypingStore>()((set, get) => ({
 
     // Set new auto-clear timer
     const timer = setTimeout(() => {
-      get().clearUserTyping(roomId, user.userId);
+      get().clearUserTyping(roomId, user.id);
       typingTimers.delete(timerKey);
     }, TYPING_TIMEOUT_MS);
     typingTimers.set(timerKey, timer);
@@ -43,7 +43,7 @@ export const useTypingStore = create<TypingStore>()((set, get) => ({
     set((state) => {
       const newMap = new Map(state.typingByRoom);
       const roomTyping = new Map(newMap.get(roomId) || new Map());
-      roomTyping.set(user.userId, user);
+      roomTyping.set(user.id, user);
       newMap.set(roomId, roomTyping);
       return { typingByRoom: newMap };
     });

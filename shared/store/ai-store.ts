@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export type AIProvider = "openai" | "google" | "anthropic";
 
@@ -62,7 +62,7 @@ export const useAIStore = create<AIState & AIAction>()(
         google: { key: "", id: "" },
         anthropic: { key: "", id: "" },
       },
-      selectedModel: { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
+      selectedModel: AI_MODELS[0], // Default to first model
 
       setApiKey: (provider, key, id) =>
         set((state) => ({
@@ -85,6 +85,7 @@ export const useAIStore = create<AIState & AIAction>()(
     }),
     {
       name: "ai-store",
+      storage: createJSONStorage(() => sessionStorage),
     },
   ),
 );

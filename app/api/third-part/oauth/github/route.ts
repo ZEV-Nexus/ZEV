@@ -22,13 +22,13 @@ export async function GET(request: Request) {
 
   // Build the callback URL based on the current request origin
   const url = new URL(request.url);
-  const callbackUrl = `${url.origin}/api/github/connect/callback`;
+  const callbackUrl = `${url.origin}/api/third-part/oauth/github/callback`;
 
   // Use a state parameter to prevent CSRF
   // Encode the userId so the callback knows who to link
   const state = Buffer.from(
     JSON.stringify({
-      userId: user.userId,
+      userId: user.id,
       ts: Date.now(),
     }),
   ).toString("base64url");
