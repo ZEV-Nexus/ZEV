@@ -65,7 +65,7 @@ export default function PostCard({
 
   const currentUserObjectId = session?.user?.id;
   const isLiked = post.likes?.includes(currentUserObjectId || "");
-  const isAuthor = session?.user?.userId === post.author?.userId;
+  const isAuthor = session?.user?.id === post.author?.id;
 
   const handleLike = async () => {
     if (!session?.user) {

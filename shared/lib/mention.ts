@@ -46,9 +46,7 @@ export function parseMentions(
     }
 
     const userId = match[1];
-    const member = members.find(
-      (m) => m.user?.id === userId || m.user?.userId === userId,
-    );
+    const member = members.find((m) => m.user?.id === userId);
     const displayName =
       member?.user?.nickname || member?.nickname || "未知使用者";
 

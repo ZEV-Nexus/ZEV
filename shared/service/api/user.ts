@@ -3,17 +3,16 @@ import { fetchApi } from "./fetch";
 
 export async function getUserByQuery(query: string) {
   const response = await fetchApi<
-    Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">[]
+    Pick<User, "id" | "email" | "nickname" | "avatar">[]
   >(`user/search?query=${encodeURIComponent(query)}`);
   return response.data;
 }
 
 export async function getUserProfile(username: string) {
   const response = await fetchApi<
-    Pick<
-      User,
-      "id" | "userId" | "username" | "nickname" | "email" | "bio" | "avatar"
-    > & { createdAt: string }
+    Pick<User, "id" | "username" | "nickname" | "email" | "bio" | "avatar"> & {
+      createdAt: string;
+    }
   >(`user/profile/${encodeURIComponent(username)}`);
   return response.data;
 }

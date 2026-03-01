@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
             user.id,
             existingKeys.id,
             key,
-            provider,
           );
           return {
             id: existingKeys.id,
