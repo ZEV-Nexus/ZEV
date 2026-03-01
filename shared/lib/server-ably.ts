@@ -16,7 +16,7 @@ export const getAblyRest = () => {
 export async function publishUserNotification(
   userId: string,
   eventName: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
 ) {
   const ably = getAblyRest();
   const channel = ably.channels.get(`user-notification:${userId}`);
@@ -30,7 +30,7 @@ export async function publishUserNotification(
 export async function publishBulkUserNotification(
   userIds: string[],
   eventName: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
 ) {
   const promises = userIds.map((userId) =>
     publishUserNotification(userId, eventName, data),
