@@ -1,6 +1,27 @@
-# ZEV
+<p align="center">
+  <img src="public/icons/zev-icon-dark.png" alt="ZEV" width="120" />
+</p>
 
-**Your Team Communication Hub**
+<h1 align="center">ZEV</h1>
+
+<p align="center"><strong>Your Team Communication Hub</strong></p>
+
+<p align="center">
+  <a href="https://github.com/ZEV-Nexus/ZEV"><img src="https://img.shields.io/github/stars/ZEV-Nexus/ZEV?style=flat-square" alt="GitHub Stars" /></a>
+  <a href="https://github.com/ZEV-Nexus/ZEV/issues"><img src="https://img.shields.io/github/issues/ZEV-Nexus/ZEV?style=flat-square" alt="GitHub Issues" /></a>
+  <a href="https://github.com/ZEV-Nexus/ZEV/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ZEV-Nexus/ZEV?style=flat-square" alt="License" /></a>
+  <a href="https://github.com/ZEV-Nexus/ZEV"><img src="https://img.shields.io/github/last-commit/ZEV-Nexus/ZEV?style=flat-square" alt="Last Commit" /></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/MongoDB-8-47A248?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/Ably-Realtime-E82045?style=flat-square&logo=ably&logoColor=white" alt="Ably" />
+  <img src="https://img.shields.io/badge/Vercel_AI_SDK-AI-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel AI SDK" />
+</p>
 
 ZEV is an open-source, real-time team communication platform built for developers and modern teams. It combines instant messaging, organized channels, AI-powered tools, and third-party integrations into a single, cohesive web application.
 
