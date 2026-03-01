@@ -1,7 +1,6 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import { mongooseIdTransform } from "../service/dto/transform";
 const UserProfileSchema = new mongoose.Schema({
-  userId: { type: String, unique: true },
   username: {
     type: String,
     unique: true,

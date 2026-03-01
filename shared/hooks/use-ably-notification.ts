@@ -86,9 +86,9 @@ export function useAblyNotification() {
 
   const [isConnected, setIsConnected] = useState(false);
 
-  const userId = session?.user?.userId;
-  const nickname = session?.user?.nickname;
-  const avatar = session?.user?.avatar;
+  const userId = session?.user.id;
+  const nickname = session?.user.nickname;
+  const avatar = session?.user.avatar;
 
   // Main effect: connection, notifications, presence
   useEffect(() => {
@@ -161,6 +161,7 @@ export function useAblyNotification() {
             toast.info(
               `${notification.sender.nickname} 邀請你加入「${notification.room?.name || "聊天室"}」`,
             );
+
             break;
           case "post_like":
             toast.info(`${notification.sender.nickname} 按讚了你的貼文`);
@@ -176,7 +177,12 @@ export function useAblyNotification() {
     notificationChannel.subscribe("chat-message", (message: Ably.Message) => {
       const payload = message.data as ChatMessagePayload;
       const currentActiveRoomId = activeRoomIdRef.current;
-      // console.log("[Ably Notification] chat-message:", payload, "ActiveRoom:", currentActiveRoomId);
+      console.log(
+        "[Ably Notification] chat-message:",
+        payload,
+        "ActiveRoom:",
+        currentActiveRoomId,
+      );
 
       const { roomId, message: chatMessage } = payload;
 
@@ -271,9 +277,9 @@ export function useAblyNotification() {
         const members = await presenceChannel.presence.get();
         const users: OnlineUser[] = members.map((m) => ({
           clientId: m.clientId || "",
-          userId: (m.data as any)?.userId || m.clientId || "",
-          nickname: (m.data as any)?.nickname || m.clientId || "",
-          avatar: (m.data as any)?.avatar || undefined,
+          userId: m.data?.id || m.clientId || "",
+          nickname: m.data?.nickname || m.clientId || "",
+          avatar: m.data?.avatar || undefined,
         }));
         setOnlineUsers(users);
       } catch (err) {
@@ -305,20 +311,17 @@ export function useAblyNotification() {
     if (!realtime || !userId) return;
 
     // Collect all room IDs from chatCategorys
-    const allRoomIds: { roomId: string; roomMongoId: string }[] = [];
+    const allRoomIds: string[] = [];
     chatCategorys.forEach((cat) => {
       cat.items.forEach((item) => {
-        if (item.room?.roomId) {
-          allRoomIds.push({
-            roomId: item.room.roomId,
-            roomMongoId: item.room.id || item.id,
-          });
+        if (item.room?.id) {
+          allRoomIds.push(item.room.id);
         }
       });
     });
 
     const currentChannels = typingChannelsRef.current;
-    const newChannelKeys = new Set(allRoomIds.map((r) => r.roomMongoId));
+    const newChannelKeys = new Set(allRoomIds);
 
     // Unsubscribe from channels no longer needed
     currentChannels.forEach((channel, key) => {
@@ -329,7 +332,7 @@ export function useAblyNotification() {
     });
 
     // Subscribe to new channels
-    allRoomIds.forEach(({ roomMongoId }) => {
+    allRoomIds.forEach((roomMongoId) => {
       if (currentChannels.has(roomMongoId)) return;
 
       const channel = realtime.channels.get(`room-typing:${roomMongoId}`);
@@ -339,7 +342,7 @@ export function useAblyNotification() {
         // Ignore own typing
         if (data.userId === userId) return;
         setUserTyping(roomMongoId, {
-          userId: data.userId,
+          id: data.userId,
           nickname: data.nickname,
         });
       });

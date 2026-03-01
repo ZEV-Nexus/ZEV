@@ -8,7 +8,7 @@ interface UseAblyChatProps {
   roomId: string;
   userId: string;
   nickname: string;
-  onMessage?: (message: Message) => void;
+  onMessage?: (message: Message & { room: string }) => void;
   onTypingChange?: (typers: Set<string>) => void;
 }
 
@@ -20,12 +20,12 @@ export function useAblyChat({
   onTypingChange,
 }: UseAblyChatProps) {
   const [room, setRoom] = useState<Room | null>(null);
+
   const realtimeRef = useRef<Ably.Realtime | null>(null);
   const chatClientRef = useRef<ChatClient | null>(null);
   const [connectionState, setConnectionState] =
     useState<Ably.ConnectionState>("initialized");
 
-  // Initialize Client
   useEffect(() => {
     const realtime = new Ably.Realtime({
       authUrl: `/api/ably/token?clientId=${userId}`,

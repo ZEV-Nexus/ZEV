@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     const stateData = JSON.parse(
       Buffer.from(state, "base64url").toString("utf-8"),
     );
-    if (stateData.userId !== user.userId) {
+    if (stateData.id !== user.id) {
       return renderClosePopup(origin, false, "驗證失敗，請重試");
     }
     // Check state is not older than 10 minutes
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
 
     // Save the GitHub username to the current user's DB record
     await connectMongoose();
-    const dbUser = await userModel.findOne({ userId: user.userId });
+    const dbUser = await userModel.findOne({ userId: user.id });
 
     if (!dbUser) {
       return renderClosePopup(origin, false, "找不到用戶資料");

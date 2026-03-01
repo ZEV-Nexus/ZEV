@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
 
     await connectMongoose();
-    const dbUser = await userModel.findOne({ userId: user.userId });
+    const dbUser = await userModel.findById(user.id);
     if (!dbUser) {
       return apiResponse({ ok: false, message: "User not found", status: 404 });
     }
@@ -32,7 +32,9 @@ export async function GET(request: Request) {
     return apiResponse({
       ok: false,
       message:
-        error instanceof Error ? error.message : "Failed to fetch notifications",
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch notifications",
       status: 500,
     });
   }

@@ -68,14 +68,18 @@ export async function sendMessage(
   return await savedMessage.populate([
     {
       path: "member",
-      populate: { path: "user", select: "nickname avatar userId username" },
+      populate: { path: "user", select: "nickname avatar username" },
     },
     {
       path: "replyTo",
       populate: {
         path: "member",
-        populate: { path: "user", select: "nickname avatar userId username" },
+        populate: { path: "user", select: "nickname avatar username" },
       },
+    },
+    {
+      path: "room",
+      populate: "roomType name avatar",
     },
     { path: "attachments" },
   ]);
@@ -122,13 +126,12 @@ export async function getUnreadCount(roomId: string, userId: string) {
     room: new mongoose.Types.ObjectId(roomId),
     member: { $ne: member._id },
   };
-  console.log(member.lastReadMessage);
 
   if (member.lastReadMessage?.createdAt) {
     query.createdAt = { $gt: new Date(member.lastReadMessage.createdAt) };
   }
 
   const messages = await messageModel.countDocuments(query);
-  console.log(messages);
+
   return messages;
 }

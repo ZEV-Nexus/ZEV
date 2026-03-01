@@ -24,7 +24,7 @@ import { useTranslations } from "next-intl";
 
 type SearchUser = Pick<
   User,
-  "id" | "userId" | "email" | "nickname" | "avatar" | "username"
+  "id" | "email" | "nickname" | "avatar" | "username"
 >;
 
 interface SearchPanelProps {
@@ -61,7 +61,7 @@ export default function SearchPanel({ onClose }: SearchPanelProps) {
 
   const handleRoomClick = (room: SearchRoom) => {
     onClose?.();
-    router.push(`/c/${room.roomId}`);
+    router.push(`/c/${room.id}`);
   };
 
   return (

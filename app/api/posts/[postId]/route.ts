@@ -13,7 +13,7 @@ export async function DELETE(
     }
 
     const { postId } = await params;
-    await deletePost(postId, user.userId);
+    await deletePost(postId, user.id);
     return apiResponse({ ok: true, data: null });
   } catch (error) {
     return apiResponse({

@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     }
 
     const updatedUser = await userModel
-      .findOneAndUpdate({ userId: currentUser.userId }, update, { new: true })
+      .findByIdAndUpdate(currentUser.id, update, { new: true })
       .select("nickname bio avatar");
 
     if (!updatedUser) {

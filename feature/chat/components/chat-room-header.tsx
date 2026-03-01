@@ -24,6 +24,15 @@ import { useOnlineStore } from "@/shared/store/online-store";
 import { RoomInfoUpdatedPayload } from "@/shared/hooks/use-ably-notification";
 import { useTranslations } from "next-intl";
 
+import {
+  DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioItem,
+  DropdownMenuRadioGroup,
+} from "@/shared/shadcn/components/ui/dropdown-menu";
+import { notificationOptions } from "@/shared/config/notification";
+
 interface ChatRoomHeaderProps {
   room: ChatRoom;
   members: Member[];
@@ -53,7 +62,7 @@ export function ChatRoomHeader({
   useEffect(() => {
     const handleRoomInfoUpdate = (event: Event) => {
       const detail = (event as CustomEvent<RoomInfoUpdatedPayload>).detail;
-      if (detail.roomId === room.roomId) {
+      if (detail.roomId === room.id) {
         setLocalRoom((prev) => ({
           ...prev,
           ...(detail.name !== undefined && { name: detail.name }),
@@ -65,11 +74,9 @@ export function ChatRoomHeader({
     window.addEventListener("room-info-updated", handleRoomInfoUpdate);
     return () =>
       window.removeEventListener("room-info-updated", handleRoomInfoUpdate);
-  }, [room.roomId]);
+  }, [room.id]);
 
-  const recipient = members?.find(
-    (member) => member.user.userId !== currentUserId,
-  );
+  const recipient = members?.find((member) => member.user.id !== currentUserId);
   const isMobile = useIsMobile();
   const router = useRouter();
   const displayName =
@@ -98,7 +105,7 @@ export function ChatRoomHeader({
             )}
             <Avatar>
               {room.roomType === "dm"
-                ? onlineUsers.has(recipient?.user.userId || "") && (
+                ? onlineUsers.has(recipient?.user.id || "") && (
                     <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
                   )
                 : members.filter((m) => onlineUsers.has(m.user.id)).length >
@@ -119,7 +126,7 @@ export function ChatRoomHeader({
               </h2>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 {room.roomType === "dm" ? (
-                  onlineUsers.has(recipient?.user.userId || "") ? (
+                  onlineUsers.has(recipient?.user.id || "") ? (
                     <>
                       <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                       {t("online")}
@@ -163,15 +170,30 @@ export function ChatRoomHeader({
                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full animate-pulse" />
               )}
             </Button>
-
-            {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <RiNotificationLine className="h-5 w-5" />
-            </Button>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <RiNotificationLine className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuRadioGroup value="all">
+                  {notificationOptions.map((option) => (
+                    <DropdownMenuRadioItem
+                      value={option.value}
+                      key={option.value}
+                      className="cursor-pointer"
+                    >
+                      {option.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Separator orientation="vertical" className="h-6 mx-1" />
 

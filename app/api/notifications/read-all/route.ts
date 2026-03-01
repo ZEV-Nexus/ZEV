@@ -12,13 +12,16 @@ export async function POST() {
     }
 
     await connectMongoose();
-    const dbUser = await userModel.findOne({ userId: user.userId });
+    const dbUser = await userModel.findById(user.id);
     if (!dbUser) {
       return apiResponse({ ok: false, message: "User not found", status: 404 });
     }
 
     await markAllNotificationsAsRead(dbUser.id);
-    return apiResponse({ ok: true, message: "All notifications marked as read" });
+    return apiResponse({
+      ok: true,
+      message: "All notifications marked as read",
+    });
   } catch (error) {
     return apiResponse({
       ok: false,

@@ -18,8 +18,6 @@ import { Skeleton } from "@/shared/shadcn/components/ui/skeleton";
 import { cn } from "@/shared/shadcn/lib/utils";
 import { useTypingStore } from "@/shared/store/typing-store";
 import { useOnlineStore } from "@/shared/store/online-store";
-import { useAblyChat } from "../hooks/use-ably-chat";
-import { useChatStore } from "@/shared/store/chat-store";
 
 import { MentionText } from "./mention-text";
 import { useTranslations } from "next-intl";
@@ -54,43 +52,25 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   const { data: session } = useSession();
   const { members, room } = item;
   const recipient = members?.find(
-    (member) => member.user.userId !== session?.user?.userId,
+    (member) => member.user.id !== session?.user?.id,
   )?.user;
   const currentUser = members?.find(
-    (member) => member.user.userId === session?.user?.userId,
+    (member) => member.user.id === session?.user?.id,
   );
-  const { updateRoomLastMessage, incrementUnreadCount, currentRoom } =
-    useChatStore();
+
   const t = useTranslations("chat");
 
   const typingByRoom = useTypingStore((s) => s.typingByRoom);
   const roomTypingMap = typingByRoom.get(room.id);
   const filteredTypers = roomTypingMap
     ? Array.from(roomTypingMap.values()).filter(
-        (t) => t.userId !== session?.user?.userId,
+        (t) => t.id !== session?.user?.id,
       )
     : [];
 
   const { onlineUsers } = useOnlineStore();
   const isRecipientOnline =
-    room.roomType === "dm" && recipient
-      ? onlineUsers.has(recipient.userId)
-      : false;
-
-  useAblyChat({
-    roomId: room.id,
-    userId: session?.user?.userId || "",
-    nickname: session?.user?.nickname || "",
-    onMessage: (message) => {
-      updateRoomLastMessage(room.id, message);
-      if (
-        message.member.user.id !== session?.user?.id &&
-        currentRoom?.id !== room.id
-      ) {
-        incrementUnreadCount(room.id);
-      }
-    },
-  });
+    room.roomType === "dm" && recipient ? onlineUsers.has(recipient.id) : false;
 
   return (
     <SidebarMenuItem key={item.id} className=" border-none overflow-hidden">
@@ -101,7 +81,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
         asChild
       >
         <Link
-          href={`/c/${room?.roomId}`}
+          href={`/c/${room.id}`}
           className="px-3 py-2 h-fit border-none  flex min-w-0 max-w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
         >
           <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">

@@ -60,11 +60,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   }
 
   const currentUser = await getCurrentUser();
-  const isOwnProfile = currentUser?.userId === user.userId;
+  const isOwnProfile = currentUser?.id === user.id;
 
   const profileData = {
     id: user.id,
-    userId: user.userId!,
+    userId: user.id!,
     username: user.username || "",
     nickname: user.nickname || "",
     email: user.email || "",
@@ -77,7 +77,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     <UserProfile
       profile={profileData}
       isOwnProfile={isOwnProfile}
-      currentUserId={currentUser?.userId}
+      currentUserId={currentUser?.id}
     />
   );
 }

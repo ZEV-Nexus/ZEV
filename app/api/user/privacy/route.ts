@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     const user = await userModel
-      .findOne({ userId: currentUser.userId })
+      .findById(currentUser.id)
       .select("privacySettings");
 
     if (!user) {
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     const updatedUser = await userModel
       .findOneAndUpdate(
-        { userId: currentUser.userId },
+        { userId: currentUser.id },
         { $set: update },
         { new: true },
       )

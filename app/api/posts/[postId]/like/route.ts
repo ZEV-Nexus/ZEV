@@ -17,11 +17,11 @@ export async function POST(
     const { postId } = await params;
 
     // Toggle like
-    const result = await toggleLike(postId, user.userId);
+    const result = await toggleLike(postId, user.id);
 
     // If liked (not unlike), create notification
     if (result.liked) {
-      const dbUser = await userModel.findOne({ userId: user.userId });
+      const dbUser = await userModel.findById(user.id);
       const post = await postModel.findById(postId);
 
       if (dbUser && post && post.author.toString() !== dbUser._id.toString()) {

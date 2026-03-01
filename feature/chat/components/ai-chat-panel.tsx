@@ -156,12 +156,10 @@ export const AIChatPanel = memo(function AIChatPanel({
                           msg.role === "user" ? "flex-row-reverse" : "flex-row",
                         )}
                       >
-                        {/* Avatar */}
                         <div className="shrink-0 mt-0.5">
                           {msg.role === "assistant" && <LogoImage />}
                         </div>
 
-                        {/* Message Bubble */}
                         <div
                           className={cn(
                             "max-w-[85%]",

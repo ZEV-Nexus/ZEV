@@ -81,9 +81,7 @@ export function ChatRoomSettingsPanel({
   members,
   currentUserId,
 }: ChatRoomSettingsPanelProps) {
-  const currentUserMember = members.find(
-    (m) => m.user.userId === currentUserId,
-  );
+  const currentUserMember = members.find((m) => m.user.id === currentUserId);
   const currentUserRole = currentUserMember?.role || "member";
   const isGroup = room.roomType === "group";
   const canChangeRole =
@@ -122,7 +120,7 @@ export function ChatRoomSettingsPanel({
   useEffect(() => {
     const handleRoleUpdate = (event: Event) => {
       const detail = (event as CustomEvent<MemberRoleUpdatedPayload>).detail;
-      if (detail.roomId === room.roomId) {
+      if (detail.roomId === room.id) {
         setLocalMembers((prev) =>
           prev.map((m) =>
             m.id === detail.memberId ? { ...m, role: detail.newRole } : m,
@@ -133,7 +131,7 @@ export function ChatRoomSettingsPanel({
 
     const handleRoomInfoUpdate = (event: Event) => {
       const detail = (event as CustomEvent<RoomInfoUpdatedPayload>).detail;
-      if (detail.roomId === room.roomId) {
+      if (detail.roomId === room.id) {
         setLocalRoom((prev) => ({
           ...prev,
           ...(detail.name !== undefined && { name: detail.name }),
@@ -148,14 +146,14 @@ export function ChatRoomSettingsPanel({
       window.removeEventListener("member-role-updated", handleRoleUpdate);
       window.removeEventListener("room-info-updated", handleRoomInfoUpdate);
     };
-  }, [room.roomId]);
+  }, [room.id]);
 
   const handleRoleChange = useCallback(
     async (
       memberId: string,
       newRole: "admin" | "owner" | "member" | "guest",
     ) => {
-      if (!room.roomId) return;
+      if (!room.id) return;
       setUpdatingMemberId(memberId);
 
       // Optimistic update
@@ -164,7 +162,7 @@ export function ChatRoomSettingsPanel({
       );
 
       try {
-        await updateMemberRole(room.roomId, memberId, newRole);
+        await updateMemberRole(room.id, memberId, newRole);
         toast.success(t("roleUpdated"));
       } catch (error: unknown) {
         // Revert on failure
@@ -176,7 +174,7 @@ export function ChatRoomSettingsPanel({
         setUpdatingMemberId(null);
       }
     },
-    [room.roomId, members, t],
+    [room, members, t],
   );
 
   const handleRoomInfoUpdated = useCallback(
@@ -186,9 +184,7 @@ export function ChatRoomSettingsPanel({
     [],
   );
 
-  const recipient = members?.find(
-    (member) => member.user.userId !== currentUserId,
-  );
+  const recipient = members?.find((member) => member.user.id !== currentUserId);
 
   const displayName =
     room.roomType === "dm" ? recipient?.user.nickname : localRoom.name;
@@ -200,19 +196,19 @@ export function ChatRoomSettingsPanel({
     room.roomType === "dm" ? recipient?.user.avatar : localRoom.avatar;
 
   const handleNotificationToggle = async (checked: boolean) => {
-    if (!room.roomId) return;
+    if (!room.id) return;
     setNotificationEnabled(checked);
-    useChatStore.getState().updateRoomSettings(room.roomId, currentUserId, {
+    useChatStore.getState().updateRoomSettings(room.id, currentUserId, {
       notificationSetting: checked ? "all" : "mute",
     });
     try {
-      await updateRoomSettings(room.roomId, {
+      await updateRoomSettings(room.id, {
         notificationSetting: checked ? "all" : "mute",
       });
     } catch (error) {
       console.error(error);
       setNotificationEnabled(!checked);
-      useChatStore.getState().updateRoomSettings(room.roomId, currentUserId, {
+      useChatStore.getState().updateRoomSettings(room.id, currentUserId, {
         notificationSetting: !checked ? "all" : "mute",
       });
       toast.error("Failed to update notification settings");
@@ -285,7 +281,20 @@ export function ChatRoomSettingsPanel({
             <div className="flex flex-col">
               <div className="flex flex-col items-center py-6 px-4">
                 <Avatar className="h-16 w-16 mb-3">
-                  <AvatarBadge className="bg-green-500 h-3 w-3 ring-2 ring-background" />
+                  {room.roomType === "dm"
+                    ? onlineUsers.has(recipient?.user.id || "") && (
+                        <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                      )
+                    : members.filter((m) => onlineUsers.has(m.user.id)).length >
+                        0 && (
+                        <AvatarBadge className="bg-green-500 h-2.5 w-2.5 ring-2 ring-card" />
+                      )}
+                  {displayAvatarUrl && (
+                    <AvatarImage
+                      src={displayAvatarUrl}
+                      alt={displayName || ""}
+                    />
+                  )}
                   {displayAvatarUrl && (
                     <AvatarImage
                       src={displayAvatarUrl}
@@ -379,8 +388,8 @@ export function ChatRoomSettingsPanel({
                 </div>
                 <div className="space-y-0.5">
                   {localMembers.slice(0, 5).map((member) => {
-                    const isCurrentUser = member.user.userId === currentUserId;
-                    const isOnline = onlineUsers.has(member.user.userId);
+                    const isCurrentUser = member.user.id === currentUserId;
+                    const isOnline = onlineUsers.has(member.user.id);
                     const isUpdating = updatingMemberId === member.id;
                     const canChangeThisMember =
                       canChangeRole &&

@@ -12,7 +12,7 @@ import { useChatStore } from "@/shared/store/chat-store";
 import { markAsRead } from "@/shared/service/api/message";
 import { useTranslations } from "next-intl";
 import { useLocaleStore } from "@/shared/store/locale-store";
-import { usePrivacyStore } from "@/shared/store/privacy-store";
+
 interface ChatMessageListProps {
   roomId: string;
   messages: Message[];
@@ -103,7 +103,7 @@ export function ChatMessageList({
       prevDate = msgDate;
 
       const isCurrentUser =
-        msg.member?.user?.userId === currentUserId ||
+        msg.member?.user?.id === currentUserId ||
         msg.memberId === currentUserId;
 
       // Grouping: same member && timestamp diff < 5min
@@ -112,14 +112,14 @@ export function ChatMessageList({
 
       const sameAsPrev =
         prevMsg &&
-        prevMsg.member?.user?.userId === msg.member?.user?.userId &&
+        prevMsg.member?.user?.id === msg.member?.user?.id &&
         isSameDay(new Date(prevMsg.createdAt), msgDate) &&
         msgDate.getTime() - new Date(prevMsg.createdAt).getTime() <
           GROUP_THRESHOLD_MS;
 
       const sameAsNext =
         nextMsg &&
-        nextMsg.member?.user?.userId === msg.member?.user?.userId &&
+        nextMsg.member?.user?.id === msg.member?.user?.id &&
         isSameDay(new Date(nextMsg.createdAt), msgDate) &&
         new Date(nextMsg.createdAt).getTime() - msgDate.getTime() <
           GROUP_THRESHOLD_MS;

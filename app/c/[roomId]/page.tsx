@@ -33,7 +33,7 @@ export default async function ChatRoomPage({
 
   return (
     <div className="h-full w-full">
-      <ChatRoom room={room} members={members} currentUserId={user.userId} />
+      <ChatRoom room={room} members={members} currentUserId={user.id} />
     </div>
   );
 }

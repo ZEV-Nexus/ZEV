@@ -53,13 +53,13 @@ export async function POST(req: Request) {
     }
 
     const existing = await userModel.findOne({ username: trimmed });
-    if (existing && existing.userId !== currentUser.userId) {
+    if (existing && existing.id !== currentUser.id) {
       return apiResponse({ error: "Username already taken", status: 409 });
     }
 
     // Update username
-    const updatedUser = await userModel.findOneAndUpdate(
-      { userId: currentUser.userId },
+    const updatedUser = await userModel.findByIdAndUpdate(
+      currentUser.id,
       { username: trimmed },
       { new: true },
     );

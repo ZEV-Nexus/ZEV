@@ -15,7 +15,7 @@ export async function POST() {
 
   try {
     await connectMongoose();
-    const dbUser = await userModel.findOne({ userId: user.userId });
+    const dbUser = await userModel.findById(user.id);
 
     if (!dbUser) {
       return NextResponse.json(

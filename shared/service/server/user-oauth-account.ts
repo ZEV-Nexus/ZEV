@@ -54,3 +54,7 @@ export async function updateUserOAuthTokens(
   );
   return userOAuth;
 }
+
+export async function deleteUserOAuth(id: string) {
+  return await userOAuthAccountModel.findByIdAndDelete(id);
+}

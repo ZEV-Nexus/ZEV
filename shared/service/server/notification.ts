@@ -51,7 +51,7 @@ export async function createNotification({
   const recipientUser = await userModel.findById(recipientId);
   if (recipientUser) {
     publishUserNotification(
-      recipientUser.userId!,
+      recipientUser.id!,
       "new-notification",
       notificationData,
     ).catch((err) =>

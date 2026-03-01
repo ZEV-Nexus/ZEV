@@ -8,7 +8,7 @@ export interface PrivacySettings {
 
 export interface User {
   id: string;
-  userId: string;
+
   username?: string;
   nickname: string;
   email: string;
@@ -53,7 +53,7 @@ export interface Member {
 
 export interface ChatRoom {
   id: string;
-  roomId?: string;
+
   lastMessage?: Message;
   lastMessageId?: string;
   name: string;
@@ -108,7 +108,7 @@ export interface GitHubRepo {
 
 export interface Post {
   id: string;
-  author: Pick<User, "id" | "userId" | "username" | "nickname" | "avatar">;
+  author: Pick<User, "id" | "username" | "nickname" | "avatar">;
   content: string;
   images?: string[];
   githubRepo?: GitHubRepo;
@@ -122,7 +122,7 @@ export interface Post {
 export interface Comment {
   id: string;
   post: string;
-  author: Pick<User, "id" | "userId" | "username" | "nickname" | "avatar">;
+  author: Pick<User, "id" | "username" | "nickname" | "avatar">;
   content: string;
   createdAt: string;
   deletedAt?: string;
@@ -133,11 +133,11 @@ export type NotificationType = "room_invite" | "post_like" | "post_comment";
 export interface Notification {
   id: string;
   recipient: string;
-  sender: Pick<User, "id" | "userId" | "username" | "nickname" | "avatar">;
+  sender: Pick<User, "id" | "username" | "nickname" | "avatar">;
   type: NotificationType;
   post?: Pick<Post, "id" | "content"> | null;
   comment?: Pick<Comment, "id" | "content"> | null;
-  room?: Pick<ChatRoom, "id" | "name" | "roomType" | "roomId"> | null;
+  room?: Pick<ChatRoom, "id" | "name" | "roomType"> | null;
   read: boolean;
   createdAt: string;
 }

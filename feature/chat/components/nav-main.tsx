@@ -68,19 +68,19 @@ export function NavMain() {
   const t = useTranslations("chat");
 
   const { data: fetchedCategories, isLoading: isQueryLoading } = useQuery({
-    queryKey: ["user-rooms", session?.user?.userId],
+    queryKey: ["user-rooms", session?.user?.id],
     queryFn: () => getUserRooms(),
-    enabled: !!session?.user?.userId,
+    enabled: !!session?.user?.id,
   });
 
   useEffect(() => {
-    if (fetchedCategories && session?.user?.userId) {
-      setChatCategorys(fetchedCategories, session.user.userId);
+    if (fetchedCategories && session?.user?.id) {
+      setChatCategorys(fetchedCategories, session.user.id);
     }
-  }, [fetchedCategories, setChatCategorys, session?.user?.userId]);
+  }, [fetchedCategories, setChatCategorys, session?.user?.id]);
 
   const isLoading =
-    status === "loading" || (!!session?.user?.userId && isQueryLoading);
+    status === "loading" || (!!session?.user?.id && isQueryLoading);
 
   return (
     <SidebarGroup>

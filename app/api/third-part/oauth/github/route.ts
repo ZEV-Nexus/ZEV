@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   // Encode the userId so the callback knows who to link
   const state = Buffer.from(
     JSON.stringify({
-      userId: user.userId,
+      userId: user.id,
       ts: Date.now(),
     }),
   ).toString("base64url");

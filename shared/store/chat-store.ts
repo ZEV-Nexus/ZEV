@@ -182,16 +182,12 @@ export const useChatStore = create<ChatStore>()(
           let hasUpdated = false;
           const updatedItems = cat.items.map((item) => {
             // Find the item. Check item.id and item.room.roomId / item.room.id
-            if (
-              item.id === roomId ||
-              item.room?.id === roomId ||
-              item.room?.roomId === roomId
-            ) {
+            if (item.room.id === roomId) {
               hasUpdated = true;
               return {
                 ...item,
                 members: item.members?.map((m) => {
-                  if (m.user.userId === userId) {
+                  if (m.user.id === userId) {
                     return {
                       ...m,
                       ...settings,
@@ -226,11 +222,7 @@ export const useChatStore = create<ChatStore>()(
           let hasUpdated = false;
           const updatedItems = cat.items.map((item) => {
             // Find the item. Check item.id and item.room.roomId / item.room.id
-            if (
-              item.id === roomId ||
-              item.room?.id === roomId ||
-              item.room?.roomId === roomId
-            ) {
+            if (item.room.id === roomId) {
               hasUpdated = true;
               return {
                 ...item,
@@ -258,11 +250,7 @@ export const useChatStore = create<ChatStore>()(
         const newCategorys = currentCategorys.map((cat) => {
           let hasUpdated = false;
           const updatedItems = cat.items.map((item) => {
-            if (
-              item.id === roomId ||
-              item.room?.id === roomId ||
-              item.room?.roomId === roomId
-            ) {
+            if (item.room.id === roomId) {
               hasUpdated = true;
               return {
                 ...item,
@@ -286,11 +274,7 @@ export const useChatStore = create<ChatStore>()(
         const currentCategorys = get().chatCategorys;
         const newCategorys = currentCategorys.map((cat) => {
           const updatedItems = cat.items.map((item) => {
-            if (
-              item.id === roomId ||
-              item.room?.id === roomId ||
-              item.room?.roomId === roomId
-            ) {
+            if (item.room?.id === roomId || item.room?.id === roomId) {
               return {
                 ...item,
                 unreadCount: (item.unreadCount || 0) + 1,
@@ -322,10 +306,10 @@ export const useChatStore = create<ChatStore>()(
 const sortChatItems = (items: ChatNavItem[], userId?: string) => {
   return [...items].sort((a, b) => {
     const pinnedA = userId
-      ? a.members?.find((m) => m.user.userId === userId)?.pinned
+      ? a.members?.find((m) => m.user.id === userId)?.pinned
       : false;
     const pinnedB = userId
-      ? b.members?.find((m) => m.user.userId === userId)?.pinned
+      ? b.members?.find((m) => m.user.id === userId)?.pinned
       : false;
 
     if (pinnedA !== pinnedB) return pinnedA ? -1 : 1;

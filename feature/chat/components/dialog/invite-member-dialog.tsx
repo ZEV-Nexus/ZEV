@@ -133,20 +133,20 @@ export default function InviteMemberDialog({
                 ) : searchResults && searchResults.length > 0 ? (
                   searchResults.map((user) => {
                     const isExisting = existingMembers.some(
-                      (m) => m.user.userId === user.userId,
+                      (m) => m.user.id === user.id,
                     );
                     if (isExisting) return null;
 
                     return (
-                      <TableRow key={user.userId}>
+                      <TableRow key={user.id}>
                         <TableCell>
                           <Checkbox
-                            checked={selectedUserIds.includes(user.userId)}
+                            checked={selectedUserIds.includes(user.id)}
                             onCheckedChange={(checked) => {
                               setSelectedUserIds((prev) =>
                                 checked
-                                  ? [...prev, user.userId]
-                                  : prev.filter((id) => id !== user.userId),
+                                  ? [...prev, user.id]
+                                  : prev.filter((id) => id !== user.id),
                               );
                             }}
                           />

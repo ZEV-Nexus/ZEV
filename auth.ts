@@ -26,7 +26,6 @@ declare module "next-auth" {
       | "provider"
       | "emailVerified"
       | "id"
-      | "userId"
       | "githubUsername"
     >;
   }
@@ -96,7 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (dbUser) {
           session.user = {
             id: dbUser.id,
-            userId: dbUser.userId!,
+
             username: dbUser.username || "",
             email: dbUser.email!,
             nickname: dbUser?.nickname || "",
@@ -104,7 +103,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             avatar: dbUser?.avatar || "",
             provider: (dbUser?.provider as LoginMethod) || "credentials",
             emailVerified: session.user?.emailVerified,
-            githubUsername: (dbUser as any)?.githubUsername || "",
+            githubUsername: dbUser?.githubUsername || "",
           };
         }
       }
@@ -115,7 +114,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       await connectMongoose();
       const loginUser = await userModel.findOne({ email: user.email });
       if (!loginUser && profile) {
-        const userId = crypto.randomUUID();
         const email = user.email || "";
         const baseUsername = email
           .split("@")[0]
@@ -128,10 +126,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           suffix++;
         }
         const githubUsername =
-          account?.provider === "github" ? (profile as any)?.login || "" : "";
+          account?.provider === "github" ? profile?.login || "" : "";
 
         const newUser = new userModel({
-          userId: userId,
           username,
           email: user.email,
           nickname: profile?.name || "",
@@ -146,8 +143,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         await sendWelcomeEmail(newUser.nickname!, newUser.email!);
       } else if (loginUser && account?.provider === "github") {
         // Update githubUsername for existing users who sign in via GitHub
-        const ghLogin = (profile as any)?.login || "";
-        if (ghLogin && !(loginUser as any).githubUsername) {
+        const ghLogin = profile?.login || "";
+        if (ghLogin && !loginUser.githubUsername) {
           await userModel.findByIdAndUpdate(loginUser._id, {
             githubUsername: ghLogin,
           });

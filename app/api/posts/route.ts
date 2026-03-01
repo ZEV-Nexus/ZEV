@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     await connectMongoose();
-    const dbUser = await userModel.findOne({ userId: user.userId });
+    const dbUser = await userModel.findById(user.id);
     if (!dbUser) {
       return apiResponse({ ok: false, message: "User not found", status: 404 });
     }

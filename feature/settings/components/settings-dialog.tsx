@@ -31,7 +31,7 @@ import { GeneralSettings } from "./general-settings";
 import { ApiKeySettings } from "./api-key-settings";
 import { NotificationSettings } from "./notification-settings";
 import ConnectSetting from "./connect-setting";
-import { useThirdPart } from "../hooks/use-third-part";
+
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { PrivacySettings } from "./privacy-setting";
@@ -54,7 +54,7 @@ const tabs = [
 
 export function SettingsDialog() {
   const [open, setOpen] = useState(false);
-  const { handleConnect, userOAuths, isLoading } = useThirdPart();
+
   const { data: session } = useSession();
   const t = useTranslations("settings");
   const needSession = tabs.filter((tab) => tab.value !== "general");
@@ -104,11 +104,7 @@ export function SettingsDialog() {
                   <ApiKeySettings />
                 </TabsContent>
                 <TabsContent value="connections">
-                  <ConnectSetting
-                    handleConnect={handleConnect}
-                    userOAuths={userOAuths}
-                    isLoading={isLoading}
-                  />
+                  <ConnectSetting />
                 </TabsContent>
                 <TabsContent value="privacy">
                   <PrivacySettings />

@@ -66,8 +66,9 @@ export default function ChatRoom({
       );
     },
   });
-  const currentMember = members?.find((m) => m.user.userId === currentUserId);
+  const currentMember = members?.find((m) => m.user.id === currentUserId);
   const nickname = currentMember?.user?.nickname || "Guest";
+
   useEffect(() => {
     setCurrentRoom(room);
   }, [room, setCurrentRoom]);

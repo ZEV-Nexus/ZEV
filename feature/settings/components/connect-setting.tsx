@@ -7,25 +7,17 @@ import {
 import { cn } from "@/shared/shadcn/lib/utils";
 import { RiLinkM, RiLinkUnlinkM, RiLoader2Line } from "@remixicon/react";
 import Image from "next/image";
-import {
-  THIRD_PARTY_PROVIDERS,
-  ThirdPartyProvider,
-} from "@/shared/config/third-part";
+import { THIRD_PARTY_PROVIDERS } from "@/shared/config/third-part";
 
 import { Badge } from "@/shared/shadcn/components/ui/badge";
 import { Button } from "@/shared/shadcn/components/ui/button";
-import { UserOAuthAccount } from "@/shared/types";
+
 import { useTranslations } from "next-intl";
-type ConnectSettingProps = {
-  handleConnect: (connectPayload: ThirdPartyProvider) => void;
-  userOAuths: UserOAuthAccount[];
-  isLoading: boolean;
-};
-export default function ConnectSetting({
-  handleConnect,
-  userOAuths,
-  isLoading,
-}: ConnectSettingProps) {
+import { useThirdPart } from "../hooks/use-third-part";
+
+export default function ConnectSetting() {
+  const { handleConnect, handleDisconnect, userOAuthAccounts, isLoading } =
+    useThirdPart();
   const t = useTranslations("settings");
   return (
     <div className="space-y-6">
@@ -37,7 +29,7 @@ export default function ConnectSetting({
       </div>
       <div className="grid gap-4 ">
         {THIRD_PARTY_PROVIDERS.map((provider) => {
-          const isConnected = userOAuths.find(
+          const isConnected = userOAuthAccounts.find(
             (o) => o.providerService === provider.service,
           );
           return (
@@ -69,13 +61,15 @@ export default function ConnectSetting({
                       {provider.provider}
                       {isConnected ? `．${isConnected?.createdAt}` : ""}
                     </p>
-                    {userOAuths.length === 0 && isLoading && (
+                    {userOAuthAccounts.length === 0 && isLoading && (
                       <RiLoader2Line className="animate-spin" />
                     )}
                     {isConnected && !isLoading ? (
                       <Button
                         variant={"destructive"}
-                        onClick={() => handleConnect(provider)}
+                        onClick={() =>
+                          handleDisconnect(isConnected.id, provider.provider)
+                        }
                         className={cn(
                           "px-3 py-1 rounded-md text-sm flex gap-2 items-center",
                           "text-red-500 border border-red-500",

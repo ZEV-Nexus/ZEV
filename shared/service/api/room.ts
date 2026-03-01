@@ -9,7 +9,7 @@ import { fetchApi } from "./fetch";
 
 export type SearchRoom = Pick<
   ChatRoom,
-  "id" | "roomId" | "name" | "avatar" | "roomType" | "createdAt"
+  "id" | "name" | "avatar" | "roomType" | "createdAt"
 >;
 
 export async function searchRooms(query: string) {
@@ -23,7 +23,7 @@ export const createRoom = async (
   userId: string,
   roomName: string,
   roomType: RoomType,
-  roomMembers: Pick<User, "id" | "userId" | "email" | "nickname" | "avatar">[],
+  roomMembers: Pick<User, "id" | "email" | "nickname" | "avatar">[],
   categoryId?: string,
 ) => {
   const response = await fetchApi<{ room: ChatRoom; members: Member[] }>(

@@ -14,7 +14,7 @@ export default function useCreateChat(categoryId?: string) {
   const session = useSession();
   const { addChatRoom } = useChatStore();
   const [chatDetails, setChatDetails] = useState<{
-    members: Pick<User, "id" | "userId" | "email" | "avatar" | "nickname">[];
+    members: Pick<User, "id" | "email" | "avatar" | "nickname">[];
     chatName: string;
     roomType: RoomType;
   }>({

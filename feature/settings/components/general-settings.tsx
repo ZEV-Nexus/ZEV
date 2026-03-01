@@ -22,6 +22,7 @@ import { useTranslations } from "next-intl";
 import { useLocaleStore, Locale } from "@/shared/store/locale-store";
 import LogoImage from "@/shared/components/logo-image";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 const themeOptions = [
   { value: "light", labelKey: "settings.themeLight", icon: RiSunLine },
@@ -69,7 +70,9 @@ export function GeneralSettings() {
                 </div>
               </div>
 
-              <Button variant="destructive">{t("settings.logout")}</Button>
+              <Button variant="destructive" onClick={() => signOut()}>
+                {t("settings.logout")}
+              </Button>
             </CardContent>
           </Card>
         ) : (

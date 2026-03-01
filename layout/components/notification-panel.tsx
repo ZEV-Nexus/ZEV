@@ -73,8 +73,8 @@ export default function NotificationPanel() {
     }
 
     // Navigation logic
-    if (notification.type === "room_invite" && notification.room?.roomId) {
-      router.push(`/c/${notification.room.roomId}`);
+    if (notification.type === "room_invite" && notification.room?.id) {
+      router.push(`/c/${notification.room?.id}`);
     } else if (notification.post?.id) {
       // Navigate to post... assuming /post/[id] or just open modal?
       // For now, maybe just do nothing or toast "Navigating..." if path unknown

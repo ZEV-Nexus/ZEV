@@ -8,3 +8,11 @@ export const getUserOAuths = async (userId: string) => {
   });
   return response.data;
 };
+
+export const deleteUserOAuthApi = async (id: string, provider: string) => {
+  const response = await fetchApi(`/third-part/oauth/${provider}/disconnect`, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+  return response;
+};

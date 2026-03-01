@@ -19,7 +19,7 @@ export async function POST(
 
     // Check if user is admin/owner
     const members = await getMembersByRoomId(roomId);
-    const currentMember = members.find((m) => m.user?.userId === user.userId);
+    const currentMember = members.find((m) => m.user?.id === user.id);
 
     if (
       !currentMember ||
@@ -35,7 +35,7 @@ export async function POST(
 
     // Publish real-time notification to all room members
     const memberUserIds = members
-      .map((m) => m.user?.userId)
+      .map((m) => m.user?.id)
       .filter((id): id is string => Boolean(id));
 
     await publishBulkUserNotification(memberUserIds, "room-info-updated", {
@@ -43,7 +43,7 @@ export async function POST(
       name: updatedRoom?.name,
       avatar: updatedRoom?.avatar,
       updatedBy: {
-        userId: user.userId,
+        userId: user.id,
         nickname: user.nickname,
       },
     });

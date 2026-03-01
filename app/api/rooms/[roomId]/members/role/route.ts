@@ -39,14 +39,12 @@ export async function POST(
     // Publish real-time notification to all room members
     const room = await roomModel.findOne({ roomId });
     if (room) {
-      const allMembers = await memberModel
-        .find({ room: room._id })
-        .populate<{
-          user: Pick<User, "userId">;
-        }>({ path: "user", select: "userId" });
+      const allMembers = await memberModel.find({ room: room._id }).populate<{
+        user: Pick<User, "id">;
+      }>({ path: "user", select: "id" });
 
       const memberUserIds = allMembers
-        .map((m) => m.user?.userId)
+        .map((m) => m.user?.id)
         .filter((id): id is string => Boolean(id));
 
       await publishBulkUserNotification(memberUserIds, "member-role-updated", {
@@ -54,7 +52,7 @@ export async function POST(
         memberId: updatedMember._id,
         newRole: role,
         updatedBy: {
-          userId: user.userId,
+          userId: user.id,
           nickname: user.nickname,
         },
       });

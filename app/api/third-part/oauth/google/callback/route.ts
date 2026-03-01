@@ -58,13 +58,13 @@ export async function GET(req: Request) {
 function renderClosePopup(origin: string, success: boolean, message: string) {
   const html = `<!DOCTYPE html>
 <html>
-<head><title>GitHub 帳號連結</title></head>
+<head><title>Google 帳號連結</title></head>
 <body>
   <p>${message}</p>
   <script>
     if (window.opener) {
       window.opener.postMessage(
-        { type: "github-connect", success: ${success}, message: "${message.replace(/"/g, '\\"')}" },
+        { type: "google-connect", success: ${success}, message: "${message.replace(/"/g, '\\"')}" },
         "${origin}"
       );
       window.close();

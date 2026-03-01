@@ -162,8 +162,8 @@ export default function MembersDialog({
             {sortedMembers.map((member) => {
               const roleConfig = ROLE_CONFIG[member.role] || ROLE_CONFIG.member;
               const RoleIcon = roleConfig.icon;
-              const isCurrentUser = member.user.userId === currentUserId;
-              const isOnline = onlineUsers.has(member.user.userId);
+              const isCurrentUser = member.user.id === currentUserId;
+              const isOnline = onlineUsers.has(member.user.id);
               const isUpdating = updatingMemberId === member.id;
 
               // Can the current user change this member's role?

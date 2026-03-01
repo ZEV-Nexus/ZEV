@@ -42,7 +42,6 @@ export async function POST(req: Request) {
             name: existingRoom.name,
             roomType: existingRoom.roomType,
             createdAt: existingRoom.createdAt,
-            roomId: existingRoom.roomId,
           },
           members,
           isExisting: true,
@@ -76,11 +75,10 @@ export async function POST(req: Request) {
       name: room.name,
       roomType: room.roomType,
       createdAt: room.createdAt,
-      roomId: room.roomId,
     };
 
     // Send real-time notification to the target user
-    if (targetUser?.userId) {
+    if (targetUser?.id) {
       const notificationPayload = {
         type: "room-created",
         room: roomData,
@@ -88,7 +86,6 @@ export async function POST(req: Request) {
           id: m.id || m._id?.toString(),
           user: {
             id: m.user?.id,
-            userId: m.user?.userId,
             nickname: m.user?.nickname,
             avatar: m.user?.avatar,
             email: m.user?.email,
@@ -100,7 +97,6 @@ export async function POST(req: Request) {
         })),
         inviter: {
           id: currentUser.id,
-          userId: currentUser.userId,
           nickname: currentUser.nickname,
           avatar: currentUser.avatar,
         },
@@ -108,7 +104,7 @@ export async function POST(req: Request) {
 
       Promise.allSettled([
         publishUserNotification(
-          targetUser.userId,
+          targetUser.id,
           "room-created",
           notificationPayload,
         ),
