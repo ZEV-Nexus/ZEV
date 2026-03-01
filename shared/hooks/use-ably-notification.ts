@@ -14,6 +14,7 @@ import { useNotificationStore } from "@/shared/store/notification-store";
 import { getNotifications } from "@/shared/service/api/notification";
 import { usePrivacyStore } from "@/shared/store/privacy-store";
 import { getPrivacySettings } from "@/shared/service/api/user";
+import MessageToast from "../components/toast/message-toast";
 
 // Notification event types
 export type NotificationType =
@@ -192,6 +193,7 @@ export function useAblyNotification() {
       // If not in this room, increment unread count
       if (currentActiveRoomId !== roomId) {
         incrementUnreadCount(roomId);
+        MessageToast(chatMessage);
       }
     });
 

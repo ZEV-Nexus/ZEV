@@ -18,24 +18,24 @@ function Toast({ id, message }: { id: string | number; message: Message }) {
   const displayAvatar =
     room.roomType === "dm" ? member.user.avatar : room.avatar;
   return (
-    <Link id={`toast-${id}`} href={`/${room.id}`} className="w-full">
-      <div className="flex rounded-lg bg-white shadow-lg ring-1 ring-black/5 w-full md:max-w-[364px] items-center p-4">
+    <Link id={`toast-${id}`} href={`/c/${room.id}`} className="w-full">
+      <div className="flex rounded-lg bg-background shadow-lg ring-1 ring-black/5 w-full items-center p-4">
         <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">
           <Avatar className="h-10 w-10 shrink-0">
             <AvatarImage src={displayAvatar} alt={displayName} />
             <AvatarFallback>{displayName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex-1 items-center justify-between">
+            <div className="flex-1 flex items-center gap-4 justify-between">
               <p className=" font-medium text-foreground truncate">
                 {displayName}
               </p>
-              <p className="text-xs">{moment(createdAt).fromNow()}</p>
+              <p className="text-xs text-muted-foreground/70">
+                {moment(createdAt).fromNow()}
+              </p>
             </div>
 
-            <p className="text-sm text-muted-foreground/70 truncate">
-              {content}
-            </p>
+            <p className="text-sm text-foreground/50 truncate">{content}</p>
           </div>
         </div>
       </div>

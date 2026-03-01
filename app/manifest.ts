@@ -14,12 +14,12 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["business", "communication", "productivity"],
     icons: [
       {
-        src: "/icons/zev-icon-apple-iOS-Dark.png",
+        src: "/icons/zev-icon-dark.png",
         sizes: "180x180",
         type: "image/png",
       },
       {
-        src: "/icons/logo.png",
+        src: "/icons/zev-icon-dark.png",
         sizes: "512x512",
         type: "image/png",
       },

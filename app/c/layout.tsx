@@ -5,11 +5,6 @@ import { usePathname } from "next/navigation";
 import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import React from "react";
 import { useKey } from "@/feature/settings/hooks/use-key";
-import { useAblyChat } from "@/feature/chat/hooks/use-ably-chat";
-import { useChatStore } from "@/shared/store/chat-store";
-import { useSession } from "next-auth/react";
-import MessageToast from "@/shared/components/toast/message-toast";
-import { toast } from "sonner";
 
 export default function ChatLayout({
   children,
@@ -20,27 +15,22 @@ export default function ChatLayout({
   const isMobile = useIsMobile();
   const isRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
   useKey();
-  const { currentRoom, updateRoomLastMessage, incrementUnreadCount } =
-    useChatStore();
-  const { data: session } = useSession();
 
-  useAblyChat({
-    roomId: currentRoom?.id || "",
-    userId: session?.user?.id || "",
-    nickname: session?.user?.nickname || "",
-    onMessage: (message) => {
-      updateRoomLastMessage(currentRoom?.id || "", message);
-      console.log("Received message in ChatLayout:", message);
-      if (
-        message.member.user.id !== session?.user?.id &&
-        currentRoom?.id !== message.room.id
-      ) {
-        incrementUnreadCount(message.room.id);
-        MessageToast(message);
-        toast.success(`New message in ${message.room.name || "a room"}`);
-      }
-    },
-  });
+  // useAblyChat({
+  //   roomId: currentRoom?.id || "",
+  //   userId: session?.user?.id || "",
+  //   nickname: session?.user?.nickname || "",
+  //   onMessage: (message) => {
+  //     updateRoomLastMessage(currentRoom?.id || "", message);
+  //     console.log("Received message in ChatLayout:", message);
+  //     if (
+  //       message.member.user.id !== session?.user?.id &&
+  //       currentRoom?.id !== message.room.id
+  //     ) {
+  //       incrementUnreadCount(message.room.id);
+  //     }
+  //   },
+  // });
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* Desktop: always show; Mobile: only show on /c (chat list) */}

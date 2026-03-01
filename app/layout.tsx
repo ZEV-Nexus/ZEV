@@ -63,13 +63,13 @@ export const metadata: Metadata = {
     icon: [
       { url: "/icons/zev-icon-apple-Dark.ico", sizes: "any" },
       {
-        url: "/icons/zev-icon-apple-iOS-Dark.png",
+        url: "/icons/zev-icon-dark.png",
         type: "image/png",
         sizes: "180x180",
       },
     ],
-    apple: "/icons/zev-icon-apple-iOS-Dark.png",
-    shortcut: "/icons/zev-icon-apple-Dark.ico",
+    apple: "/icons/zev-icon-dark.png",
+    shortcut: "/icons/zev-icon-dark.ico",
   },
   openGraph: {
     type: "website",
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/icons/logo-with-text-light-removebg.png",
+        url: "/icons/zev-icon-text-light.png",
         width: 1200,
         height: 630,
         alt: "ZEV — Team Communication Hub",
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
     title: "ZEV | Your Team Communication Hub",
     description:
       "ZEV is the easiest way for teams and companies to chat, collaborate, and stay connected. Real-time messaging, channels, file sharing & AI tools.",
-    images: ["/icons/logo-with-text-light-removebg.png"],
+    images: ["/icons/zev-icon-text-dark.png"],
     creator: "@ZEV",
   },
   robots: {
