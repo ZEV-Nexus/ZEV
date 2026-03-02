@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/shared/service/server/auth";
+import { getCurrentUser, hasAccessToRoom } from "@/shared/service/server/auth";
 import { getMessages } from "@/shared/service/server/message";
 import { apiResponse } from "@/shared/service/server/response";
 
@@ -21,7 +21,10 @@ export async function GET(req: Request) {
         status: 400,
       });
     }
-
+    const hasAccess = await hasAccessToRoom(user.id, roomId);
+    if (!hasAccess) {
+      return apiResponse({ ok: false, message: "Forbidden", status: 403 });
+    }
     const messages = await getMessages(roomId, limit, before);
     return apiResponse({ data: messages });
   } catch (error: unknown) {

@@ -1,4 +1,4 @@
-import { roomCategoryModel } from "@/shared/schema";
+import { roomCategoryModel, memberModel } from "@/shared/schema";
 
 export async function createRoomCategory(userId: string, name: string) {
   const lastCategory = await roomCategoryModel
@@ -37,15 +37,20 @@ export async function updateRoomCategoryTitle(
   );
 }
 
-export async function deleteRoomCategory(categoryId: string) {
+export async function deleteRoomCategory(userId: string, categoryId: string) {
   // Delete the category
-  await roomCategoryModel.findByIdAndDelete(categoryId);
-
+  const deletedCategory = await roomCategoryModel.findOneAndDelete({
+    _id: categoryId,
+    user: userId,
+  });
+  if (!deletedCategory) {
+    throw new Error("Category not found or unauthorized");
+  }
   // Reset members who were in this category to default (null)
   // This effectively moves them back to "Group" or "Direct Messages" based on logic
-  const { memberModel } = await import("@/shared/schema");
+
   await memberModel.updateMany(
-    { roomCategory: categoryId },
+    { roomCategory: deletedCategory.id },
     { $set: { roomCategory: null } },
   );
 

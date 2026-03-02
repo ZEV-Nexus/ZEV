@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { updateMemberCategory } from "@/shared/service/server/member";
-import { auth } from "@/auth";
+
+import { getCurrentUser } from "@/shared/service/server/auth";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getCurrentUser();
+    if (!user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { roomId, categoryId, index } = await req.json();
+    const { roomId, categoryId } = await req.json();
 
     if (!roomId) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     const targetCategoryId =
       categoryId === "dm" || categoryId === "group" ? null : categoryId;
 
-    await updateMemberCategory(session.user.id, roomId, targetCategoryId);
+    await updateMemberCategory(user.id, roomId, targetCategoryId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

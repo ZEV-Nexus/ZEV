@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { updateRoomCategoryIndex } from "@/shared/service/server/room-category";
-import { auth } from "@/auth";
+
+import { getCurrentUser } from "@/shared/service/server/auth";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

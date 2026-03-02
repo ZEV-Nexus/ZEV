@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { deleteRoomCategory } from "@/shared/service/server/room-category";
-import { auth } from "@/auth";
+
+import { getCurrentUser } from "@/shared/service/server/auth";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getCurrentUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
-    await deleteRoomCategory(categoryId);
+    await deleteRoomCategory(user.id,   categoryId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -79,7 +79,10 @@ export default function ChatRoom({
     nickname,
     onMessage: (message: Message) => {
       setLocalMessages((prev) => {
-        if (prev.some((m) => m.id === message.id)) return prev;
+        if (prev.some((m) => m.id === message.id))
+          return prev.map((m) =>
+            m.id === message.id ? { ...m, ...message } : m,
+          );
         return [...prev, message];
       });
     },
@@ -289,7 +292,8 @@ export default function ChatRoom({
     );
 
     try {
-      await editMessageApi(messageId, content);
+      const message = await editMessageApi(messageId, content);
+      await sendRealtimeMessage(content, message as Message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("editFailed"));
     }

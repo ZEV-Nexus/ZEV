@@ -16,21 +16,6 @@ export default function ChatLayout({
   const isRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
   useKey();
 
-  // useAblyChat({
-  //   roomId: currentRoom?.id || "",
-  //   userId: session?.user?.id || "",
-  //   nickname: session?.user?.nickname || "",
-  //   onMessage: (message) => {
-  //     updateRoomLastMessage(currentRoom?.id || "", message);
-  //     console.log("Received message in ChatLayout:", message);
-  //     if (
-  //       message.member.user.id !== session?.user?.id &&
-  //       currentRoom?.id !== message.room.id
-  //     ) {
-  //       incrementUnreadCount(message.room.id);
-  //     }
-  //   },
-  // });
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* Desktop: always show; Mobile: only show on /c (chat list) */}
