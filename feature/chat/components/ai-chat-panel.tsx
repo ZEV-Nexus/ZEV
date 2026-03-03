@@ -25,6 +25,7 @@ import { UIMessage } from "ai";
 
 import { useTranslations } from "next-intl";
 import LogoImage from "@/shared/components/logo-image";
+import Markdown from "./markdown";
 export interface AIMessage {
   id: string;
   role: "user" | "assistant";
@@ -175,11 +176,13 @@ export const AIChatPanel = memo(function AIChatPanel({
                             )}
                           >
                             <p className="whitespace-pre-wrap wrap-break-word leading-relaxed text-left">
-                              {msg.parts
-                                .map((part) =>
-                                  part.type === "text" ? part.text : "",
-                                )
-                                .join("")}
+                              <Markdown>
+                                {msg.parts
+                                  .map((part) =>
+                                    part.type === "text" ? part.text : "",
+                                  )
+                                  .join("")}
+                              </Markdown>
                             </p>
                           </div>
                         </div>

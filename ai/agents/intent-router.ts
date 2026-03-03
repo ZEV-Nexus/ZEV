@@ -10,6 +10,7 @@ export const IntentType = z.enum([
   "translate",
   "reply_with_attachment",
   "gmail_draft",
+  "meet_draft",
   "none",
 ]);
 
@@ -39,6 +40,7 @@ Possible intents:
 - translate: The user explicitly asks to translate text to another language.
 - reply_with_attachment: The message contains or references attachments (images, files) and asks about them.
 - gmail_draft: The user wants to compose, reply to, read, or manage emails/Gmail.
+- meet_draft: The user wants to create, update, cancel, or list Google Meet video meetings/conferences.
 - none: General conversation, questions, or anything that doesn't fit above.
 
 Rules:

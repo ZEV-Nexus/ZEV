@@ -1,5 +1,5 @@
 import { oauthClient } from "@/shared/lib/google-auth";
-import { THIRD_PARTY_PROVIDERS } from "@/shared/config/third-part";
+import { THIRD_PARTY_PROVIDERS } from "@/shared/constant/third-part";
 import { apiResponse } from "@/shared/service/server/response";
 import { getCurrentUser } from "@/shared/service/server/auth";
 import { NextResponse } from "next/server";

@@ -11,9 +11,11 @@ export async function createGoogleCalendarEvent(
   calendarId: string,
   event: calendar_v3.Schema$Event,
 ) {
+  const hasConferenceData = !!event.conferenceData;
   const response = await calendar.events.insert({
     calendarId,
     requestBody: event,
+    ...(hasConferenceData ? { conferenceDataVersion: 1 } : {}),
   });
   return response.data;
 }

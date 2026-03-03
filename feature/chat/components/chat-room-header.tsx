@@ -31,7 +31,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuRadioGroup,
 } from "@/shared/shadcn/components/ui/dropdown-menu";
-import { notificationOptions } from "@/shared/config/notification";
+import { notificationOptions } from "@/shared/constant/notification";
 import { updateRoomSettings } from "@/shared/service/api/room";
 import { useChatStore } from "@/shared/store/chat-store";
 import { toast } from "sonner";

@@ -7,7 +7,7 @@ import {
 import { cn } from "@/shared/shadcn/lib/utils";
 import { RiLinkM, RiLinkUnlinkM, RiLoader2Line } from "@remixicon/react";
 import Image from "next/image";
-import { THIRD_PARTY_PROVIDERS } from "@/shared/config/third-part";
+import { THIRD_PARTY_PROVIDERS } from "@/shared/constant/third-part";
 
 import { Badge } from "@/shared/shadcn/components/ui/badge";
 import { Button } from "@/shared/shadcn/components/ui/button";

@@ -18,6 +18,12 @@ import {
   buildGmailSendPayload,
 } from "@/ai/agents/gmail-agent";
 import {
+  extractMeetAction,
+  needsMeetClarification,
+  buildMeetEventPayload,
+  buildMeetFallbackConfirmation,
+} from "@/ai/agents/meet-agent";
+import {
   createGoogleCalendarEvent,
   googleCalendar,
 } from "@/shared/lib/google-calendar";
@@ -153,6 +159,13 @@ export async function POST(req: Request) {
 - 撰寫/回覆郵件 → 提取草稿 → 要求使用者確認後才寄送
 - 查看收件匣 → 列出最近郵件
 - 讀取郵件 → 顯示郵件內容
+
+### Google Meet 會議
+當使用者要求建立、修改、取消或查詢 Google Meet 視訊會議時，使用 meet_action 工具。
+此工具會呼叫 Meet Agent（中階模型）：
+- 建立會議 → 提取會議資訊 → 要求使用者確認後才建立
+- 查詢會議 → 列出即將到來的會議
+- 取消/修改會議 → 需要使用者確認
 
 ## 一般對話
 對於非工具相關的問題，直接回答即可。
@@ -582,6 +595,220 @@ export async function POST(req: Request) {
               console.error("Gmail Agent error:", error);
               return {
                 error: "Gmail Agent 處理郵件時發生錯誤，請稍後再試。",
+              };
+            }
+          },
+        }),
+        // ─── Meet Tool → delegates to Meet Agent ───
+        meet_action: tool({
+          description: `處理 Google Meet 會議相關操作：建立會議、修改會議、取消會議、查詢會議列表。
+呼叫獨立的 Meet Agent（中階模型）進行意圖解析。
+建立會議時會自動產生 Google Meet 連結。
+所有操作都需經過使用者確認。`,
+          inputSchema: z.object({
+            user_message: z.string().describe("使用者關於會議的原始訊息"),
+            action_type: z
+              .enum(["create", "list", "confirm_create"])
+              .describe(
+                "操作類型：create=建立會議、list=查詢會議列表、confirm_create=使用者已確認建立",
+              ),
+            confirmed_meeting: z
+              .object({
+                title: z.string(),
+                start_time: z.string(),
+                end_time: z.string(),
+                attendees: z.array(z.string()).optional(),
+              })
+              .optional()
+              .describe("使用者已確認的會議資訊（confirm_create 時使用）"),
+          }),
+          execute: async ({ user_message, action_type, confirmed_meeting }) => {
+            try {
+              const refreshToken = await findRefreshTokenByService(
+                user.id,
+                "calendar",
+              );
+
+              if (!refreshToken) {
+                return {
+                  error:
+                    "尚未連結 Google 帳號，請前往設定頁面連結 Google 帳號。",
+                };
+              }
+
+              const calendar = await googleCalendar(refreshToken);
+
+              // ─── List meetings ───
+              if (action_type === "list") {
+                const nowISO = new Date().toISOString();
+                const response = await calendar.events.list({
+                  calendarId: "primary",
+                  timeMin: nowISO,
+                  maxResults: 10,
+                  singleEvents: true,
+                  orderBy: "startTime",
+                });
+
+                const events = (response.data.items || []).filter(
+                  (e) => e.conferenceData || e.hangoutLink,
+                );
+
+                if (events.length === 0) {
+                  return {
+                    type: "meet_list",
+                    message: "目前沒有即將到來的 Google Meet 會議。",
+                  };
+                }
+
+                return {
+                  type: "meet_list",
+                  events: events.map((e) => ({
+                    id: e.id,
+                    title: e.summary,
+                    start: e.start?.dateTime || e.start?.date,
+                    end: e.end?.dateTime || e.end?.date,
+                    meetLink:
+                      e.hangoutLink ||
+                      e.conferenceData?.entryPoints?.find(
+                        (ep) => ep.entryPointType === "video",
+                      )?.uri,
+                  })),
+                  message: `📋 即將到來的 Meet 會議：\n${events
+                    .map(
+                      (e, i) =>
+                        `${i + 1}. **${e.summary || "(無標題)"}**\n   🕐 ${e.start?.dateTime || e.start?.date}${e.hangoutLink ? `\n   🔗 ${e.hangoutLink}` : ""}`,
+                    )
+                    .join("\n\n")}`,
+                };
+              }
+
+              // ─── Confirm create meeting ───
+              if (action_type === "confirm_create" && confirmed_meeting) {
+                const event = await createGoogleCalendarEvent(
+                  calendar,
+                  "primary",
+                  {
+                    summary: confirmed_meeting.title,
+                    start: { dateTime: confirmed_meeting.start_time },
+                    end: { dateTime: confirmed_meeting.end_time },
+                    attendees: (confirmed_meeting.attendees || []).map(
+                      (email) => ({ email }),
+                    ),
+                    conferenceData: {
+                      createRequest: {
+                        requestId: `meet-${Date.now()}`,
+                        conferenceSolutionKey: { type: "hangoutsMeet" },
+                      },
+                    },
+                  },
+                );
+
+                const meetLink =
+                  event.conferenceData?.entryPoints?.find(
+                    (e) => e.entryPointType === "video",
+                  )?.uri || event.hangoutLink;
+
+                return {
+                  type: "meet_created",
+                  event: {
+                    id: event.id,
+                    title: event.summary,
+                    start: event.start?.dateTime,
+                    end: event.end?.dateTime,
+                    meetLink,
+                    htmlLink: event.htmlLink,
+                  },
+                  message: `✅ 已建立會議：「${event.summary}」\n🕐 ${event.start?.dateTime} ~ ${event.end?.dateTime}${meetLink ? `\n🔗 Meet 連結：${meetLink}` : ""}`,
+                };
+              }
+
+              // ─── Create: Extract intent with Meet Agent ───
+              let conversationContext = "";
+              if (roomId) {
+                const recentMsgs = await getMessages(roomId, 20);
+                conversationContext = getConversationContextFromMessages(
+                  formatMessages(recentMsgs),
+                );
+              }
+
+              const extraction = await extractMeetAction(
+                provider,
+                apiKey,
+                user_message,
+                conversationContext,
+                now.toISOString(),
+              );
+
+              // If clarification needed
+              if (needsMeetClarification(extraction)) {
+                return {
+                  type: "meet_clarification",
+                  meeting: extraction,
+                  message:
+                    extraction.clarification_needed ||
+                    buildMeetFallbackConfirmation(extraction),
+                };
+              }
+
+              // LIST_MEETINGS detected by agent
+              if (extraction.intent === "LIST_MEETINGS") {
+                const nowISO = new Date().toISOString();
+                const response = await calendar.events.list({
+                  calendarId: "primary",
+                  timeMin: nowISO,
+                  maxResults: 10,
+                  singleEvents: true,
+                  orderBy: "startTime",
+                });
+
+                const events = (response.data.items || []).filter(
+                  (e) => e.conferenceData || e.hangoutLink,
+                );
+
+                return {
+                  type: "meet_list",
+                  events: events.map((e) => ({
+                    id: e.id,
+                    title: e.summary,
+                    start: e.start?.dateTime || e.start?.date,
+                    end: e.end?.dateTime || e.end?.date,
+                    meetLink:
+                      e.hangoutLink ||
+                      e.conferenceData?.entryPoints?.find(
+                        (ep) => ep.entryPointType === "video",
+                      )?.uri,
+                  })),
+                  message:
+                    events.length === 0
+                      ? "目前沒有即將到來的 Google Meet 會議。"
+                      : `📋 即將到來的 Meet 會議：\n${events
+                          .map(
+                            (e, i) =>
+                              `${i + 1}. **${e.summary || "(無標題)"}**\n   🕐 ${e.start?.dateTime || e.start?.date}`,
+                          )
+                          .join("\n\n")}`,
+                };
+              }
+
+              // Return for confirmation
+              const payload = buildMeetEventPayload(extraction);
+              return {
+                type: "confirm_meet",
+                meeting: {
+                  intent: extraction.intent,
+                  title: extraction.title,
+                  start_time: extraction.start_time,
+                  end_time: extraction.end_time,
+                  attendees: extraction.attendees,
+                  confidence: extraction.confidence,
+                },
+                canCreate: !!payload,
+                message: buildMeetFallbackConfirmation(extraction),
+              };
+            } catch (error) {
+              console.error("Meet Agent error:", error);
+              return {
+                error: "Meet Agent 處理會議時發生錯誤，請稍後再試。",
               };
             }
           },

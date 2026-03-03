@@ -27,3 +27,13 @@ export {
   type GmailConfirmation,
   type GmailSendPayload,
 } from "./gmail-agent";
+export {
+  extractMeetAction,
+  needsMeetClarification,
+  needsMeetConfirmation,
+  buildMeetEventPayload,
+  buildMeetFallbackConfirmation,
+  type MeetExtraction,
+  type MeetConfirmation,
+  type MeetEventPayload,
+} from "./meet-agent";

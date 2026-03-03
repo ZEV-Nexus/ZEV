@@ -1,5 +1,5 @@
 "use client";
-import { ThirdPartyProvider } from "@/shared/config/third-part";
+import { ThirdPartyProvider } from "@/shared/constant/third-part";
 import {
   deleteUserOAuthApi,
   getUserOAuths,

@@ -30,7 +30,7 @@ function Toast({ id, message }: { id: string | number; message: Message }) {
   const displayAvatar =
     room.roomType === "dm" ? member.user.avatar : room.avatar;
   return (
-    <Link id={`toast-${id}`} href={`/c/${room.id}`} className="w-full">
+    <Link id={`toast-${id}`} href={`/c/${room.id}`} className="w-full min-w-50">
       <div className="flex rounded-lg bg-background/50 backdrop-blur-sm shadow-lg ring-1 ring-black/5 w-full items-center p-4">
         <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">
           <Avatar className="h-10 w-10 shrink-0">
