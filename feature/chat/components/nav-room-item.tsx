@@ -82,6 +82,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
       >
         <Link
           href={`/c/${room.id}`}
+          prefetch={true}
           className="px-3 py-2 h-fit border-none  flex min-w-0 max-w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
         >
           <div className="flex gap-2 flex-1 min-w-0 overflow-hidden  ">

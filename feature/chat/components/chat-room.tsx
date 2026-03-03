@@ -40,7 +40,15 @@ export default function ChatRoom({
   members,
   currentUserId,
 }: ChatRoomProps) {
-  const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const {
+    updateRoomLastMessage,
+    setCurrentRoom,
+    chatMessages,
+    setChatMessages,
+  } = useChatStore();
+  const [localMessages, setLocalMessages] = useState<Message[]>(
+    chatMessages[room.id] || [],
+  );
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -48,7 +56,7 @@ export default function ChatRoom({
 
   const [replyingMessage, setReplyingMessage] = useState<Message | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
-  const { updateRoomLastMessage, setCurrentRoom } = useChatStore();
+
   const { selectedModel, setSelectedModel, maskedKeys } = useAIStore();
   const t = useTranslations("chat");
 
@@ -106,9 +114,10 @@ export default function ChatRoom({
   useEffect(() => {
     if (messagesData) {
       setLocalMessages(messagesData);
+      setChatMessages(room.id, messagesData);
       setHasMoreMessages(messagesData.length >= MESSAGE_LIMIT);
     }
-  }, [messagesData]);
+  }, [messagesData, room, setChatMessages]);
 
   // Load older messages for infinite scroll
   const handleLoadMore = async () => {

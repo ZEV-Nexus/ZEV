@@ -12,11 +12,12 @@ interface ChatState {
   chatCategorys: ChatNavCategory[];
   unreadCounts: Record<string, number>;
   currentRoom: ChatRoom | null;
+  chatMessages: Record<string, Message[]>;
 }
 
 interface ChatAction {
   setChatCategorys: (chatCategorys: ChatNavCategory[], userId?: string) => void;
-
+  setChatMessages: (roomId: string, messages: Message[]) => void;
   addChatCategory: (chatCategory: ChatNavCategory) => void;
   removeChatCategory: (categoryId: string) => void;
   updateChatCategoryTitle: (categoryId: string, title: string) => void;
@@ -41,8 +42,20 @@ export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
       chatCategorys: [],
+      chatMessages: {},
       unreadCounts: {},
       currentRoom: null,
+      setChatMessages: (roomId, messages) => {
+        if (messages.length > 50) {
+          messages = messages.slice(-50);
+        }
+        set((state) => ({
+          chatMessages: {
+            ...state.chatMessages,
+            [roomId]: messages,
+          },
+        }));
+      },
       setChatCategorys: (chatCategorys, userId) => {
         const currentCategorys = get().chatCategorys;
         const syncedCategorys = chatCategorys.map((apiCategory) => {

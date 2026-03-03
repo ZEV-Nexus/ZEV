@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -98,6 +98,9 @@ export default function AppActivityBar() {
   const isChatPage = pathname.startsWith("/c");
   const isChatRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
   const isHomePage = pathname === "/";
+  useEffect(() => {
+    router.prefetch("/c");
+  }, [router]);
 
   // Mobile: hide bottom bar when inside a chat room (full screen chat)
   if (isMobile && isChatRoomPage) {
