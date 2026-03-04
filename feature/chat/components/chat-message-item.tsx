@@ -392,13 +392,13 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                     </button>
                   </div>
                 </div>
-              ) : (
-                <p className="text-[15px] whitespace-pre-wrap wrap-break-word leading-[1.4]">
-                  {message.content ? (
-                    <MentionText content={message.content} members={members} />
-                  ) : null}
-                </p>
-              )}
+              ) : message.content ? (
+                <MentionText
+                  content={message.content}
+                  members={members}
+                  className="text-[15px] whitespace-pre-wrap wrap-break-word leading-[1.4]"
+                />
+              ) : null}
             </div>
 
             {!isEditing && (

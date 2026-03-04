@@ -148,9 +148,10 @@ export default function ChatRoom({
     content: string,
     attachments?: File[],
     replyToId?: string,
+    toolMention?: string,
   ) => {
     if (isAIPanelOpen) {
-      handleSendToAI(content, attachments);
+      handleSendToAI(content, attachments, toolMention);
       return;
     }
 
@@ -191,7 +192,7 @@ export default function ChatRoom({
     };
 
     setLocalMessages((prev) => [...prev, optimisticMessage]);
-    setReplyingMessage(null); // Clear reply state immediately
+    setReplyingMessage(null);
 
     try {
       // Upload files first
@@ -203,13 +204,16 @@ export default function ChatRoom({
         const results = await Promise.all(uploadPromises);
         uploadedAttachments = results as unknown as IAttachment[];
       }
-
-      const savedMessage = await sendMessage(
+      const modelKeyId = maskedKeys[selectedModel.provider].id;
+      const { message: savedMessage, aiMessage } = await sendMessage(
         currentMember.id,
         room.id,
         content,
         uploadedAttachments,
         replyToId,
+        modelKeyId,
+        selectedModel.id,
+        toolMention,
       );
 
       // Replace optimistic message with saved one
@@ -217,13 +221,25 @@ export default function ChatRoom({
         setLocalMessages((prev) =>
           prev.map((msg) =>
             msg.id === optimisticMessage.id
-              ? { ...optimisticMessage, ...(savedMessage as Message) }
+              ? {
+                  ...optimisticMessage,
+                  ...(savedMessage as Message),
+                  ...(aiMessage && typeof aiMessage === "object"
+                    ? aiMessage
+                    : {}),
+                }
               : msg,
           ),
         );
-        updateRoomLastMessage(room.id, savedMessage as Message);
+        updateRoomLastMessage(
+          room.id,
+          aiMessage ? (aiMessage as Message) : (savedMessage as Message),
+        );
         // Publish to Ably
         await sendRealtimeMessage(content, savedMessage as Message);
+        if (aiMessage && typeof aiMessage === "object") {
+          await sendRealtimeMessage(content, aiMessage as Message);
+        }
       }
     } catch (error: unknown) {
       // Remove optimistic message on error
@@ -236,7 +252,11 @@ export default function ChatRoom({
     }
   };
 
-  const handleSendToAI = async (content: string, files?: File[]) => {
+  const handleSendToAI = async (
+    content: string,
+    files?: File[],
+    toolMentions?: string,
+  ) => {
     if (!content.trim() || status === "streaming") return;
     const aiMessage = { text: content, role: "user" };
 
@@ -278,6 +298,7 @@ export default function ChatRoom({
         modelId: selectedModel.id,
         roomId: room.id,
         ...(attachmentMeta.length > 0 ? { attachments: attachmentMeta } : {}),
+        ...(toolMentions && toolMentions.length > 0 ? { toolMentions } : {}),
       },
     });
   };

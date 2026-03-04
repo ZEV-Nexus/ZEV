@@ -9,6 +9,17 @@ const messageSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  toolsMention: {
+    type: String,
+    enum: [
+      "gmail_action",
+      "create_schedule",
+      "meet_action",
+      "summarize_chat",
+      "translate_text",
+      "analyze_attachment",
+    ],
+  },
   aiRoom: { type: mongoose.Schema.Types.ObjectId, ref: "Room" },
   replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
   editedAt: Date,

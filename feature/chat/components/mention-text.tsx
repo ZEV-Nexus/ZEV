@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Member } from "@/shared/types";
 import { parseMentions, hasMentions } from "@/shared/lib/mention";
 import { cn } from "@/shared/shadcn/lib/utils";
+import Markdown from "./markdown";
 
 interface MentionTextProps {
   content: string;
@@ -23,14 +24,17 @@ export function MentionText({ content, members, className }: MentionTextProps) {
 
   // 沒有 mention 時直接返回純文字
   if (!hasMentions(content)) {
-    return <span className={className}>{content}</span>;
+    return (
+      <span className={className}>
+        <Markdown>{content}</Markdown>
+      </span>
+    );
   }
 
   return (
     <span className={className}>
       {segments.map((segment, index) => {
         if (segment.type === "mention") {
-          console.log(segment.user);
           return (
             <span
               key={segment.user?.id}
@@ -45,7 +49,7 @@ export function MentionText({ content, members, className }: MentionTextProps) {
             </span>
           );
         }
-        return <span key={`text-${index}`}>{segment.content}</span>;
+        return <Markdown key={`text-${index}`}>{segment.content}</Markdown>;
       })}
     </span>
   );

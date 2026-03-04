@@ -3,6 +3,8 @@ import { sendMessage } from "@/shared/service/server/message";
 import { apiResponse } from "@/shared/service/server/response";
 import { getMembersByRoomId } from "@/shared/service/server/member";
 import { publishUserNotification } from "@/shared/lib/server-ably";
+import { generateTextResponse } from "@/ai";
+import { createModel, resolveApiKey } from "@/shared/lib/ai";
 
 export async function POST(req: Request) {
   try {
@@ -11,8 +13,16 @@ export async function POST(req: Request) {
       return apiResponse({ ok: false, message: "Unauthorized", status: 401 });
     }
 
-    const { roomId, memberId, content, attachments, replyTo } =
-      await req.json();
+    const {
+      roomId,
+      memberId,
+      content,
+      attachments,
+      replyTo,
+      toolMention,
+      modelKeyId,
+      modelId,
+    } = await req.json();
     if (!roomId || (!content && !attachments?.length)) {
       return apiResponse({ ok: false, message: "Bad Request", status: 400 });
     }
@@ -29,6 +39,40 @@ export async function POST(req: Request) {
       attachments,
       replyTo,
     );
+    let aiMessage = null;
+
+    if (toolMention) {
+      if (!modelKeyId) {
+        return new Response("Model Key ID is required", { status: 400 });
+      }
+
+      const resolved = await resolveApiKey(modelKeyId);
+      if (!resolved) {
+        return new Response(`Missing API Key for model key ID: ${modelKeyId}`, {
+          status: 401,
+        });
+      }
+
+      const { apiKey, provider } = resolved;
+      const model = createModel(provider, apiKey, modelId);
+      const aiResponse = await generateTextResponse(
+        model,
+        user,
+        message.content || "",
+        provider,
+        apiKey,
+        toolMention,
+      );
+
+      aiMessage = await sendMessage(
+        memberId,
+        roomId,
+        aiResponse.output,
+        attachments,
+        message.id,
+        toolMention,
+      );
+    }
 
     // Broadcast to room members for sidebar update
     const members = await getMembersByRoomId(roomId);
@@ -40,9 +84,10 @@ export async function POST(req: Request) {
           message,
         }),
       );
+
     await Promise.allSettled(notifyPromises);
 
-    return apiResponse({ data: message });
+    return apiResponse({ data: { message, aiMessage } });
   } catch (error) {
     console.error("Failed to send message:", error);
     return apiResponse({

@@ -40,6 +40,7 @@ interface ChatMessageInputProps {
     content: string,
     attachments?: File[],
     replyToId?: string,
+    toolMentions?: string,
   ) => void;
   roomId: string;
   members?: Member[];
@@ -67,6 +68,32 @@ export function ChatMessageInput({
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const [mentionOpen, setMentionOpen] = useState(false);
   const t = useTranslations("chat");
+
+  const toolMention: { id: string; label: string }[] = useMemo(() => {
+    return [
+      {
+        id: "gmail_action",
+        label: "Gmail 工具",
+      },
+      {
+        id: "create_schedule",
+        label: "Calendar 工具",
+      },
+      {
+        id: "meet_action",
+        label: "Meet 工具",
+      },
+    ];
+  }, []);
+
+  // label → toolId 的對應表
+  const toolLabelToIdMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const tool of toolMention) {
+      map.set(tool.label, tool.id);
+    }
+    return map;
+  }, [toolMention]);
 
   // 將成員列表轉換成 mention 選項，使用 userId 作為 value
   const mentionSuggestions = useMemo(
@@ -128,8 +155,24 @@ export function ChatMessageInput({
   const handleSend = () => {
     if (!message.trim() && attachments.length === 0) return;
 
+    // 從已選取的 mentionValues 中分離出 tool mentions
+    const mentionedTools: string[] = [];
+    for (const label of mentionValues) {
+      const toolId = toolLabelToIdMap.get(label);
+      if (toolId) {
+        mentionedTools.push(toolId);
+      }
+    }
+
+    // 將工具 mention 標記從訊息中移除（只保留使用者實際要說的內容）
     const contentToSend = convertMentionsForSend(message);
-    onSendMessage(contentToSend, attachments, replyingMessage?.id);
+
+    onSendMessage(
+      contentToSend,
+      attachments,
+      replyingMessage?.id,
+      mentionedTools.length > 0 ? mentionedTools.join(",") : undefined,
+    );
     setMessage("");
     setMentionValues([]);
     setAttachments([]);
@@ -329,6 +372,14 @@ export function ChatMessageInput({
                 <Textarea value={message} className="max-h-[7lh]" />
               </MentionInput>
               <MentionContent>
+                {toolMention.map((tool) => (
+                  <MentionItem key={tool.id} value={tool.label}>
+                    <div className="flex items-center gap-2">
+                      <RiAtLine className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm">{tool.label}</span>
+                    </div>
+                  </MentionItem>
+                ))}
                 {mentionSuggestions.length > 0 ? (
                   mentionSuggestions.map((member) => (
                     <MentionItem key={member.id} value={member.label}>

@@ -45,12 +45,14 @@ export async function sendMessage(
   content?: string,
   attachments?: IAttachment[],
   replyTo?: string,
+  toolMention?: string,
 ) {
   const message = new messageModel({
     member: memberId,
     room: roomId,
     content,
     replyTo,
+    toolsMention: toolMention,
   });
   if (attachments) {
     const attachmentIds = await Promise.all(

@@ -150,6 +150,7 @@ export const AIChatPanel = memo(function AIChatPanel({
                 ) : (
                   <div className="flex flex-col gap-4">
                     {aiMessages.map((msg) => {
+                      console.log("Rendering message:", msg);
                       return (
                         <div
                           key={msg.id}
@@ -232,8 +233,19 @@ export const AIChatPanel = memo(function AIChatPanel({
                                 );
                               }
 
-                              if (part.type === "step-start") {
-                                return null;
+                              if (
+                                msg.parts[msg.parts.length - 1].type ===
+                                "step-start"
+                              ) {
+                                return (
+                                  <span
+                                    key={idx}
+                                    className=" flex items-center gap-2 py-1.5 px-3 my-1 rounded-lg bg-muted/30 border border-border/40 text-xs text-muted-foreground"
+                                  >
+                                    <RiLoader2Line className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                                    <p>回覆生成中...</p>
+                                  </span>
+                                );
                               }
 
                               return null;

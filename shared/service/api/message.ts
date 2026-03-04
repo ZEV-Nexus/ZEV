@@ -22,8 +22,14 @@ export async function sendMessage(
   content?: string,
   attachments?: IAttachment[],
   replyTo?: string,
+  modelKeyId?: string,
+  modelId?: string,
+  toolMention?: string,
 ) {
-  const response = await fetchApi<Message>("chat/messages/send", {
+  const response = await fetchApi<{
+    message: Message;
+    aiMessage: Message | null;
+  }>("chat/messages/send", {
     method: "POST",
     body: JSON.stringify({
       memberId,
@@ -31,6 +37,9 @@ export async function sendMessage(
       content,
       attachments,
       replyTo,
+      modelKeyId,
+      modelId,
+      toolMention,
     }),
   });
   return response.data;

@@ -50,7 +50,7 @@ function TypingDots() {
     </span>
   );
 }
-const MotionLink = motion(Link);
+const MotionLink = motion.create(Link);
 
 export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   const { data: session } = useSession();
@@ -121,9 +121,9 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                 </p>
               ) : (
                 room.lastMessage && (
-                  <p
+                  <div
                     className={cn(
-                      "text-xs text-muted-foreground truncate",
+                      "text-xs text-muted-foreground truncate flex items-center",
                       item.unreadCount && item.unreadCount > 0
                         ? "font-bold"
                         : "",
@@ -141,10 +141,10 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                       <MentionText
                         content={room.lastMessage?.content || ""}
                         members={members!}
-                        className="pointer-events-none truncate"
+                        className="pointer-events-none truncate "
                       />
                     )}
-                  </p>
+                  </div>
                 )
               )}
             </div>
