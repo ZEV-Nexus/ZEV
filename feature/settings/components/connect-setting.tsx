@@ -57,13 +57,16 @@ export default function ConnectSetting() {
                     </Badge>
                   </CardTitle>
                   <CardDescription className="flex items-center justify-between">
-                    <p className="text-xs">
+                    <p className="text-xs flex gap-2 items-center">
                       {provider.provider}
-                      {isConnected ? `．${isConnected?.createdAt}` : ""}
+                      {isConnected
+                        ? `．${isConnected?.createdAt}`
+                        : userOAuthAccounts.length === 0 &&
+                          isLoading && (
+                            <RiLoader2Line size={16} className="animate-spin" />
+                          )}
                     </p>
-                    {userOAuthAccounts.length === 0 && isLoading && (
-                      <RiLoader2Line className="animate-spin" />
-                    )}
+
                     {isConnected && !isLoading ? (
                       <Button
                         variant={"destructive"}
@@ -82,12 +85,16 @@ export default function ConnectSetting() {
                     ) : (
                       <Button
                         onClick={() => handleConnect(provider)}
+                        disabled={isLoading}
                         className={cn(
                           "px-3 py-1 rounded-md text-sm flex gap-2 items-center",
                         )}
                       >
-                        <RiLinkM size={14} />
-
+                        {isLoading ? (
+                          <RiLoader2Line size={16} className="animate-spin" />
+                        ) : (
+                          <RiLinkM size={14} />
+                        )}
                         <p>{t("connect")}</p>
                       </Button>
                     )}

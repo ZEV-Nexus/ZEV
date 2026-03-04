@@ -198,7 +198,7 @@ export default function AppActivityBar() {
                 href={`/${session.user.username}`}
                 prefetch={true}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors",
                   pathname === `/${session.user.username}`
                     ? "text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -351,6 +351,7 @@ export default function AppActivityBar() {
               <SidebarMenuItem>
                 <SidebarMenuButton tooltip={t("profilePage")} asChild>
                   <Link
+                    className="relative text-foreground/70 [&_svg]:size-5 group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center"
                     href={`/${session.user.username}`}
                     onClick={() => {
                       closePanel();

@@ -140,7 +140,18 @@
     "ai": {
         "howCanIHelp": "我可以如何協助您？",
         "pressEnterToStart": "輸入訊息後按 Enter 即可開始對話",
-        "selectModel": "Select a model"
+        "selectModel": "Select a model",
+        "toolStatus": {
+            "summarize_chat": "正在擷取並總結對話紀錄...",
+            "translate_text": "正在翻譯文字...",
+            "create_schedule": "正在建立行事曆排程...",
+            "analyze_attachment": "正在分析附件...",
+            "gmail_action": "正在處理 Gmail 郵件...",
+            "meet_action": "正在處理 Google Meet 會議...",
+            "default": "正在思考中...",
+            "completed": "已完成",
+            "error": "發生錯誤"
+        }
     },
     "settings": {
         "title": "設定",

@@ -35,6 +35,7 @@ import ConnectSetting from "./connect-setting";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { PrivacySettings } from "./privacy-setting";
+import { SidebarMenuButton } from "@/shared/shadcn/components/ui/sidebar";
 
 const tabs = [
   { value: "general", labelKey: "general", icon: RiSettings3Line },
@@ -63,9 +64,9 @@ export function SettingsDialog() {
       <Tooltip>
         <TooltipTrigger asChild>
           <DialogTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200">
-              <RiSettings4Line className="h-5 w-5" />
-            </button>
+            <SidebarMenuButton className="flex h-10 w-12  items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200">
+              <RiSettings4Line className="h-6 w-6" />
+            </SidebarMenuButton>
           </DialogTrigger>
         </TooltipTrigger>
         <TooltipContent side="right">{t("title")}</TooltipContent>

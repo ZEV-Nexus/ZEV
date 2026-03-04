@@ -140,7 +140,18 @@
     "ai": {
         "howCanIHelp": "How can I help you?",
         "pressEnterToStart": "Type a message and press Enter to start",
-        "selectModel": "Select a model"
+        "selectModel": "Select a model",
+        "toolStatus": {
+            "summarize_chat": "Summarizing conversation...",
+            "translate_text": "Translating text...",
+            "create_schedule": "Creating calendar event...",
+            "analyze_attachment": "Analyzing attachment...",
+            "gmail_action": "Processing Gmail...",
+            "meet_action": "Processing Google Meet...",
+            "default": "Thinking...",
+            "completed": "Completed",
+            "error": "Error occurred"
+        }
     },
     "settings": {
         "title": "Settings",

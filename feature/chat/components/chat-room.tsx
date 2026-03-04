@@ -24,7 +24,7 @@ import { useChatStore } from "@/shared/store/chat-store";
 import { useAblyChat } from "@/feature/chat/hooks/use-ably-chat";
 import { RiLoader2Line } from "@remixicon/react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, UIMessage } from "ai";
 import { useAIStore } from "@/shared/store/ai-store";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
@@ -65,7 +65,7 @@ export default function ChatRoom({
     status,
     sendMessage: sendAiMessage,
     setMessages: setAiMessages,
-  } = useChat({
+  } = useChat<UIMessage & { type: "string" }>({
     transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
     onError: (err: unknown) => {
       console.error(err);
