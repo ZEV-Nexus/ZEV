@@ -51,7 +51,7 @@ export function ApiKeySettings() {
           <div key={provider.id} className="grid gap-2">
             <Label htmlFor={provider.id}>
               {provider.label}
-              {!isEditing && maskedKeys[provider.id] && (
+              {!isEditing && maskedKeys[provider.id].key !== "" && (
                 <span className="ml-2 text-xs text-green-500 font-normal">
                   {t("configured")}
                 </span>
@@ -84,7 +84,7 @@ export function ApiKeySettings() {
                 placeholder={
                   isEditing
                     ? provider.placeholder
-                    : maskedKeys[provider.id]
+                    : maskedKeys[provider.id].key !== ""
                       ? maskedKeys[provider.id].key
                       : t("notConfigured")
                 }

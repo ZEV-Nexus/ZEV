@@ -14,20 +14,12 @@ import {
 } from "@remixicon/react";
 import { useTranslations } from "next-intl";
 
-import { PrivacySettings } from "@/shared/types";
-
 import { usePrivacy } from "../hooks/use-privacy";
 
 interface PrivacySettingsPanelProps {
   onBack: () => void;
   roomType: "dm" | "group" | "channel" | "ai";
 }
-
-const DEFAULT_SETTINGS: PrivacySettings = {
-  showReadReceipts: true,
-  showTypingIndicator: true,
-  showOnlineStatus: true,
-};
 
 export function PrivacySettingsPanel({
   onBack,

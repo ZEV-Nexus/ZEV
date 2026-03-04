@@ -1,24 +1,13 @@
 "use client";
 
-import { Button } from "@/shared/shadcn/components/ui/button";
 import { Input } from "@/shared/shadcn/components/ui/input";
 import {
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/shared/shadcn/components/ui/sidebar";
-import {
-  RiArrowUpDownLine,
-  RiMenu2Line,
-  RiMenuLine,
-  RiSearch2Line,
-  RiSideBarLine,
-} from "@remixicon/react";
+import { RiSearch2Line } from "@remixicon/react";
 
 export function NavHeader() {
-  const { toggleSidebar } = useSidebar();
-
   return (
     <SidebarMenu>
       <SidebarMenuItem className=" flex justify-between items-center">

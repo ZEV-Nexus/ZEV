@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -98,9 +98,6 @@ export default function AppActivityBar() {
   const isChatPage = pathname.startsWith("/c");
   const isChatRoomPage = pathname !== "/c" && pathname.startsWith("/c/");
   const isHomePage = pathname === "/";
-  useEffect(() => {
-    router.prefetch("/c");
-  }, [router]);
 
   // Mobile: hide bottom bar when inside a chat room (full screen chat)
   if (isMobile && isChatRoomPage) {
@@ -199,6 +196,7 @@ export default function AppActivityBar() {
             {session?.user && (
               <Link
                 href={`/${session.user.username}`}
+                prefetch={true}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
                   pathname === `/${session.user.username}`

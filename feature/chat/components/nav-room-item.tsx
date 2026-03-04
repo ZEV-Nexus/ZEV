@@ -21,6 +21,9 @@ import { useOnlineStore } from "@/shared/store/online-store";
 
 import { MentionText } from "./mention-text";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "motion/react";
 
 export function NavRoomItemSkeleton() {
   return (
@@ -47,6 +50,7 @@ function TypingDots() {
     </span>
   );
 }
+const MotionLink = motion(Link);
 
 export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   const { data: session } = useSession();
@@ -59,7 +63,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   );
 
   const t = useTranslations("chat");
-
+  const router = useRouter();
   const typingByRoom = useTypingStore((s) => s.typingByRoom);
   const roomTypingMap = typingByRoom.get(room.id);
   const filteredTypers = roomTypingMap
@@ -71,6 +75,9 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
   const { onlineUsers } = useOnlineStore();
   const isRecipientOnline =
     room.roomType === "dm" && recipient ? onlineUsers.has(recipient.id) : false;
+  useEffect(() => {
+    router.prefetch(`/c/${room.id}`);
+  }, [router, room.id]);
 
   return (
     <SidebarMenuItem key={item.id} className=" border-none overflow-hidden">
@@ -80,7 +87,9 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
         }
         asChild
       >
-        <Link
+        <MotionLink
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
           href={`/c/${room.id}`}
           prefetch={true}
           className="px-3 py-2 h-fit border-none  flex min-w-0 max-w-full overflow-hidden justify-between hover:bg-gray-100 dark:hover:bg-gray-800  hover:rounded-xl "
@@ -148,7 +157,7 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
           ) : (
             <div className="w-4" />
           )}
-        </Link>
+        </MotionLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
   );

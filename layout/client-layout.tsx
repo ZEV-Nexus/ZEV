@@ -11,6 +11,8 @@ import {
 import { useIsMobile } from "@/shared/shadcn/hooks/use-mobile";
 import { useAIStore } from "@/shared/store/ai-store";
 import { useChatStore } from "@/shared/store/chat-store";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function ClientLayout({
   children,
@@ -21,11 +23,12 @@ export default function ClientLayout({
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith("/auth");
   const isMobile = useIsMobile();
-
+  const router = useRouter();
+  const { data: session } = useSession();
   useEffect(() => {
     useAIStore.persist.rehydrate();
     useChatStore.persist.rehydrate();
-  }, []);
+  }, [session, router]);
 
   return (
     <QueryClientProvider client={client}>
