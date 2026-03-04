@@ -21,9 +21,10 @@ import {
   FieldLabel,
 } from "@/shared/shadcn/components/ui/field";
 import { Input } from "@/shared/shadcn/components/ui/input";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { updateCategory } from "@/shared/service/api/room-category";
 import { useChatStore } from "@/shared/store/chat-store";
+import { useTranslations } from "next-intl";
 
 export default function EditCategoryDialog({
   children,
@@ -37,12 +38,7 @@ export default function EditCategoryDialog({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(currentName);
   const { updateChatCategoryTitle } = useChatStore();
-
-  useEffect(() => {
-    if (open) {
-      setName(currentName);
-    }
-  }, [open, currentName]);
+  const t = useTranslations("chatDialog");
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
@@ -51,7 +47,7 @@ export default function EditCategoryDialog({
     },
     onSuccess: () => {
       updateChatCategoryTitle(categoryId, name);
-      toast.success("Category updated successfully");
+      toast.success(t("categoryUpdated"));
       setOpen(false);
     },
     onError: (error) => {
@@ -64,16 +60,14 @@ export default function EditCategoryDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Category</DialogTitle>
-          <DialogDescription>
-            Change the name of this category
-          </DialogDescription>
+          <DialogTitle>{t("editCategoryTitle")}</DialogTitle>
+          <DialogDescription>{t("editCategoryDescription")}</DialogDescription>
         </DialogHeader>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="category-name">Category Name</FieldLabel>
+            <FieldLabel htmlFor="category-name">{t("categoryName")}</FieldLabel>
             <Input
-              placeholder="Category Name"
+              placeholder={t("categoryNamePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
@@ -86,14 +80,14 @@ export default function EditCategoryDialog({
         </FieldGroup>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t("cancel")}</Button>
           </DialogClose>
           <Button
             type="button"
             disabled={isPending || !name.trim()}
             onClick={() => mutate()}
           >
-            {isPending ? <RiLoader2Line className="animate-spin" /> : "Save"}
+            {isPending ? <RiLoader2Line className="animate-spin" /> : t("save")}
           </Button>
         </DialogFooter>
       </DialogContent>

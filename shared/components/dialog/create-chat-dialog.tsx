@@ -48,6 +48,7 @@ import {
 import { RiLoader2Line, RiSearch2Line } from "@remixicon/react";
 import { ScrollArea } from "@/shared/shadcn/components/ui/scroll-area";
 import { RoomType } from "@/shared/types";
+import { useTranslations } from "next-intl";
 
 export default function CreateChatDialog({
   categoryId,
@@ -69,16 +70,15 @@ export default function CreateChatDialog({
   } = useCreateChat(categoryId);
 
   const [open, setOpen] = React.useState(false);
+  const t = useTranslations("chatDialog");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Create Chat</DialogTitle>
-          <DialogDescription>
-            Create a new chat for personal room or group.
-          </DialogDescription>
+          <DialogTitle>{t("createChatTitle")}</DialogTitle>
+          <DialogDescription>{t("createChatDescription")}</DialogDescription>
         </DialogHeader>
 
         <RadioGroup
@@ -93,20 +93,18 @@ export default function CreateChatDialog({
         >
           <div className="flex items-center gap-2">
             <RadioGroupItem value="dm" id="type-dm" />
-            <Label htmlFor="type-dm">Personal (DM)</Label>
+            <Label htmlFor="type-dm">{t("personalDM")}</Label>
           </div>
           <div className="flex items-center gap-2">
             <RadioGroupItem value="group" id="type-group" />
-            <Label htmlFor="type-group">Group</Label>
+            <Label htmlFor="type-group">{t("group")}</Label>
           </div>
         </RadioGroup>
 
         {chatDetails.roomType === "dm" ? (
           <>
             <FieldGroup>
-              <FieldDescription>
-                Search your friend by username to start a personal chat.
-              </FieldDescription>
+              <FieldDescription>{t("dmSearchDescription")}</FieldDescription>
               <Field>
                 <InputGroup>
                   <InputGroupInput
@@ -114,14 +112,14 @@ export default function CreateChatDialog({
                     name="username"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search friends..."
+                    placeholder={t("searchFriends")}
                   />
                   <InputGroupAddon>
                     <RiSearch2Line />
                   </InputGroupAddon>
                   <InputGroupAddon align="inline-end">
                     <InputGroupText>
-                      {searchResults?.length} friends
+                      {t("friends", { count: searchResults?.length ?? 0 })}
                     </InputGroupText>
                   </InputGroupAddon>
                 </InputGroup>
@@ -130,16 +128,14 @@ export default function CreateChatDialog({
           </>
         ) : (
           <FieldGroup>
-            <FieldDescription>
-              Search your friends by username to start a group chat.
-            </FieldDescription>
+            <FieldDescription>{t("groupSearchDescription")}</FieldDescription>
             <Field>
-              <Label htmlFor="group-name">Group name</Label>
+              <Label htmlFor="group-name">{t("groupName")}</Label>
               <Input
                 id="group-name"
                 name="name"
                 required
-                placeholder="Enter group name"
+                placeholder={t("enterGroupName")}
                 value={chatDetails.chatName}
                 onChange={(e) =>
                   setChatDetails((prev) => ({
@@ -156,14 +152,14 @@ export default function CreateChatDialog({
                   name="members"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search friends..."
+                  placeholder={t("searchFriends")}
                 />
                 <InputGroupAddon>
                   <RiSearch2Line />
                 </InputGroupAddon>
                 <InputGroupAddon align="inline-end">
                   <InputGroupText>
-                    {searchResults?.length} friends
+                    {t("friends", { count: searchResults?.length ?? 0 })}
                   </InputGroupText>
                 </InputGroupAddon>
               </InputGroup>
@@ -204,8 +200,8 @@ export default function CreateChatDialog({
                       />
                     )}
                   </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>{t("name")}</TableHead>
+                  <TableHead>{t("email")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -352,7 +348,7 @@ export default function CreateChatDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t("cancel")}</Button>
           </DialogClose>
           <Button
             type="button"
@@ -365,7 +361,11 @@ export default function CreateChatDialog({
               });
             }}
           >
-            {isPending ? <RiLoader2Line className="animate-spin" /> : "Create"}
+            {isPending ? (
+              <RiLoader2Line className="animate-spin" />
+            ) : (
+              t("create")
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -24,6 +24,7 @@ import { Input } from "@/shared/shadcn/components/ui/input";
 import { useState } from "react";
 import { createCategory } from "@/shared/service/api/room-category";
 import { useChatStore } from "@/shared/store/chat-store";
+import { useTranslations } from "next-intl";
 export default function CreateCategoryDialog({
   children,
 }: {
@@ -32,6 +33,7 @@ export default function CreateCategoryDialog({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const { addChatCategory } = useChatStore();
+  const t = useTranslations("chatDialog");
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
       const res = await createCategory(name);
@@ -44,7 +46,7 @@ export default function CreateCategoryDialog({
         index: data.index,
         items: [],
       });
-      toast.success("Category created successfully");
+      toast.success(t("categoryCreated"));
       setOpen(false);
       setName("");
     },
@@ -58,16 +60,16 @@ export default function CreateCategoryDialog({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Category</DialogTitle>
+          <DialogTitle>{t("createCategoryTitle")}</DialogTitle>
           <DialogDescription>
-            Create a new category to setting up group chat
+            {t("createCategoryDescription")}
           </DialogDescription>
         </DialogHeader>
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="category-name">Category Name</FieldLabel>
+            <FieldLabel htmlFor="category-name">{t("categoryName")}</FieldLabel>
             <Input
-              placeholder="Category Name"
+              placeholder={t("categoryNamePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -75,7 +77,7 @@ export default function CreateCategoryDialog({
         </FieldGroup>
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t("cancel")}</Button>
           </DialogClose>
           <Button
             type="button"
@@ -84,7 +86,11 @@ export default function CreateCategoryDialog({
               mutate();
             }}
           >
-            {isPending ? <RiLoader2Line className="animate-spin" /> : "Create"}
+            {isPending ? (
+              <RiLoader2Line className="animate-spin" />
+            ) : (
+              t("create")
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
