@@ -365,4 +365,4 @@ For bug reports and feature requests, please open an issue on GitHub.
 
 ## License
 
-This project is open source. See the repository for license details.
+This project is open source with [MIT](https://github.com/ZEV-Nexus/ZEV/blob/main/LICENSE) license. See the repository for license details.
