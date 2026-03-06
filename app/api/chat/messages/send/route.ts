@@ -62,6 +62,7 @@ export async function POST(req: Request) {
         provider,
         apiKey,
         toolMention,
+        roomId,
       );
 
       aiMessage = await sendMessage(

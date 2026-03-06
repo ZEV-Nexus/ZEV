@@ -47,6 +47,7 @@ interface AIAction {
   setMaskedKeys: (masked: UserApiKey) => void;
   setSelectedModel: (model: AIModel) => void;
   getApiKey: (provider: AIProvider) => UserApiKey[AIProvider];
+  deleteApiKey: (provider: AIProvider) => void;
 }
 
 export const useAIStore = create<AIState & AIAction>()(
@@ -82,6 +83,10 @@ export const useAIStore = create<AIState & AIAction>()(
       setSelectedModel: (model) => set({ selectedModel: model }),
 
       getApiKey: (provider) => get().apiKeys[provider],
+      deleteApiKey: (provider) =>
+        set((state) => ({
+          maskedKeys: { ...state.maskedKeys, [provider]: { key: "", id: "" } },
+        })),
     }),
     {
       name: "ai-store",

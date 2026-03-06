@@ -7,6 +7,7 @@ import type { AIProvider } from "@/shared/store/ai-store";
 
 export const MeetActionType = z.enum([
   "CREATE_MEETING",
+  "CREATE_MEETING_WITHOUT_TIME",
   "UPDATE_MEETING",
   "CANCEL_MEETING",
   "LIST_MEETINGS",
@@ -79,10 +80,13 @@ const MEET_SYSTEM_PROMPT = `你是一個 Google Meet 任務代理，嵌入於應
 3. 若資訊不足，提出明確且最少的澄清問題
 
 支援的 Intent 範圍（僅限以下）：
-• CREATE_MEETING
+• CREATE_MEETING（使用者有指定時間）
+• CREATE_MEETING_WITHOUT_TIME（使用者未指定時間，或只想快速建立 Meet 連結）
 • UPDATE_MEETING
 • CANCEL_MEETING
 • LIST_MEETINGS
+
+Google Meet 本身不需要起始與結束時間即可建立會議空間（Space），因此：
 
 CREATE_MEETING 必須包含：
 • title
@@ -90,12 +94,21 @@ CREATE_MEETING 必須包含：
 • end_time (ISO 8601)
 • attendees (email array，可為空陣列)
 
+CREATE_MEETING_WITHOUT_TIME 必須包含：
+• title（若使用者未指定標題，可根據語意推斷一個簡短標題）
+• attendees (email array，可為空陣列)
+• start_time 和 end_time 設為 null
+
+判斷邏輯：
+• 使用者明確指定了時間 → CREATE_MEETING
+• 使用者未指定時間，或說「開個會議」「建立 Meet 連結」等 → CREATE_MEETING_WITHOUT_TIME
+
 嚴格規則：
-• 不自行猜測時間、參與者或會議標題
+• 不自行猜測時間或參與者
 • 不自動建立、修改或取消會議
-• 所有行為必須可對應 Google Calendar API（包含 conferenceData 建立 Meet 連結）
+• 所有行為透過 Google Meet REST API v2 執行（spaces.create）
 • 若請求超出能力（例如錄製會議、監聽會議內容），必須拒絕並說明原因
-• require_confirmation 必須始終為 true
+• require_confirmation 預設為 true，但若使用者意圖非常明確可設為 false
 • 輸出只允許 JSON，不得加入說明文字
 • 若資訊不足，設定 missing_fields 並提供 clarification_needed`;
 
@@ -136,6 +149,15 @@ ${conversationContext ? `Recent conversation:\n${conversationContext}` : ""}`,
 // ─── Needs Clarification Check ───
 
 export function needsMeetClarification(extraction: MeetExtraction): boolean {
+  // CREATE_MEETING_WITHOUT_TIME 不需要時間，只需要 title
+  if (extraction.intent === "CREATE_MEETING_WITHOUT_TIME") {
+    return (
+      extraction.clarification_needed !== null ||
+      !extraction.title ||
+      extraction.confidence < 0.7
+    );
+  }
+
   return (
     extraction.clarification_needed !== null ||
     extraction.missing_fields.length > 0 ||
@@ -149,12 +171,12 @@ export function needsMeetConfirmation(extraction: MeetExtraction): boolean {
   return extraction.require_confirmation || extraction.confidence < 0.9;
 }
 
-// ─── Build Calendar Event with Meet Conference ───
+// ─── Build Meet Event Payload ───
 
 export interface MeetEventPayload {
   title: string;
-  start_time: string;
-  end_time: string;
+  start_time?: string | null;
+  end_time?: string | null;
   attendees: string[];
 }
 
@@ -167,7 +189,8 @@ export function buildMeetEventPayload(
   const end_time = confirmation?.end_time || extraction.end_time;
   const attendees = confirmation?.attendees || extraction.attendees;
 
-  if (!title || !start_time || !end_time) return null;
+  // Meet Space 不需要時間，只需要 title
+  if (!title) return null;
 
   return {
     title,
@@ -189,6 +212,14 @@ export function buildMeetFallbackConfirmation(
     lines.push(`**標題**：${extraction.title || "⚠️ 未指定"}`);
     lines.push(`**開始時間**：${extraction.start_time || "⚠️ 未指定"}`);
     lines.push(`**結束時間**：${extraction.end_time || "⚠️ 未指定"}`);
+    lines.push(
+      `**參與者**：${extraction.attendees.length > 0 ? extraction.attendees.join("、") : "無"}`,
+    );
+    lines.push(`**信心度**：${Math.round(extraction.confidence * 100)}%`);
+    lines.push("");
+  } else if (extraction.intent === "CREATE_MEETING_WITHOUT_TIME") {
+    lines.push("📹 我為您準備了以下會議：", "");
+    lines.push(`**標題**：${extraction.title || "⚠️ 未指定"}`);
     lines.push(
       `**參與者**：${extraction.attendees.length > 0 ? extraction.attendees.join("、") : "無"}`,
     );

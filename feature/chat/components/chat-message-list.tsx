@@ -190,6 +190,12 @@ export function ChatMessageList({
     });
   }, []);
 
+  useEffect(() => {
+    if (atBottom) {
+      scrollToBottom();
+    }
+  }, [atBottom, listItems, scrollToBottom]);
+
   const handleMarkAsRead = useCallback((roomId: string) => {
     markAsRead(roomId);
   }, []);
@@ -214,7 +220,7 @@ export function ChatMessageList({
   return (
     <div className="relative h-full w-full">
       <Virtuoso
-        className="h-full w-full"
+        className="max-h-full w-full"
         id="chat-message-list"
         ref={virtuosoRef}
         data={listItems}
@@ -224,13 +230,14 @@ export function ChatMessageList({
           align: "end",
         }}
         startReached={handleStartReached}
-        followOutput={atBottom ? "auto" : false}
+        followOutput={"smooth"}
         atBottomThreshold={200}
         atBottomStateChange={(bottom) => {
           setAtBottom(bottom);
           if (bottom) {
             clearUnreadCount(roomId);
             handleMarkAsRead(roomId);
+
             prevAtBottom.current = atBottom;
           }
         }}

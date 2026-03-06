@@ -22,7 +22,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/shared/shadcn/components/ui/select";
@@ -58,13 +60,24 @@ import { useOnlineStore } from "@/shared/store/online-store";
 import { useTranslations } from "next-intl";
 import { SharedMediaPanel } from "@/feature/chat/components/shared-media-panel";
 import { PrivacySettingsPanel } from "@/feature/chat/components/privacy-settings-panel";
+import { AI_MODELS, AIModel, useAIStore } from "@/shared/store/ai-store";
+import { useKey } from "@/feature/settings/hooks/use-key";
+import {
+  RiSparklingFill,
+  RiEyeLine,
+  RiEyeOffLine,
+  RiKeyLine,
+} from "@remixicon/react";
+import { Input } from "@/shared/shadcn/components/ui/input";
+import { Label } from "@/shared/shadcn/components/ui/label";
 
 type PanelView =
   | "main"
   | "media-image"
   | "media-file"
   | "media-link"
-  | "privacy";
+  | "privacy"
+  | "ai-settings";
 
 interface ChatRoomSettingsPanelProps {
   open: boolean;
@@ -99,6 +112,17 @@ export function ChatRoomSettingsPanel({
   const [currentPanel, setCurrentPanel] = useState<PanelView>("main");
   const { onlineUsers } = useOnlineStore();
   const t = useTranslations("chatSettings");
+  const tSettings = useTranslations("settings");
+  const { selectedModel, setSelectedModel, maskedKeys } = useAIStore();
+  const {
+    apiKeys,
+    setApiKeys,
+    showKeys,
+    toggleShowKey,
+    saveUserApiKeysMutation,
+    isEditing,
+    setIsEditing,
+  } = useKey();
 
   // Reset panel when sheet closes
   useEffect(() => {
@@ -275,6 +299,142 @@ export function ChatRoomSettingsPanel({
           />
         )}
 
+        {/* AI Settings sub-panel */}
+        {currentPanel === "ai-settings" && (
+          <div className="flex flex-col h-full">
+            <div className="flex items-center gap-2 px-4 py-3 border-b">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setCurrentPanel("main")}
+              >
+                <RiArrowRightSLine className="h-4 w-4 rotate-180" />
+              </Button>
+              <h3 className="text-sm font-medium">{t("apiKeySettings")}</h3>
+            </div>
+            <ScrollArea className="flex-1">
+              <div className="px-4 py-4 space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  {t("apiKeySettingsDescription")}
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="edit-mode-panel" className="text-sm">
+                    {tSettings("editMode")}
+                  </Label>
+                  <Switch
+                    checked={isEditing}
+                    onCheckedChange={setIsEditing}
+                    id="edit-mode-panel"
+                  />
+                </div>
+
+                <div className="grid gap-3">
+                  {[
+                    {
+                      id: "openai" as const,
+                      label: "OpenAI",
+                      placeholder: "sk-...",
+                    },
+                    {
+                      id: "anthropic" as const,
+                      label: "Anthropic",
+                      placeholder: "sk-ant-...",
+                    },
+                    {
+                      id: "google" as const,
+                      label: "Google Gemini",
+                      placeholder: "AIza...",
+                    },
+                  ].map((provider) => (
+                    <div key={provider.id} className="grid gap-1.5">
+                      <Label
+                        htmlFor={`panel-${provider.id}`}
+                        className="text-sm"
+                      >
+                        {provider.label}
+                        {!isEditing && maskedKeys[provider.id]?.key !== "" && (
+                          <span className="ml-2 text-xs text-green-500 font-normal">
+                            {tSettings("configured")}
+                          </span>
+                        )}
+                        {!isEditing && maskedKeys[provider.id]?.key === "" && (
+                          <span className="ml-2 text-xs text-muted-foreground font-normal">
+                            {tSettings("notConfigured")}
+                          </span>
+                        )}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id={`panel-${provider.id}`}
+                          type={
+                            showKeys[provider.id] || !isEditing
+                              ? "text"
+                              : "password"
+                          }
+                          value={
+                            isEditing
+                              ? apiKeys[provider.id]?.key || ""
+                              : maskedKeys[provider.id]?.key || ""
+                          }
+                          onChange={(e) =>
+                            setApiKeys({
+                              ...apiKeys,
+                              [provider.id]: {
+                                key: e.target.value,
+                                id: maskedKeys[provider.id]
+                                  ? maskedKeys[provider.id].id
+                                  : "",
+                              },
+                            })
+                          }
+                          placeholder={
+                            isEditing
+                              ? provider.placeholder
+                              : maskedKeys[provider.id]?.key !== ""
+                                ? maskedKeys[provider.id].key
+                                : tSettings("notConfigured")
+                          }
+                          disabled={
+                            !isEditing || saveUserApiKeysMutation.isPending
+                          }
+                          className="pr-10 h-9 text-sm"
+                        />
+                        {isEditing && (
+                          <button
+                            type="button"
+                            onClick={() => toggleShowKey(provider.id)}
+                            className="absolute right-0 top-0 h-full px-3 flex items-center justify-center hover:bg-transparent"
+                          >
+                            {showKeys[provider.id] ? (
+                              <RiEyeOffLine className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <RiEyeLine className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    disabled={!isEditing || saveUserApiKeysMutation.isPending}
+                    onClick={() => saveUserApiKeysMutation.mutate(apiKeys)}
+                  >
+                    {saveUserApiKeysMutation.isPending
+                      ? tSettings("saving")
+                      : tSettings("saveSettings")}
+                  </Button>
+                </div>
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
         {/* Main settings view */}
         {currentPanel === "main" && (
           <ScrollArea>
@@ -360,6 +520,70 @@ export function ChatRoomSettingsPanel({
                       onCheckedChange={handlePinnedToggle}
                     />
                   </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* AI Model Settings */}
+              <div className="px-4 py-3">
+                <h4 className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">
+                  {t("aiSettings")}
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <RiSparklingFill className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("aiModel")}</span>
+                    </div>
+                  </div>
+                  <div className="px-2">
+                    <Select
+                      onValueChange={(e) => {
+                        const model = AI_MODELS.find((m) => m.id === e);
+                        if (model) setSelectedModel(model);
+                      }}
+                      value={selectedModel?.id || ""}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={t("selectModel")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(
+                          AI_MODELS.reduce(
+                            (prev, curr) => {
+                              if (prev[curr.provider])
+                                prev[curr.provider].push(curr);
+                              else prev[curr.provider] = [curr];
+                              return prev;
+                            },
+                            {} as Record<string, AIModel[]>,
+                          ),
+                        ).map(([provider, models]) => (
+                          <SelectGroup key={provider}>
+                            <SelectLabel className="capitalize">
+                              {provider}
+                            </SelectLabel>
+                            {models.map((model) => (
+                              <SelectItem key={model.id} value={model.id}>
+                                {model.name}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <button
+                    onClick={() => setCurrentPanel("ai-settings")}
+                    className="flex items-center justify-between w-full py-2.5 px-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3">
+                      <RiKeyLine className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{t("configureApiKeys")}</span>
+                    </div>
+                    <RiArrowRightSLine className="h-4 w-4 text-muted-foreground" />
+                  </button>
                 </div>
               </div>
 

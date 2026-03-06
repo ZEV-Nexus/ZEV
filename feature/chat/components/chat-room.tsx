@@ -224,13 +224,13 @@ export default function ChatRoom({
               ? {
                   ...optimisticMessage,
                   ...(savedMessage as Message),
-                  ...(aiMessage && typeof aiMessage === "object"
-                    ? aiMessage
-                    : {}),
                 }
               : msg,
           ),
         );
+        if (aiMessage && typeof aiMessage === "object") {
+          setLocalMessages((prev) => [...prev, aiMessage as Message]);
+        }
         updateRoomLastMessage(
           room.id,
           aiMessage ? (aiMessage as Message) : (savedMessage as Message),

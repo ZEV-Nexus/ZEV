@@ -1,22 +1,23 @@
 "use client";
 
 import {
-  getUserApiKeys,
+  deleteUserApiKey,
   saveUserApiKeys,
 } from "@/shared/service/api/user-api-key";
 import { AIProvider, useAIStore, UserApiKey } from "@/shared/store/ai-store";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export function useKey() {
-  const { maskedKeys, setMaskedKey, setMaskedKeys } = useAIStore();
+  const { maskedKeys, setMaskedKey, setMaskedKeys, deleteApiKey } =
+    useAIStore();
   const [isEditing, setIsEditing] = useState(false);
-  const [apiKeys, setApiKeys] = useState<UserApiKey>({
-    openai: { key: "", id: "" },
-    anthropic: { key: "", id: "" },
-    google: { key: "", id: "" },
-  });
+  const [apiKeys, setApiKeys] = useState<UserApiKey>(
+    Object.fromEntries(
+      Object.entries(maskedKeys).map(([k, v]) => [{ id: v.id, key: "" }]),
+    ),
+  );
 
   const saveUserApiKeysMutation = useMutation({
     mutationKey: ["saveUserApiKeys"],
@@ -33,15 +34,6 @@ export function useKey() {
     },
   });
 
-  useQuery({
-    queryKey: ["userApiKeys"],
-    queryFn: async () => {
-      const keys = await getUserApiKeys();
-      setMaskedKeys(keys);
-      return keys;
-    },
-  });
-
   const [showKeys, setShowKeys] = useState<Record<AIProvider, boolean>>({
     openai: false,
     anthropic: false,
@@ -49,6 +41,11 @@ export function useKey() {
   });
   const toggleShowKey = (provider: AIProvider) => {
     setShowKeys((prev) => ({ ...prev, [provider]: !prev[provider] }));
+  };
+
+  const handleDeleteKey = async (provider: AIProvider) => {
+    deleteApiKey(provider);
+    await deleteUserApiKey(provider);
   };
 
   return {
@@ -62,5 +59,6 @@ export function useKey() {
     saveUserApiKeysMutation,
     isEditing,
     setIsEditing,
+    handleDeleteKey,
   };
 }

@@ -141,7 +141,8 @@ export default function NavRoomItem({ item }: { item: ChatNavItem }) {
                       <MentionText
                         content={room.lastMessage?.content || ""}
                         members={members!}
-                        className="pointer-events-none truncate "
+                        noMarkdown={true}
+                        className="pointer-events-none truncate  "
                       />
                     )}
                   </div>

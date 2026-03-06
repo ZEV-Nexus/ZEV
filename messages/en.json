@@ -114,7 +114,13 @@
         "blocking": "Blocking",
         "blockUser": "Block User",
         "privacyLoadError": "Failed to load privacy settings",
-        "privacyUpdateError": "Failed to update privacy settings"
+        "privacyUpdateError": "Failed to update privacy settings",
+        "aiSettings": "AI Settings",
+        "aiModel": "AI Model",
+        "selectModel": "Select model",
+        "configureApiKeys": "Configure API Keys",
+        "apiKeySettings": "API Key Settings",
+        "apiKeySettingsDescription": "Configure your API keys for different AI providers. Keys are securely stored and encrypted."
     },
     "chatDialog": {
         "inviteTitle": "Invite Member",

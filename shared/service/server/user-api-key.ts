@@ -55,3 +55,10 @@ export async function updateUserApiKey(
 
   return key;
 }
+
+export async function deleteUserApiKeysByProvider(
+  userId: string,
+  provider: string,
+) {
+  await userApiKeyModel.deleteMany({ user: userId, provider });
+}

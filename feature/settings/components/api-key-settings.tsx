@@ -25,6 +25,7 @@ export function ApiKeySettings() {
     saveUserApiKeysMutation,
     isEditing,
     setIsEditing,
+    handleDeleteKey,
   } = useKey();
   const t = useTranslations("settings");
 
@@ -52,9 +53,14 @@ export function ApiKeySettings() {
             <Label htmlFor={provider.id}>
               {provider.label}
               {!isEditing && maskedKeys[provider.id].key !== "" && (
-                <span className="ml-2 text-xs text-green-500 font-normal">
-                  {t("configured")}
-                </span>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="ml-2"
+                  onClick={() => handleDeleteKey(provider.id)}
+                >
+                  {t("delete")}
+                </Button>
               )}
             </Label>
             <div className="relative">

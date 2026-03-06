@@ -10,13 +10,15 @@ interface MentionTextProps {
   content: string;
   members: Member[];
   className?: string;
+  noMarkdown?: boolean;
 }
 
-/**
- * 將訊息內容中的 <@userId> 解析為高亮的 mention 標籤
- * 透過 userId 查找對應的使用者暱稱來顯示
- */
-export function MentionText({ content, members, className }: MentionTextProps) {
+export function MentionText({
+  content,
+  members,
+  className,
+  noMarkdown = false,
+}: MentionTextProps) {
   const segments = useMemo(
     () => parseMentions(content, members),
     [content, members],
@@ -26,7 +28,7 @@ export function MentionText({ content, members, className }: MentionTextProps) {
   if (!hasMentions(content)) {
     return (
       <span className={className}>
-        <Markdown>{content}</Markdown>
+        {noMarkdown ? content : <Markdown>{content}</Markdown>}
       </span>
     );
   }
@@ -49,7 +51,13 @@ export function MentionText({ content, members, className }: MentionTextProps) {
             </span>
           );
         }
-        return <Markdown key={`text-${index}`}>{segment.content}</Markdown>;
+        return noMarkdown ? (
+          <span key={`text-${index}`} className={className}>
+            {segment.content}
+          </span>
+        ) : (
+          <Markdown key={`text-${index}`}>{segment.content}</Markdown>
+        );
       })}
     </span>
   );

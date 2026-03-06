@@ -114,7 +114,13 @@
         "blocking": "封鎖",
         "blockUser": "封鎖使用者",
         "privacyLoadError": "載入隱私設定失敗",
-        "privacyUpdateError": "更新隱私設定失敗"
+        "privacyUpdateError": "更新隱私設定失敗",
+        "aiSettings": "AI 設定",
+        "aiModel": "AI 模型",
+        "selectModel": "選擇模型",
+        "configureApiKeys": "配置 API 金鑰",
+        "apiKeySettings": "API 金鑰設定",
+        "apiKeySettingsDescription": "為不同的 AI 服務提供商配置 API 金鑰。金鑰將被安全存儲和加密。"
     },
     "chatDialog": {
         "inviteTitle": "邀請成員",
@@ -206,6 +212,7 @@
         "connected": "已連結",
         "notConnected": "未連結",
         "disconnect": "斷開連結",
+        "delete": "刪除",
         "connect": "連結",
         "privacy": "隱私",
         "privacyDescription": "管理您的隱私設定，訊息隱私、已讀回執、輸入指示器和在線狀態的顯示"

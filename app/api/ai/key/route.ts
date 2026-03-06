@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { userApiKeyModel } from "@/shared/schema";
 import {
   createUserApiKey,
+  deleteUserApiKeysByProvider,
   getUserApiKey,
   getUserApiKeys,
   updateUserApiKey,
@@ -95,6 +96,31 @@ export async function POST(request: NextRequest) {
         ),
       },
     });
+  } catch (error: unknown) {
+    return apiResponse({
+      error: (error as Error)?.message || "Unknown error",
+      status: 500,
+    });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return apiResponse({ error: "Unauthorized", status: 401 });
+    }
+    const { provider } = await request.json();
+    if (!provider) {
+      return apiResponse({ error: "Missing provider", status: 400 });
+    }
+    const keys = await getUserApiKeys(user.id);
+    const keyToDelete = keys.find((k) => k.provider === provider);
+    if (!keyToDelete) {
+      return apiResponse({ error: "API key not found", status: 404 });
+    }
+    await deleteUserApiKeysByProvider(user.id, provider);
+    return apiResponse({ data: { success: true } });
   } catch (error: unknown) {
     return apiResponse({
       error: (error as Error)?.message || "Unknown error",

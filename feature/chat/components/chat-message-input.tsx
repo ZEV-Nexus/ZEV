@@ -8,6 +8,7 @@ import {
   MentionContent,
   MentionInput,
   MentionItem,
+  MentionLabel,
 } from "@/shared/shadcn/components/ui/mention";
 import {
   RiSendPlaneLine,
@@ -254,7 +255,6 @@ export function ChatMessageInput({
           </div>
         )}
 
-        {/* Attachments Preview */}
         {attachments.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
             {attachments.map((file, index) => (
@@ -288,7 +288,6 @@ export function ChatMessageInput({
           </div>
         )}
 
-        {/* Input Area with Mention */}
         <div
           ref={inputContainerRef}
           onBlur={handleContainerBlur}
@@ -374,7 +373,7 @@ export function ChatMessageInput({
               <MentionContent>
                 {toolMention.map((tool) => (
                   <MentionItem key={tool.id} value={tool.label}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ">
                       <RiAtLine className="h-4 w-4 text-primary shrink-0" />
                       <span className="text-sm">{tool.label}</span>
                     </div>

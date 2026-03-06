@@ -44,6 +44,11 @@ import {
   googleCalendar,
 } from "@/shared/lib/google-calendar";
 import {
+  googleMeet,
+  createMeetSpace,
+  listConferenceRecords,
+} from "@/shared/lib/google-meet";
+import {
   googleGmail,
   sendGmailMessage,
   listGmailMessages,
@@ -349,7 +354,8 @@ export const streamTextOutput = (
       // ─── Gmail Tool → delegates to Gmail Agent ───
       gmail_action: tool({
         description: `處理 Gmail 相關操作：撰寫郵件、回覆郵件、查看收件匣、讀取郵件。
-    呼叫獨立的 Gmail Agent（中階模型）進行意圖解析。
+    呼叫獨立的 Gmail Agent（中階模型），結合房間對話上下文進行意圖解析與判斷。
+    除已確認寄送和指定 ID 讀取外，所有操作皆經過 Agent 分析對話上下文後決定。
     寄送郵件前必須經過使用者確認。`,
         inputSchema: z.object({
           user_message: z.string().describe("使用者關於郵件的原始訊息"),
@@ -392,28 +398,18 @@ export const streamTextOutput = (
 
             const gmail = await googleGmail(refreshToken);
 
-            // ─── List inbox ───
-            if (action_type === "list") {
-              const messages = await listGmailMessages(gmail, 10);
+            // ─── Send confirmed draft（已確認操作，不需要 Agent 分析）───
+            if (action_type === "send_confirmed" && confirmed_draft) {
+              const result = await sendGmailMessage(gmail, confirmed_draft);
               return {
-                type: "gmail_messages",
-                messages: messages.map((m) => ({
-                  id: m.id,
-                  from: m.from,
-                  subject: m.subject,
-                  date: m.date,
-                  snippet: m.snippet,
-                })),
-                message: `📬 以下是最近的郵件：\n${messages
-                  .map(
-                    (m, i) =>
-                      `${i + 1}. **${m.subject || "(無主旨)"}** — ${m.from}\n   ${m.snippet}`,
-                  )
-                  .join("\n\n")}`,
+                type: "gmail_sent",
+                messageId: result.id,
+                threadId: result.threadId,
+                message: `✅ 郵件已成功寄送給 ${confirmed_draft.to}`,
               };
             }
 
-            // ─── Read specific message ───
+            // ─── Read specific message（有明確 message_id，直接讀取）───
             if (action_type === "read" && message_id) {
               const msg = await readGmailMessage(gmail, message_id);
               return {
@@ -432,18 +428,7 @@ export const streamTextOutput = (
               };
             }
 
-            // ─── Send confirmed draft ───
-            if (action_type === "send_confirmed" && confirmed_draft) {
-              const result = await sendGmailMessage(gmail, confirmed_draft);
-              return {
-                type: "gmail_sent",
-                messageId: result.id,
-                threadId: result.threadId,
-                message: `✅ 郵件已成功寄送給 ${confirmed_draft.to}`,
-              };
-            }
-
-            // ─── Draft: Extract intent with Gmail Agent ───
+            // ─── 取得房間對話上下文，交由 Gmail Agent 做意圖分析 ───
             let conversationContext = "";
             if (roomId) {
               const recentMsgs = await getMessages(roomId, 20);
@@ -522,127 +507,66 @@ export const streamTextOutput = (
       }),
       // ─── Meet Tool → delegates to Meet Agent ───
       meet_action: tool({
-        description: `處理 Google Meet 會議相關操作：建立會議、修改會議、取消會議、查詢會議列表。
+        description: `處理 Google Meet 會議相關操作：建立會議、修改會議、取消會議、查詢會議紀錄。
     呼叫獨立的 Meet Agent（中階模型）進行意圖解析。
     建立會議時會自動產生 Google Meet 連結。
-    所有操作都需經過使用者確認。`,
+    信心度 100% 時自動建立，否則需經過使用者確認。`,
         inputSchema: z.object({
           user_message: z.string().describe("使用者關於會議的原始訊息"),
           action_type: z
             .enum(["create", "list", "confirm_create"])
             .describe(
-              "操作類型：create=建立會議、list=查詢會議列表、confirm_create=使用者已確認建立",
+              "操作類型：create=建立會議、list=查詢會議紀錄、confirm_create=使用者已確認建立",
             ),
           confirmed_meeting: z
             .object({
               title: z.string(),
-              start_time: z.string(),
-              end_time: z.string(),
+              start_time: z.string().optional(),
+              end_time: z.string().optional(),
               attendees: z.array(z.string()).optional(),
             })
             .optional()
-            .describe("使用者已確認的會議資訊（confirm_create 時使用）"),
+            .describe(
+              "使用者已確認的會議資訊（confirm_create 時使用，Meet 不需要時間）",
+            ),
         }),
         execute: async ({ user_message, action_type, confirmed_meeting }) => {
           try {
             const refreshToken = await findRefreshTokenByService(
               user.id,
-              "calendar",
+              "meet",
             );
 
             if (!refreshToken) {
               return {
-                error: "尚未連結 Google 帳號，請前往設定頁面連結 Google 帳號。",
+                error:
+                  "尚未連結 Google Meet 帳號，請前往設定頁面連結 Google Meet。",
               };
             }
 
-            const calendar = await googleCalendar(refreshToken);
+            const meet = await googleMeet(refreshToken);
 
-            // ─── List meetings ───
-            if (action_type === "list") {
-              const nowISO = new Date().toISOString();
-              const response = await calendar.events.list({
-                calendarId: "primary",
-                timeMin: nowISO,
-                maxResults: 10,
-                singleEvents: true,
-                orderBy: "startTime",
-              });
-
-              const events = (response.data.items || []).filter(
-                (e) => e.conferenceData || e.hangoutLink,
-              );
-
-              if (events.length === 0) {
-                return {
-                  type: "meet_list",
-                  message: "目前沒有即將到來的 Google Meet 會議。",
-                };
-              }
-
-              return {
-                type: "meet_list",
-                events: events.map((e) => ({
-                  id: e.id,
-                  title: e.summary,
-                  start: e.start?.dateTime || e.start?.date,
-                  end: e.end?.dateTime || e.end?.date,
-                  meetLink:
-                    e.hangoutLink ||
-                    e.conferenceData?.entryPoints?.find(
-                      (ep) => ep.entryPointType === "video",
-                    )?.uri,
-                })),
-                message: `📋 即將到來的 Meet 會議：\n${events
-                  .map(
-                    (e, i) =>
-                      `${i + 1}. **${e.summary || "(無標題)"}**\n   🕐 ${e.start?.dateTime || e.start?.date}${e.hangoutLink ? `\n   🔗 ${e.hangoutLink}` : ""}`,
-                  )
-                  .join("\n\n")}`,
-              };
-            }
-
-            // ─── Confirm create meeting ───
+            // ─── Confirm create meeting（已確認操作，不需要 Agent 分析）───
             if (action_type === "confirm_create" && confirmed_meeting) {
-              const event = await createGoogleCalendarEvent(
-                calendar,
-                "primary",
-                {
-                  summary: confirmed_meeting.title,
-                  start: { dateTime: confirmed_meeting.start_time },
-                  end: { dateTime: confirmed_meeting.end_time },
-                  attendees: (confirmed_meeting.attendees || []).map(
-                    (email) => ({ email }),
-                  ),
-                  conferenceData: {
-                    createRequest: {
-                      requestId: `meet-${Date.now()}`,
-                      conferenceSolutionKey: { type: "hangoutsMeet" },
-                    },
-                  },
-                },
-              );
+              const space = await createMeetSpace(meet);
 
-              const meetLink =
-                event.conferenceData?.entryPoints?.find(
-                  (e) => e.entryPointType === "video",
-                )?.uri || event.hangoutLink;
-
+              const hasTime =
+                confirmed_meeting.start_time && confirmed_meeting.end_time;
               return {
                 type: "meet_created",
                 event: {
-                  id: event.id,
-                  title: event.summary,
-                  start: event.start?.dateTime,
-                  end: event.end?.dateTime,
-                  meetLink,
-                  htmlLink: event.htmlLink,
+                  title: confirmed_meeting.title,
+                  start: confirmed_meeting.start_time || null,
+                  end: confirmed_meeting.end_time || null,
+                  meetLink: space.meetingUri,
+                  meetingCode: space.meetingCode,
+                  spaceName: space.name,
                 },
-                message: `✅ 已建立會議：「${event.summary}」\n🕐 ${event.start?.dateTime} ~ ${event.end?.dateTime}${meetLink ? `\n🔗 Meet 連結：${meetLink}` : ""}`,
+                message: `✅ 已建立會議：「${confirmed_meeting.title}」${hasTime ? `\n🕐 ${confirmed_meeting.start_time} ~ ${confirmed_meeting.end_time}` : ""}${space.meetingUri ? `\n🔗 Meet 連結：${space.meetingUri}` : ""}`,
               };
             }
 
-            // ─── Create: Extract intent with Meet Agent ───
+            // ─── 取得房間對話上下文，交由 Meet Agent 做意圖分析 ───
             let conversationContext = "";
             if (roomId) {
               const recentMsgs = await getMessages(roomId, 20);
@@ -672,41 +596,44 @@ export const streamTextOutput = (
 
             // LIST_MEETINGS detected by agent
             if (extraction.intent === "LIST_MEETINGS") {
-              const nowISO = new Date().toISOString();
-              const response = await calendar.events.list({
-                calendarId: "primary",
-                timeMin: nowISO,
-                maxResults: 10,
-                singleEvents: true,
-                orderBy: "startTime",
-              });
-
-              const events = (response.data.items || []).filter(
-                (e) => e.conferenceData || e.hangoutLink,
-              );
+              const records = await listConferenceRecords(meet, 10);
 
               return {
                 type: "meet_list",
-                events: events.map((e) => ({
-                  id: e.id,
-                  title: e.summary,
-                  start: e.start?.dateTime || e.start?.date,
-                  end: e.end?.dateTime || e.end?.date,
-                  meetLink:
-                    e.hangoutLink ||
-                    e.conferenceData?.entryPoints?.find(
-                      (ep) => ep.entryPointType === "video",
-                    )?.uri,
+                records: records.map((r) => ({
+                  name: r.name,
+                  startTime: r.startTime,
+                  endTime: r.endTime,
+                  space: r.space,
                 })),
                 message:
-                  events.length === 0
-                    ? "目前沒有即將到來的 Google Meet 會議。"
-                    : `📋 即將到來的 Meet 會議：\n${events
+                  records.length === 0
+                    ? "目前沒有 Google Meet 會議紀錄。"
+                    : `📋 Meet 會議紀錄：\n${records
                         .map(
-                          (e, i) =>
-                            `${i + 1}. **${e.summary || "(無標題)"}**\n   🕐 ${e.start?.dateTime || e.start?.date}`,
+                          (r, i) =>
+                            `${i + 1}. **${r.name || "(無標題)"}**\n   🕐 ${r.startTime || "未知時間"}`,
                         )
                         .join("\n\n")}`,
+              };
+            }
+
+            // 信心度 100% → 直接建立會議（含 CREATE_MEETING_WITHOUT_TIME）
+            if (extraction.confidence === 1) {
+              const space = await createMeetSpace(meet);
+
+              const hasTime = extraction.start_time && extraction.end_time;
+              return {
+                type: "meet_created",
+                event: {
+                  title: extraction.title,
+                  start: extraction.start_time,
+                  end: extraction.end_time,
+                  meetLink: space.meetingUri,
+                  meetingCode: space.meetingCode,
+                  spaceName: space.name,
+                },
+                message: `✅ 已建立會議：「${extraction.title}」${hasTime ? `\n🕐 ${extraction.start_time} ~ ${extraction.end_time}` : ""}${space.meetingUri ? `\n🔗 Meet 連結：${space.meetingUri}` : ""}`,
               };
             }
 
@@ -752,17 +679,33 @@ export const generateTextResponse = async (
     | "emailVerified"
     | "githubUsername"
   >,
+
   prompt: string,
   provider: AIProvider,
   apiKey: string,
-
   toolMentionDirective: string,
+  roomId?: string,
 ) => {
   const now = new Date();
+
+  // 預先取得房間對話上下文，讓模型在決定工具呼叫前就能看到
+  let roomConversationContext = "";
+  if (roomId) {
+    const recentMsgs = await getMessages(roomId, 20);
+    roomConversationContext = getConversationContextFromMessages(
+      formatMessages(recentMsgs),
+    );
+  }
+
   return await generateText({
     model,
     prompt,
-    system: systemPrompt(new Date(), "", toolMentionDirective),
+    system: systemPrompt(
+      new Date(),
+      "",
+      toolMentionDirective,
+      roomConversationContext,
+    ),
     tools: {
       // ─── Translation Tool → delegates to Translation Agent ───
       translate_text: tool({
@@ -803,13 +746,20 @@ export const generateTextResponse = async (
         execute: async ({ user_message }) => {
           try {
             // 取得對話上下文
-
+            let conversationContext = "";
+            if (roomId) {
+              const recentMsgs = await getMessages(roomId, 20);
+              conversationContext = getConversationContextFromMessages(
+                formatMessages(recentMsgs),
+              );
+            }
             // 呼叫 Calendar Agent (extractTask) — 使用中階模型
             const taskExtraction = await extractTask(
               provider,
               apiKey,
               user_message,
               now.toISOString(),
+              conversationContext,
             );
 
             // 判斷是否需要確認
@@ -867,7 +817,7 @@ export const generateTextResponse = async (
               type: "schedule_created",
               task: taskExtraction,
               event,
-              message: `✅ 已建立行事曆事件：「${calendarEvent.summary}」於 ${calendarEvent.start}到 ${calendarEvent.end}`,
+              message: `✅ 已建立行事曆事件：「${calendarEvent.summary}」於 ${calendarEvent.start?.date}到 ${calendarEvent.end?.date}`,
             };
           } catch (error) {
             console.error("Calendar Agent error:", error);
@@ -881,7 +831,8 @@ export const generateTextResponse = async (
       // ─── Gmail Tool → delegates to Gmail Agent ───
       gmail_action: tool({
         description: `處理 Gmail 相關操作：撰寫郵件、回覆郵件、查看收件匣、讀取郵件。
-    呼叫獨立的 Gmail Agent（中階模型）進行意圖解析。
+    呼叫獨立的 Gmail Agent（中階模型），結合房間對話上下文進行意圖解析與判斷。
+    除已確認寄送和指定 ID 讀取外，所有操作皆經過 Agent 分析對話上下文後決定。
     寄送郵件前必須經過使用者確認。`,
         inputSchema: z.object({
           user_message: z.string().describe("使用者關於郵件的原始訊息"),
@@ -924,28 +875,18 @@ export const generateTextResponse = async (
 
             const gmail = await googleGmail(refreshToken);
 
-            // ─── List inbox ───
-            if (action_type === "list") {
-              const messages = await listGmailMessages(gmail, 10);
+            // ─── Send confirmed draft（已確認操作，不需要 Agent 分析）───
+            if (action_type === "send_confirmed" && confirmed_draft) {
+              const result = await sendGmailMessage(gmail, confirmed_draft);
               return {
-                type: "gmail_messages",
-                messages: messages.map((m) => ({
-                  id: m.id,
-                  from: m.from,
-                  subject: m.subject,
-                  date: m.date,
-                  snippet: m.snippet,
-                })),
-                message: `📬 以下是最近的郵件：\n${messages
-                  .map(
-                    (m, i) =>
-                      `${i + 1}. **${m.subject || "(無主旨)"}** — ${m.from}\n   ${m.snippet}`,
-                  )
-                  .join("\n\n")}`,
+                type: "gmail_sent",
+                messageId: result.id,
+                threadId: result.threadId,
+                message: `✅ 郵件已成功寄送給 ${confirmed_draft.to}`,
               };
             }
 
-            // ─── Read specific message ───
+            // ─── Read specific message（有明確 message_id，直接讀取）───
             if (action_type === "read" && message_id) {
               const msg = await readGmailMessage(gmail, message_id);
               return {
@@ -964,23 +905,19 @@ export const generateTextResponse = async (
               };
             }
 
-            // ─── Send confirmed draft ───
-            if (action_type === "send_confirmed" && confirmed_draft) {
-              const result = await sendGmailMessage(gmail, confirmed_draft);
-              return {
-                type: "gmail_sent",
-                messageId: result.id,
-                threadId: result.threadId,
-                message: `✅ 郵件已成功寄送給 ${confirmed_draft.to}`,
-              };
+            // ─── 取得房間對話上下文，交由 Gmail Agent 做意圖分析 ───
+            let conversationContext = "";
+            if (roomId) {
+              const recentMsgs = await getMessages(roomId, 20);
+              conversationContext = getConversationContextFromMessages(
+                formatMessages(recentMsgs),
+              );
             }
-
-            // ─── Draft: Extract intent with Gmail Agent ───
-
             const draft = await extractGmailDraft(
               provider,
               apiKey,
               user_message,
+              conversationContext,
             );
 
             // If clarification needed
@@ -1046,133 +983,78 @@ export const generateTextResponse = async (
       }),
       // ─── Meet Tool → delegates to Meet Agent ───
       meet_action: tool({
-        description: `處理 Google Meet 會議相關操作：建立會議、修改會議、取消會議、查詢會議列表。
+        description: `處理 Google Meet 會議相關操作：建立會議、修改會議、取消會議、查詢會議紀錄。
     呼叫獨立的 Meet Agent（中階模型）進行意圖解析。
     建立會議時會自動產生 Google Meet 連結。
-    所有操作都需經過使用者確認。`,
+    信心度 100% 時自動建立，否則需經過使用者確認。`,
         inputSchema: z.object({
           user_message: z.string().describe("使用者關於會議的原始訊息"),
           action_type: z
             .enum(["create", "list", "confirm_create"])
             .describe(
-              "操作類型：create=建立會議、list=查詢會議列表、confirm_create=使用者已確認建立",
+              "操作類型：create=建立會議、list=查詢會議紀錄、confirm_create=使用者已確認建立",
             ),
           confirmed_meeting: z
             .object({
               title: z.string(),
-              start_time: z.string(),
-              end_time: z.string(),
+              start_time: z.string().optional(),
+              end_time: z.string().optional(),
               attendees: z.array(z.string()).optional(),
             })
             .optional()
-            .describe("使用者已確認的會議資訊（confirm_create 時使用）"),
+            .describe(
+              "使用者已確認的會議資訊（confirm_create 時使用，Meet 不需要時間）",
+            ),
         }),
         execute: async ({ user_message, action_type, confirmed_meeting }) => {
           try {
             const refreshToken = await findRefreshTokenByService(
               user.id,
-              "calendar",
+              "meet",
             );
 
             if (!refreshToken) {
               return {
-                error: "尚未連結 Google 帳號，請前往設定頁面連結 Google 帳號。",
+                error:
+                  "尚未連結 Google Meet 帳號，請前往設定頁面連結 Google Meet。",
               };
             }
 
-            const calendar = await googleCalendar(refreshToken);
+            const meet = await googleMeet(refreshToken);
 
-            // ─── List meetings ───
-            if (action_type === "list") {
-              const nowISO = new Date().toISOString();
-              const response = await calendar.events.list({
-                calendarId: "primary",
-                timeMin: nowISO,
-                maxResults: 10,
-                singleEvents: true,
-                orderBy: "startTime",
-              });
-
-              const events = (response.data.items || []).filter(
-                (e) => e.conferenceData || e.hangoutLink,
-              );
-
-              if (events.length === 0) {
-                return {
-                  type: "meet_list",
-                  message: "目前沒有即將到來的 Google Meet 會議。",
-                };
-              }
-
-              return {
-                type: "meet_list",
-                events: events.map((e) => ({
-                  id: e.id,
-                  title: e.summary,
-                  start: e.start?.dateTime || e.start?.date,
-                  end: e.end?.dateTime || e.end?.date,
-                  meetLink:
-                    e.hangoutLink ||
-                    e.conferenceData?.entryPoints?.find(
-                      (ep) => ep.entryPointType === "video",
-                    )?.uri,
-                })),
-                message: `📋 即將到來的 Meet 會議：\n${events
-                  .map(
-                    (e, i) =>
-                      `${i + 1}. **${e.summary || "(無標題)"}**\n   🕐 ${e.start?.dateTime || e.start?.date}${e.hangoutLink ? `\n   🔗 ${e.hangoutLink}` : ""}`,
-                  )
-                  .join("\n\n")}`,
-              };
-            }
-
-            // ─── Confirm create meeting ───
+            // ─── Confirm create meeting（已確認操作，不需要 Agent 分析）───
             if (action_type === "confirm_create" && confirmed_meeting) {
-              const event = await createGoogleCalendarEvent(
-                calendar,
-                "primary",
-                {
-                  summary: confirmed_meeting.title,
-                  start: { dateTime: confirmed_meeting.start_time },
-                  end: { dateTime: confirmed_meeting.end_time },
-                  attendees: (confirmed_meeting.attendees || []).map(
-                    (email) => ({ email }),
-                  ),
-                  conferenceData: {
-                    createRequest: {
-                      requestId: `meet-${Date.now()}`,
-                      conferenceSolutionKey: { type: "hangoutsMeet" },
-                    },
-                  },
-                },
-              );
+              const space = await createMeetSpace(meet);
 
-              const meetLink =
-                event.conferenceData?.entryPoints?.find(
-                  (e) => e.entryPointType === "video",
-                )?.uri || event.hangoutLink;
-
+              const hasTime =
+                confirmed_meeting.start_time && confirmed_meeting.end_time;
               return {
                 type: "meet_created",
                 event: {
-                  id: event.id,
-                  title: event.summary,
-                  start: event.start?.dateTime,
-                  end: event.end?.dateTime,
-                  meetLink,
-                  htmlLink: event.htmlLink,
+                  title: confirmed_meeting.title,
+                  start: confirmed_meeting.start_time || null,
+                  end: confirmed_meeting.end_time || null,
+                  meetLink: space.meetingUri,
+                  meetingCode: space.meetingCode,
+                  spaceName: space.name,
                 },
-                message: `✅ 已建立會議：「${event.summary}」\n🕐 ${event.start?.dateTime} ~ ${event.end?.dateTime}${meetLink ? `\n🔗 Meet 連結：${meetLink}` : ""}`,
+                message: `✅ 已建立會議：「${confirmed_meeting.title}」${hasTime ? `\n🕐 ${confirmed_meeting.start_time} ~ ${confirmed_meeting.end_time}` : ""}${space.meetingUri ? `\n🔗 Meet 連結：${space.meetingUri}` : ""}`,
               };
             }
 
-            // ─── Create: Extract intent with Meet Agent ───
-
+            // ─── 取得房間對話上下文，交由 Meet Agent 做意圖分析 ───
+            let conversationContext = "";
+            if (roomId) {
+              const recentMsgs = await getMessages(roomId, 20);
+              conversationContext = getConversationContextFromMessages(
+                formatMessages(recentMsgs),
+              );
+            }
             const extraction = await extractMeetAction(
               provider,
               apiKey,
               user_message,
-
+              conversationContext,
               now.toISOString(),
             );
 
@@ -1189,41 +1071,44 @@ export const generateTextResponse = async (
 
             // LIST_MEETINGS detected by agent
             if (extraction.intent === "LIST_MEETINGS") {
-              const nowISO = new Date().toISOString();
-              const response = await calendar.events.list({
-                calendarId: "primary",
-                timeMin: nowISO,
-                maxResults: 10,
-                singleEvents: true,
-                orderBy: "startTime",
-              });
-
-              const events = (response.data.items || []).filter(
-                (e) => e.conferenceData || e.hangoutLink,
-              );
+              const records = await listConferenceRecords(meet, 10);
 
               return {
                 type: "meet_list",
-                events: events.map((e) => ({
-                  id: e.id,
-                  title: e.summary,
-                  start: e.start?.dateTime || e.start?.date,
-                  end: e.end?.dateTime || e.end?.date,
-                  meetLink:
-                    e.hangoutLink ||
-                    e.conferenceData?.entryPoints?.find(
-                      (ep) => ep.entryPointType === "video",
-                    )?.uri,
+                records: records.map((r) => ({
+                  name: r.name,
+                  startTime: r.startTime,
+                  endTime: r.endTime,
+                  space: r.space,
                 })),
                 message:
-                  events.length === 0
-                    ? "目前沒有即將到來的 Google Meet 會議。"
-                    : `📋 即將到來的 Meet 會議：\n${events
+                  records.length === 0
+                    ? "目前沒有 Google Meet 會議紀錄。"
+                    : `📋 Meet 會議紀錄：\n${records
                         .map(
-                          (e, i) =>
-                            `${i + 1}. **${e.summary || "(無標題)"}**\n   🕐 ${e.start?.dateTime || e.start?.date}`,
+                          (r, i) =>
+                            `${i + 1}. **${r.name || "(無標題)"}**\n   🕐 ${r.startTime || "未知時間"}`,
                         )
                         .join("\n\n")}`,
+              };
+            }
+
+            // 信心度 100% → 直接建立會議（含 CREATE_MEETING_WITHOUT_TIME）
+            if (extraction.confidence === 1) {
+              const space = await createMeetSpace(meet);
+
+              const hasTime = extraction.start_time && extraction.end_time;
+              return {
+                type: "meet_created",
+                event: {
+                  title: extraction.title,
+                  start: extraction.start_time,
+                  end: extraction.end_time,
+                  meetLink: space.meetingUri,
+                  meetingCode: space.meetingCode,
+                  spaceName: space.name,
+                },
+                message: `✅ 已建立會議：「${extraction.title}」${hasTime ? `\n🕐 ${extraction.start_time} ~ ${extraction.end_time}` : ""}${space.meetingUri ? `\n🔗 Meet 連結：${space.meetingUri}` : ""}`,
               };
             }
 

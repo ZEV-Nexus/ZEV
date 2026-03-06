@@ -20,3 +20,10 @@ export async function saveUserApiKeys(
 
   return response.data?.apiKeys ?? {};
 }
+
+export async function deleteUserApiKey(provider: string) {
+  await fetchApi("/ai/key", {
+    method: "DELETE",
+    body: JSON.stringify({ provider }),
+  });
+}

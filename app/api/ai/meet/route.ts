@@ -11,9 +11,10 @@ import {
   type MeetExtraction,
 } from "@/ai/agents/meet-agent";
 import {
-  googleCalendar,
-  createGoogleCalendarEvent,
-} from "@/shared/lib/google-calendar";
+  googleMeet,
+  createMeetSpace,
+  listConferenceRecords,
+} from "@/shared/lib/google-meet";
 import { findRefreshTokenByService } from "@/shared/service/server/user-oauth-account";
 import { getMessages } from "@/shared/service/server/message";
 
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
   try {
     // ─── Confirm create meeting action ───
     if (action === "confirm_meet" && meeting) {
-      const conf = confirmation as MeetConfirmation;
+      const conf = confirmation as MeetConfirmation; 
 
       if (conf?.confirm) {
         const payload = buildMeetEventPayload(meeting as MeetExtraction, conf);
@@ -79,68 +80,46 @@ export async function POST(req: Request) {
               type: "error",
               error: {
                 code: "INSUFFICIENT_CONTEXT",
-                message: "會議標題或時間資訊不足，無法建立會議",
-                required_fields: [
-                  ...(!meeting.title ? ["title"] : []),
-                  ...(!meeting.start_time ? ["start_time"] : []),
-                  ...(!meeting.end_time ? ["end_time"] : []),
-                ],
+                message: "會議標題資訊不足，無法建立會議",
+                required_fields: [...(!meeting.title ? ["title"] : [])],
               },
             },
           });
         }
 
-        // Get Calendar OAuth token
-        const refreshToken = await findRefreshTokenByService(
-          user.id,
-          "calendar",
-        );
+        // Get Meet OAuth token
+        const refreshToken = await findRefreshTokenByService(user.id, "meet");
         if (!refreshToken) {
           return apiResponse({
             data: {
               type: "error",
               error: {
-                code: "CALENDAR_NOT_CONNECTED",
-                message: "請先連結 Google 帳號",
+                code: "MEET_NOT_CONNECTED",
+                message: "請先連結 Google Meet 帳號",
                 required_fields: [],
               },
             },
           });
         }
 
-        const calendar = await googleCalendar(refreshToken);
+        const meet = await googleMeet(refreshToken);
 
-        // Create event with Google Meet conference
-        const event = await createGoogleCalendarEvent(calendar, "primary", {
-          summary: payload.title,
-          start: { dateTime: payload.start_time },
-          end: { dateTime: payload.end_time },
-          attendees: payload.attendees.map((email) => ({ email })),
-          conferenceData: {
-            createRequest: {
-              requestId: `meet-${Date.now()}`,
-              conferenceSolutionKey: { type: "hangoutsMeet" },
-            },
-          },
-        });
+        // Create meeting space with Google Meet API
+        const space = await createMeetSpace(meet);
 
-        const meetLink =
-          event.conferenceData?.entryPoints?.find(
-            (e) => e.entryPointType === "video",
-          )?.uri || null;
-
+        const hasTime = payload.start_time && payload.end_time;
         return apiResponse({
           data: {
             type: "meet_created",
             event: {
-              id: event.id,
-              title: event.summary,
-              start: event.start,
-              end: event.end,
-              meetLink,
-              htmlLink: event.htmlLink,
+              title: payload.title,
+              start: payload.start_time || null,
+              end: payload.end_time || null,
+              meetLink: space.meetingUri,
+              meetingCode: space.meetingCode,
+              spaceName: space.name,
             },
-            message: `✅ 已建立會議：「${event.summary}」\n🕐 ${event.start?.dateTime} ~ ${event.end?.dateTime}${meetLink ? `\n🔗 Meet 連結：${meetLink}` : ""}`,
+            message: `✅ 已建立會議：「${payload.title}」${hasTime ? `\n🕐 ${payload.start_time} ~ ${payload.end_time}` : ""}${space.meetingUri ? `\n🔗 Meet 連結：${space.meetingUri}` : ""}`,
           },
         });
       }
@@ -155,48 +134,31 @@ export async function POST(req: Request) {
 
     // ─── List meetings action ───
     if (action === "list_meetings") {
-      const refreshToken = await findRefreshTokenByService(user.id, "calendar");
+      const refreshToken = await findRefreshTokenByService(user.id, "meet");
       if (!refreshToken) {
         return apiResponse({
           data: {
             type: "error",
             error: {
-              code: "CALENDAR_NOT_CONNECTED",
-              message: "請先連結 Google 帳號",
+              code: "MEET_NOT_CONNECTED",
+              message: "請先連結 Google Meet 帳號",
               required_fields: [],
             },
           },
         });
       }
 
-      const calendar = await googleCalendar(refreshToken);
-      const now = new Date().toISOString();
-      const response = await calendar.events.list({
-        calendarId: "primary",
-        timeMin: now,
-        maxResults: 10,
-        singleEvents: true,
-        orderBy: "startTime",
-      });
-
-      const events = (response.data.items || []).filter(
-        (e) => e.conferenceData || e.hangoutLink,
-      );
+      const meet = await googleMeet(refreshToken);
+      const records = await listConferenceRecords(meet, 10);
 
       return apiResponse({
         data: {
           type: "meet_list",
-          events: events.map((e) => ({
-            id: e.id,
-            title: e.summary,
-            start: e.start,
-            end: e.end,
-            meetLink:
-              e.hangoutLink ||
-              e.conferenceData?.entryPoints?.find(
-                (ep) => ep.entryPointType === "video",
-              )?.uri,
-            htmlLink: e.htmlLink,
+          records: records.map((r) => ({
+            name: r.name,
+            startTime: r.startTime,
+            endTime: r.endTime,
+            space: r.space,
           })),
         },
       });
@@ -240,49 +202,68 @@ export async function POST(req: Request) {
 
     // LIST_MEETINGS doesn't need confirmation
     if (extracted.intent === "LIST_MEETINGS") {
-      const refreshToken = await findRefreshTokenByService(user.id, "calendar");
+      const refreshToken = await findRefreshTokenByService(user.id, "meet");
       if (!refreshToken) {
         return apiResponse({
           data: {
             type: "error",
             error: {
-              code: "CALENDAR_NOT_CONNECTED",
-              message: "請先連結 Google 帳號",
+              code: "MEET_NOT_CONNECTED",
+              message: "請先連結 Google Meet 帳號",
               required_fields: [],
             },
           },
         });
       }
 
-      const calendar = await googleCalendar(refreshToken);
-      const now = new Date().toISOString();
-      const response = await calendar.events.list({
-        calendarId: "primary",
-        timeMin: now,
-        maxResults: 10,
-        singleEvents: true,
-        orderBy: "startTime",
-      });
-
-      const events = (response.data.items || []).filter(
-        (e) => e.conferenceData || e.hangoutLink,
-      );
+      const meet = await googleMeet(refreshToken);
+      const records = await listConferenceRecords(meet, 10);
 
       return apiResponse({
         data: {
           type: "meet_list",
-          events: events.map((e) => ({
-            id: e.id,
-            title: e.summary,
-            start: e.start,
-            end: e.end,
-            meetLink:
-              e.hangoutLink ||
-              e.conferenceData?.entryPoints?.find(
-                (ep) => ep.entryPointType === "video",
-              )?.uri,
-            htmlLink: e.htmlLink,
+          records: records.map((r) => ({
+            name: r.name,
+            startTime: r.startTime,
+            endTime: r.endTime,
+            space: r.space,
           })),
+        },
+      });
+    }
+
+    // 信心度 100% → 直接建立會議
+    if (extracted.confidence === 1) {
+      const refreshToken = await findRefreshTokenByService(user.id, "meet");
+      if (!refreshToken) {
+        return apiResponse({
+          data: {
+            type: "error",
+            error: {
+              code: "MEET_NOT_CONNECTED",
+              message: "請先連結 Google Meet 帳號",
+              required_fields: [],
+            },
+          },
+        });
+      }
+
+      const meet = await googleMeet(refreshToken);
+      const space = await createMeetSpace(meet);
+
+      const hasTime = extracted.start_time && extracted.end_time;
+      return apiResponse({
+        data: {
+          type: "meet_created",
+          event: {
+            title: extracted.title,
+            start: extracted.start_time || null,
+            end: extracted.end_time || null,
+            meetLink: space.meetingUri,
+            meetingCode: space.meetingCode,
+            spaceName: space.name,
+          },
+          message: `✅ 已建立會議：「${extracted.title}」${hasTime ? `\n🕐 ${extracted.start_time} ~ ${extracted.end_time}` : ""}${space.meetingUri ? `\n🔗 Meet 連結：${space.meetingUri}` : ""}`,
         },
       });
     }
