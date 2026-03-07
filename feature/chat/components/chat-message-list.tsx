@@ -197,7 +197,7 @@ export function ChatMessageList({
   }, [scrollToMessageId, listItems, hasMore, isLoadingMore, onLoadMore]);
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollTo({
-      top: 999999, // Force scroll to absolute bottom
+      top: 999999,
       behavior: "smooth",
     });
   }, []);

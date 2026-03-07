@@ -194,16 +194,14 @@ export default function AppActivityBar() {
 
             {/* User avatar */}
             {session?.user && (
-              <Link
-                href={`/${session.user.username}`}
-                prefetch={true}
+              <motion.button
+                whileTap={{ scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 w-full h-full transition-colors",
-                  pathname === `/${session.user.username}`
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                  "flex flex-col items-center justify-center gap-0.5 w-16 h-full transition-colors",
                 )}
                 onClick={() => {
+                  router.push(`/${session.user.username}`);
                   closePanel();
                   setIsSearchOpen(false);
                 }}
@@ -218,7 +216,7 @@ export default function AppActivityBar() {
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-[10px] leading-none">{t("profile")}</span>
-              </Link>
+              </motion.button>
             )}
           </div>
         </nav>
