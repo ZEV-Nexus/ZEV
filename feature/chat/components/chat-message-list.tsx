@@ -21,7 +21,7 @@ interface ChatMessageListProps {
   isAIPanelOpen?: boolean;
   hasMore?: boolean;
   isLoadingMore?: boolean;
-  onLoadMore?: () => void;
+  onLoadMore: () => Promise<Message[] | undefined>;
   onEditMessage?: (messageId: string, content: string) => void;
   onDeleteMessage?: (messageId: string) => void;
   onReplyMessage?: (message: Message) => void;
@@ -82,7 +82,9 @@ export function ChatMessageList({
   const [firstItemIndex, setFirstItemIndex] = useState(START_INDEX);
   const prevListItemsLenRef = useRef<number>(0);
   const wasLoadingMoreRef = useRef(false);
-
+  const [scrollToMessageId, setScrollToMessageId] = useState<string | null>(
+    null,
+  );
   const listItems = useMemo<ListItem[]>(() => {
     if (messages.length === 0) return [];
 
@@ -167,22 +169,32 @@ export function ChatMessageList({
     }
   }, [hasMore, isLoadingMore, onLoadMore]);
 
-  const handleScrollToMessage = useCallback(
-    (messageId: string) => {
-      const idx = listItems.findIndex(
-        (item) => item.type === "message" && item.message.id === messageId,
-      );
-      if (idx !== -1) {
-        virtuosoRef.current?.scrollToIndex({
-          index: idx,
-          align: "center",
-          behavior: "smooth",
-        });
-      }
-    },
-    [listItems],
-  );
+  useEffect(() => {
+    if (!scrollToMessageId) return;
 
+    const idx = listItems.findIndex(
+      (item) =>
+        item.type === "message" && item.message.id === scrollToMessageId,
+    );
+
+    if (idx !== -1) {
+      virtuosoRef.current?.scrollToIndex({
+        index: idx,
+        align: "center",
+        behavior: "smooth",
+      });
+      setTimeout(() => {
+        setScrollToMessageId(null);
+      }, 0);
+    } else if (hasMore && !isLoadingMore) {
+      // 訊息尚未載入，繼續載入更多歷史訊息
+      onLoadMore();
+    } else if (!hasMore && !isLoadingMore) {
+      setTimeout(() => {
+        setScrollToMessageId(null);
+      }, 0);
+    }
+  }, [scrollToMessageId, listItems, hasMore, isLoadingMore, onLoadMore]);
   const scrollToBottom = useCallback(() => {
     virtuosoRef.current?.scrollTo({
       top: 999999, // Force scroll to absolute bottom
@@ -230,7 +242,7 @@ export function ChatMessageList({
           align: "end",
         }}
         startReached={handleStartReached}
-        followOutput={"smooth"}
+        followOutput={atBottom ? "smooth" : false}
         atBottomThreshold={200}
         atBottomStateChange={(bottom) => {
           setAtBottom(bottom);
@@ -278,7 +290,7 @@ export function ChatMessageList({
                 showTimestamp={item.showTimestamp}
                 bubblePosition={item.bubblePosition}
                 members={members}
-                onScrollToMessage={handleScrollToMessage}
+                onScrollToMessage={setScrollToMessageId}
                 onEditMessage={onEditMessage}
                 onDeleteMessage={onDeleteMessage}
                 onReplyMessage={onReplyMessage}

@@ -133,15 +133,18 @@ export default function ChatRoom({
       if (data && data.length > 0) {
         setLocalMessages((prev) => [...data, ...prev]);
         setHasMoreMessages(data.length >= MESSAGE_LIMIT);
+        return data;
       } else {
         setHasMoreMessages(false);
       }
     } catch (error: unknown) {
       console.log(error);
+
       toast.error(t("loadMoreFailed"));
     } finally {
       setIsLoadingMore(false);
     }
+    return [];
   };
 
   const handleSendMessage = async (

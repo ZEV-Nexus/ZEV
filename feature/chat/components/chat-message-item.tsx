@@ -43,7 +43,7 @@ interface ChatMessageItemProps {
   showTimestamp: boolean;
   bubblePosition: BubblePosition;
   members?: Member[];
-  onScrollToMessage?: (messageId: string) => void;
+  onScrollToMessage: (messageId: string) => void;
   onEditMessage?: (messageId: string, content: string) => void;
   onDeleteMessage?: (messageId: string) => void;
   onReplyMessage?: (message: Message) => void;
