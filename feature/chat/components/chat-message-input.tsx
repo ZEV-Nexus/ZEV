@@ -8,7 +8,6 @@ import {
   MentionContent,
   MentionInput,
   MentionItem,
-  MentionLabel,
 } from "@/shared/shadcn/components/ui/mention";
 import {
   RiSendPlaneLine,

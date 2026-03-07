@@ -289,7 +289,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
 
       <div
         className={cn(
-          "flex flex-col min-w-0",
+          "flex flex-col min-w-0 ",
           isCurrentUser ? "items-end" : "items-start",
           "max-w-[85%] md:max-w-[60%]",
         )}
@@ -346,14 +346,14 @@ export const ChatMessageItem = memo(function ChatMessageItem({
         {(message.content || isEditing) && (
           <div
             className={cn(
-              "flex items-center gap-0.5 relative",
+              "flex items-center gap-0.5 relative min-w-0 max-w-full ",
               isCurrentUser ? "flex-row-reverse" : "flex-row",
               message.attachments && message.attachments.length > 0 && "mb-1",
             )}
           >
             <div
               className={cn(
-                "relative px-3 py-1.75 md:px-3.5 md:pmy-2.5",
+                "relative px-3 py-1.75 md:px-3.5 md:py-2.5 min-w-0 max-w-full overflow-hidden",
                 isCurrentUser
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/60 text-foreground",
@@ -396,7 +396,7 @@ export const ChatMessageItem = memo(function ChatMessageItem({
                 <MentionText
                   content={message.content}
                   members={members}
-                  className="text-[15px] whitespace-pre-wrap wrap-break-word leading-[1.4]"
+                  className="text-[15px] break-words leading-[1.4] min-w-0"
                 />
               ) : null}
             </div>

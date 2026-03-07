@@ -27,14 +27,14 @@ export function MentionText({
   // 沒有 mention 時直接返回純文字
   if (!hasMentions(content)) {
     return (
-      <span className={className}>
+      <div className={cn(className, "min-w-0 overflow-x-auto")}>
         {noMarkdown ? content : <Markdown>{content}</Markdown>}
-      </span>
+      </div>
     );
   }
 
   return (
-    <span className={className}>
+    <div className={cn(className, "min-w-0 overflow-x-auto")}>
       {segments.map((segment, index) => {
         if (segment.type === "mention") {
           return (
@@ -52,13 +52,11 @@ export function MentionText({
           );
         }
         return noMarkdown ? (
-          <span key={`text-${index}`} className={className}>
-            {segment.content}
-          </span>
+          <span key={`text-${index}`}>{segment.content}</span>
         ) : (
           <Markdown key={`text-${index}`}>{segment.content}</Markdown>
         );
       })}
-    </span>
+    </div>
   );
 }
