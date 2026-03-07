@@ -371,14 +371,17 @@ export function ChatMessageInput({
                 <Textarea value={message} className="max-h-[7lh]" />
               </MentionInput>
               <MentionContent>
-                {toolMention.map((tool) => (
-                  <MentionItem key={tool.id} value={tool.label}>
-                    <div className="flex items-center gap-2 ">
-                      <RiAtLine className="h-4 w-4 text-primary shrink-0" />
-                      <span className="text-sm">{tool.label}</span>
-                    </div>
-                  </MentionItem>
-                ))}
+                {!mentionValues.some((v) =>
+                  toolMention.some((t) => t.label === v),
+                ) &&
+                  toolMention.map((tool) => (
+                    <MentionItem key={tool.id} value={tool.label}>
+                      <div className="flex items-center gap-2 ">
+                        <RiAtLine className="h-4 w-4 text-primary shrink-0" />
+                        <span className="text-sm">{tool.label}</span>
+                      </div>
+                    </MentionItem>
+                  ))}
                 {mentionSuggestions.length > 0 ? (
                   mentionSuggestions.map((member) => (
                     <MentionItem key={member.id} value={member.label}>

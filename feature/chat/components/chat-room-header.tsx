@@ -101,7 +101,7 @@ export function ChatRoomHeader({
     <>
       <div className="bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0 overflow-hidden">
             {isMobile && (
               <Button
                 variant="ghost"
@@ -129,8 +129,8 @@ export function ChatRoomHeader({
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex flex-col">
-              <h2 className="text-lg font-semibold text-foreground">
+            <div className="flex flex-col min-w-0 ">
+              <h2 className="text-lg font-semibold text-foreground  max-w-full truncate">
                 {displayName}
               </h2>
               <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -157,7 +157,7 @@ export function ChatRoomHeader({
           </div>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {/* Search */}
             <Button
               variant="ghost"
