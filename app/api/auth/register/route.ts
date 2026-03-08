@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
       suffix++;
     }
     const newUser = new userModel({
-      userId: crypto.randomUUID(),
       username,
       email,
       password: hashPassword,
